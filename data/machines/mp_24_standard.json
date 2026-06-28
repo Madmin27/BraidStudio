@@ -1,0 +1,28 @@
+{
+  "machineProfileId": "mp_24_standard",
+  "status": "generic_candidate",
+  "machineFamily": "maypole_circular_horn_gear",
+  "carrierCount": 24,
+  "trackModel": "generic_two_counter_rotating_interlaced_paths",
+  "directionOptions": ["clockwise", "counterClockwise"],
+  "defaultWalk": "1_over_1",
+  "physicalSpecs": {
+    "hornGearCount": 12,
+    "maxRpm": null
+  },
+  "carrierGroups": {
+    "clockwise": [1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23],
+    "counterClockwise": [2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24]
+  },
+  "assumptions": [
+    "Generic 24 carrier maypole/circular horn gear layout.",
+    "Odd/even carrier grouping is a candidate rule, not shop measured.",
+    "Suitable as a first candidate profile for 24 carrier rope sheath previews."
+  ],
+  "limitations": [
+    "Not production accurate until observed on the physical machine.",
+    "Exact walkMap must be calibrated from slow top-view machine video or direct observation."
+  ],
+  "validationRequired": true,
+  "shopMeasured": false
+}
