@@ -1,0 +1,37 @@
+{
+  "recipeId": "rec_16_001",
+  "status": "candidate",
+  "machineProfileId": "mp_16_standard",
+  "patternName": "1x1 Herringbone Candidate",
+  "productType": "round_braid",
+  "walkType": "1_over_1",
+  "direction": "clockwise",
+  "carrierColorMap": {
+    "1": "black",
+    "2": "white",
+    "3": "black",
+    "4": "white",
+    "5": "black",
+    "6": "white",
+    "7": "black",
+    "8": "white",
+    "9": "black",
+    "10": "white",
+    "11": "black",
+    "12": "white",
+    "13": "black",
+    "14": "white",
+    "15": "black",
+    "16": "white"
+  },
+  "settings": {
+    "braidAngle": 45,
+    "tensionLevel": "medium",
+    "firstTrialLengthCm": 50
+  },
+  "validation": {
+    "machineProfileRequiredStatus": "shop_measured",
+    "recipeRequiredStatusForProduction": "shop_validated",
+    "notes": "Candidate recipe. Use for renderer/template testing only until shop validation."
+  }
+}
