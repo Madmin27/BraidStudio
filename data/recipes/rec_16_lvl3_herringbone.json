@@ -1,0 +1,20 @@
+{
+  "recipeId": "rec_16_lvl3_herringbone",
+  "machineProfileId": "mp_16_standard",
+  "metadata": {
+    "difficulty": 3,
+    "patternFamily": "twill",
+    "visualSignature": "diagonal_rib",
+    "braidLogic": "2_over_2"
+  },
+  "carrierColorMap": {
+    "1": "white", "2": "white", "3": "black", "4": "black",
+    "5": "white", "6": "white", "7": "black", "8": "black",
+    "9": "white", "10": "white", "11": "black", "12": "black",
+    "13": "white", "14": "white", "15": "black", "16": "black"
+  },
+  "settings": {
+    "braidAngle": 45,
+    "tensionLevel": "medium"
+  }
+}
