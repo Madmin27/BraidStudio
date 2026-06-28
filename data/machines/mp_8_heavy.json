@@ -1,0 +1,12 @@
+{
+  "machineProfileId": "mp_8_heavy",
+  "machineFamily": "maypole_circular",
+  "carrierCount": 8,
+  "trackModel": "sinusoidal_8",
+  "directionOptions": ["clockwise", "counterClockwise"],
+  "defaultWalk": "1_over_1",
+  "physicalSpecs": {
+    "hornGearCount": 4,
+    "maxRpm": 200
+  }
+}
