@@ -1,0 +1,54 @@
+{
+  "recipeId": "rec_24_001",
+  "status": "candidate",
+  "machineProfileId": "mp_24_standard",
+  "patternName": "24 Carrier White Rope With 3 Red Tracers",
+  "productType": "double_braid_outer_sheath_candidate",
+  "walkType": "1_over_1",
+  "direction": "clockwise",
+  "carrierColorMap": {
+    "1": "red",
+    "2": "white",
+    "3": "white",
+    "4": "white",
+    "5": "white",
+    "6": "white",
+    "7": "white",
+    "8": "white",
+    "9": "red",
+    "10": "white",
+    "11": "white",
+    "12": "white",
+    "13": "white",
+    "14": "white",
+    "15": "white",
+    "16": "white",
+    "17": "red",
+    "18": "white",
+    "19": "white",
+    "20": "white",
+    "21": "white",
+    "22": "white",
+    "23": "white",
+    "24": "white"
+  },
+  "construction": {
+    "material": "polyester",
+    "structure": "double_braid",
+    "sheathCount": 2,
+    "coreType": "parallel_polyester_fiber",
+    "floating": false
+  },
+  "settings": {
+    "diameterMm": 20,
+    "linearDensityKgM": 0.319,
+    "braidAngle": null,
+    "tensionLevel": "medium",
+    "firstTrialLengthCm": 50
+  },
+  "validation": {
+    "machineProfileRequiredStatus": "shop_measured",
+    "recipeRequiredStatusForProduction": "shop_validated",
+    "notes": "Candidate example for deterministic technical sheet rendering. Not production-ready."
+  }
+}
