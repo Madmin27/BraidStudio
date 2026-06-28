@@ -1,0 +1,36 @@
+{
+  "recipeId": "rec_24_marine_pro",
+  "machineProfileId": "mp_24_standard",
+  "metadata": {
+    "difficulty": 3,
+    "patternFamily": "twill",
+    "visualSignature": "diagonal_rib",
+    "braidLogic": "2_over_2"
+  },
+  "carrierColorMap": {
+    "1": "red",
+    "2": "red",
+    "3": "white",
+    "4": "white",
+    "5": "black",
+    "6": "black",
+    "7": "red",
+    "8": "red",
+    "9": "white",
+    "10": "white",
+    "11": "black",
+    "12": "black",
+    "13": "red",
+    "14": "red",
+    "15": "white",
+    "16": "white",
+    "17": "black",
+    "18": "black",
+    "19": "red",
+    "20": "red",
+    "21": "white",
+    "22": "white",
+    "23": "black",
+    "24": "black"
+  }
+}
