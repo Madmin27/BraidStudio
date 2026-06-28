@@ -524,6 +524,40 @@ dd {
   display: block;
 }
 
+.ts-block canvas,
+.ts-block img.canvas-detail,
+.ts-block img.canvas-walk,
+.canvas-rope-frame img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.canvas-rope-frame {
+  display: grid;
+  gap: 6px;
+}
+
+.canvas-rope-frame canvas,
+.canvas-rope-frame img {
+  border: 1px solid #111;
+  background: #f3f5f1;
+}
+
+.rope-scale {
+  display: flex;
+  justify-content: space-between;
+  border-top: 1px solid #111;
+  padding-top: 4px;
+  font-size: 12px;
+}
+
+.canvas-detail,
+.canvas-walk {
+  border: 1px solid #111;
+  background: #fff;
+}
+
 .ts-specs {
   grid-row: span 2;
 }

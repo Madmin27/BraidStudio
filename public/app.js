@@ -5,6 +5,7 @@ import {
 } from "../src/state.js";
 import { machineProfiles } from "../src/machineProfiles.js";
 import { buildBraidMatrix, getCarrierDirection } from "../src/utils/braidMatrix.js";
+import { renderTechnicalSheetCanvases, replaceCanvasWithImages } from "../src/utils/braidCanvasRenderer.js";
 
 const patterns = [
   { id: "diamond", name: "Diamond", carriers: [16, 24], colors: ["siyah", "kırmızı"], material: "polyester", walk: "two-over-two" },
@@ -547,6 +548,7 @@ function renderRecipeSheet(recipe) {
     <section class="ts-block"><h3>Onay / kontrol</h3>${renderKeyValues([["Hazırlayan", "BraidStudio"], ["Kontrol", "________"], ["Onay", recipe.shop_validation.production_ready ? "ONAYLI" : "Bekliyor"]])}</section>
     <section class="ts-block"><h3>Kullanım alanları</h3><div class="usage-icons"><span>Yelken</span><span>Marina</span><span>Endüstriyel</span><span>Mooring</span></div></section>
   `;
+  const canvasRender = renderTechnicalSheetCanvases(recipeSheet, sheet);
   logProcess("Renderer girdisi", "Teknik sheet DOM üretildi", {
     recipeId: recipe.recipe_id,
     patternType: sheet.pattern_type,
@@ -563,6 +565,7 @@ function renderRecipeSheet(recipe) {
       cellCount: renderMatrix.steps * renderMatrix.carrierCount,
       braidLogic: renderMatrix.braidLogic
     },
+    canvasRender,
     previewConfidence: recipe.preview.previewConfidence,
     warnings: recipe.preview.warnings
   }, buildMismatchReport({ recipe }).some((item) => item.level === "error") ? "error" : "info");
@@ -586,6 +589,7 @@ function getRecipeSheetCss() {
 
 function buildRecipeSheetSvgMarkup() {
   const clone = recipeSheet.cloneNode(true);
+  replaceCanvasWithImages(clone, recipeSheet);
   clone.setAttribute("xmlns", "http://www.w3.org/1999/xhtml");
   clone.querySelectorAll("svg").forEach((svg) => {
     svg.setAttribute("xmlns", "http://www.w3.org/2000/svg");
@@ -779,11 +783,11 @@ function mostCommonColor(colors = []) {
 }
 
 function renderMainRopeSvg(sheet) {
-  return `<svg viewBox="0 0 820 160" role="img"><g transform="translate(20 36)">${ropeLines(sheet, 760, 74, false)}<rect width="760" height="74" fill="none" stroke="#111"/></g><line x1="20" y1="135" x2="780" y2="135" stroke="#111"/><text x="20" y="154">0</text><text x="740" y="154">30 cm</text></svg>`;
+  return `<div class="canvas-rope-frame"><canvas data-braid-canvas="main" width="1520" height="148" aria-label="Ana halat görünümü"></canvas><div class="rope-scale"><span>0</span><span>30 cm</span></div></div>`;
 }
 
 function renderCloseRopeSvg(sheet) {
-  return `<svg viewBox="0 0 360 220" role="img"><rect width="360" height="220" fill="#fbfbf8" stroke="#111"/>${ropeLines(sheet, 360, 220, true)}</svg>`;
+  return `<canvas class="canvas-detail" data-braid-canvas="close" width="720" height="440" aria-label="Yakın halat görünümü"></canvas>`;
 }
 
 function renderSectionSvg(sheet) {
@@ -813,44 +817,7 @@ function renderCarrierRingSvg(sheet) {
 }
 
 function renderWalkSvg(sheet) {
-  const count = Math.min(sheet.carrier_count || 16, 32);
-  const steps = Array.isArray(sheet.walkMap?.steps) ? sheet.walkMap.steps.slice(0, 8) : [];
-  const base = mostCommonColor(sheet.color_sequence || []);
-  const paths = [];
-  const grid = [];
-  const x0 = 42;
-  const y0 = 22;
-  const plotW = 286;
-  const plotH = 112;
-  const stepW = plotW / Math.max(steps.length, 1);
-
-  for (let row = 0; row < count; row += 1) {
-    const y = y0 + (row / Math.max(count - 1, 1)) * plotH;
-    grid.push(`<line x1="${x0}" y1="${y}" x2="${x0 + plotW}" y2="${y}" stroke="#e0e4e0" stroke-width=".7"/>`);
-    if (row % 2 === 0) grid.push(`<text x="18" y="${y + 3}" font-size="7">${row + 1}</text>`);
-  }
-  for (let stepIndex = 0; stepIndex <= steps.length; stepIndex += 1) {
-    const x = x0 + stepIndex * stepW;
-    grid.push(`<line x1="${x}" y1="${y0}" x2="${x}" y2="${y0 + plotH}" stroke="#c8d0ca" stroke-width=".7"/>`);
-    grid.push(`<text x="${x}" y="16" text-anchor="middle" font-size="7">${stepIndex}</text>`);
-  }
-
-  for (const carrier of sheet.carrier_layout || []) {
-    let currentPosition = carrier.carrier_no;
-    const points = [`${x0},${y0 + ((currentPosition - 1) / Math.max(count - 1, 1)) * plotH}`];
-    steps.forEach((step, stepIndex) => {
-      const move = step.moves.find((item) => item.carrier_no === carrier.carrier_no);
-      currentPosition = move?.to || currentPosition;
-      const x = x0 + (stepIndex + 1) * stepW;
-      const y = y0 + ((currentPosition - 1) / Math.max(count - 1, 1)) * plotH;
-      points.push(`${x},${y}`);
-    });
-    const isMarker = carrier.color !== base;
-    paths.push(`<polyline points="${points.join(" ")}" fill="none" stroke="${colorToHex(carrier.color)}" stroke-width="${isMarker ? 2.4 : 1.1}" opacity="${isMarker ? ".95" : ".44"}"/>`);
-    paths.push(`<circle cx="${x0}" cy="${points[0].split(",")[1]}" r="${isMarker ? 3 : 1.8}" fill="${colorToHex(carrier.color)}" stroke="#111" stroke-width=".5"/>`);
-  }
-  const status = sheet.walkMap?.status || "generic_candidate";
-  return `<svg viewBox="0 0 360 180" role="img"><rect width="360" height="180" fill="#fff" stroke="#111"/>${grid.join("")}${paths.join("")}<text x="18" y="148" font-size="9">${sheet.walkMap?.machineProfileId || ""}</text><text x="18" y="161" font-size="9">${sheet.machineProfile.trackModel}</text><text x="18" y="174" font-size="9">${status} - shop ölçümü gerekir</text></svg>`;
+  return `<canvas class="canvas-walk" data-braid-canvas="walk" width="720" height="360" aria-label="Kukla yürüyüş diyagramı"></canvas>`;
 }
 
 function applyPattern(patternId) {
