@@ -33,3 +33,11 @@ nano /root/sunucu/BraidStudio/.env
 ```bash
 systemctl restart braidstudio.service
 ```
+
+# BraidStudio AI Öğrenme Protokolü
+
+AI Modeli (OpenRouter üzerinden), `data/recipes/` içerisindeki JSON dosyalarını kullanarak desen analizi yapacaktır:
+1. Görsel analizi yapıldığında, `patternSignatures` içindeki `visualKey` ile eşleştirme yap.
+2. Eşleşen deseni `data/recipes/` klasöründeki en yakın `metadata` ile doğrula.
+3. Önerilen reçeteyi `carrierColorMap` yapısında çıktı ver.
+4. Hata durumunda: Kullanıcı düzeltmesi ile `history/` klasörüne "öğrenme verisi" olarak kaydet.
