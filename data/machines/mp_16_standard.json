@@ -1,0 +1,28 @@
+{
+  "machineProfileId": "mp_16_standard",
+  "status": "generic_candidate",
+  "machineFamily": "maypole_circular_horn_gear",
+  "carrierCount": 16,
+  "trackModel": "generic_two_counter_rotating_interlaced_paths",
+  "directionOptions": ["clockwise", "counterClockwise"],
+  "defaultWalk": "1_over_1",
+  "physicalSpecs": {
+    "hornGearCount": 8,
+    "maxRpm": null
+  },
+  "carrierGroups": {
+    "clockwise": [1, 3, 5, 7, 9, 11, 13, 15],
+    "counterClockwise": [2, 4, 6, 8, 10, 12, 14, 16]
+  },
+  "assumptions": [
+    "Generic maypole/circular horn gear layout.",
+    "Odd/even carrier grouping is a candidate rule, not shop measured.",
+    "Direction reversal mirrors the visible spiral direction."
+  ],
+  "limitations": [
+    "Not production accurate until observed on the physical machine.",
+    "Track plate, horn gear layout or manufacturer differences may change the real walkMap."
+  ],
+  "validationRequired": true,
+  "shopMeasured": false
+}
