@@ -391,6 +391,74 @@ function markerLayoutFromColors(carrierCount, colors, visualSignature = "spiral_
   return layout;
 }
 
+function isMarkerPattern(patternType) {
+  const value = String(patternType || "").toLowerCase();
+  return value.includes("marker") || value.includes("fleck") || value.includes("izli") || value.includes("tracer") || value.includes("solid_with");
+}
+
+function currentVisualSignature() {
+  const predictions = state.ai_analysis_result?.predictions || {};
+  return predictions.predictor_result?.visualSignature
+    || state.ai_analysis_result?.predictor_result?.visualSignature
+    || predictions.fingerprint?.predictedSignature
+    || predictions.predictedSignature
+    || state.user_selected_options.ai_selected_candidate?.visualSignature
+    || (isMarkerPattern(state.user_selected_options.pattern_type) ? "spiral_tracer" : "plain_weave");
+}
+
+function rebuildCarrierLayoutForSelection(selection, visualSignature = currentVisualSignature()) {
+  const carrierCount = Number(selection.carrier_count || 0);
+  const colors = Array.isArray(selection.colors) && selection.colors.length ? selection.colors : ["white"];
+  if (!carrierCount) return [];
+  if (isMarkerPattern(selection.pattern_type) && colors.length > 1) {
+    return markerLayoutFromColors(carrierCount, colors, visualSignature);
+  }
+  return Array.from({ length: carrierCount }, (_, index) => ({
+    carrier_no: index + 1,
+    color: colors[index % colors.length],
+    strand_role: "sheath"
+  }));
+}
+
+function shouldRebuildCarrierLayout(selection) {
+  const carrierCount = Number(selection.carrier_count || 0);
+  const layout = Array.isArray(selection.carrier_layout) ? selection.carrier_layout : [];
+  if (!carrierCount) return false;
+  if (layout.length !== carrierCount) return true;
+  const allowedColors = new Set((selection.colors || []).map((color) => String(color).toLowerCase()));
+  return layout.some((carrier) => !allowedColors.has(String(carrier.color).toLowerCase()));
+}
+
+function syncMachineProfileToCarrierCount() {
+  const carrierCount = Number(carrierSelect.value);
+  const matchedProfile = machineProfiles.find((profile) => (
+    profile.carrierCount === carrierCount && profile.machineFamily === "maypole_circular"
+  ));
+  if (matchedProfile) {
+    machineProfileSelect.value = matchedProfile.machineProfileId;
+  }
+}
+
+function syncSelectionStateWithLayout(reason = "selection_sync") {
+  syncSelectionState();
+  const forceRebuild = ["carrier_count", "colors", "pattern_type"].includes(reason);
+  if (!forceRebuild && !shouldRebuildCarrierLayout(state.user_selected_options)) {
+    return { rebuilt: false, layout: state.user_selected_options.carrier_layout };
+  }
+  const layout = rebuildCarrierLayoutForSelection(state.user_selected_options);
+  state = applyUserSelection(state, { carrier_layout: layout });
+  logProcess("Kullanıcı değişikliği", "Carrier layout kullanıcı seçimine göre yeniden kuruldu", {
+    reason,
+    carrierCount: state.user_selected_options.carrier_count,
+    colors: state.user_selected_options.colors,
+    patternType: state.user_selected_options.pattern_type,
+    visualSignature: currentVisualSignature(),
+    carrierLayoutCount: layout.length,
+    carrierLayoutPreview: layout.slice(0, 24)
+  });
+  return { rebuilt: true, layout };
+}
+
 function markerDirectionSummary(carrierLayout = [], machineProfile = null) {
   const base = mostCommonColor(carrierLayout.map((carrier) => carrier.color));
   const markers = carrierLayout.filter((carrier) => carrier.color !== base);
@@ -924,9 +992,11 @@ analyzeButton.addEventListener("click", async () => {
 });
 
 generateButton.addEventListener("click", () => {
-  syncSelectionState();
+  syncMachineProfileToCarrierCount();
+  const layoutSync = syncSelectionStateWithLayout("recipe_generate");
   logProcess("Reçete üretimi", "Reçete üretimi başlatıldı", {
     finalSelection: state.user_selected_options,
+    layoutRebuilt: layoutSync.rebuilt,
     mismatchBeforeGenerate: buildMismatchReport()
   }, buildMismatchReport().some((item) => item.level === "error") ? "error" : "info");
   state = generateRecipe(state);
@@ -948,12 +1018,16 @@ generateButton.addEventListener("click", () => {
   render();
 });
 
-selectionForm.addEventListener("change", () => {
+selectionForm.addEventListener("change", (event) => {
   selectedPatternId = patternSelect.value;
-  syncSelectionState();
+  if (event.target === carrierSelect) {
+    syncMachineProfileToCarrierCount();
+  }
+  const layoutSync = syncSelectionStateWithLayout(event.target?.name || "selection_change");
   clearGeneratedRecipe();
   logProcess("Kullanıcı değişikliği", "Final seçim manuel değişti, eski reçete temizlendi", {
     finalSelection: state.user_selected_options,
+    layoutRebuilt: layoutSync.rebuilt,
     mismatch: buildMismatchReport()
   });
   render();

@@ -56,21 +56,13 @@ export function generateRecipe(state) {
   const colors = finalSelection.colors.length ? finalSelection.colors : ["tanımsız"];
   const carrierCount = Number(finalSelection.carrier_count || 0);
   const machineProfile = findMachineProfile(finalSelection.machine_profile_id, carrierCount);
-  const carrierLayout = Array.isArray(finalSelection.carrier_layout) && finalSelection.carrier_layout.length
+  const carrierLayout = Array.isArray(finalSelection.carrier_layout) && finalSelection.carrier_layout.length === carrierCount
     ? finalSelection.carrier_layout
-    : Array.from({ length: carrierCount }, (_, index) => {
-    const position = index + 1;
-    const markerPositions = markerCarrierPositions(carrierCount, finalSelection.pattern_type);
-    const colorIndex = markerPattern(finalSelection.pattern_type) && colors.length > 1
-      ? (markerPositions.includes(position) ? 1 : 0)
-      : index % colors.length;
-    return {
-      carrier_no: position,
-      color: colors[colorIndex],
-      strand_role: markerPattern(finalSelection.pattern_type) && colorIndex === 1 ? "sheath_marker" : "sheath"
-    };
-  });
+    : buildCarrierLayout(finalSelection, carrierCount, colors);
   const colorSequence = carrierLayout.map((carrier) => carrier.color);
+  const layoutRegenerated = Array.isArray(finalSelection.carrier_layout)
+    && finalSelection.carrier_layout.length > 0
+    && finalSelection.carrier_layout.length !== carrierCount;
   const missingFields = [
     ["pattern_type", finalSelection.pattern_type],
     ["material", finalSelection.material],
@@ -87,15 +79,20 @@ export function generateRecipe(state) {
     "AI sonucu üretim gerçeği değildir; reçete finalSelection üzerinden üretilmiştir.",
     "Tek fotoğraf carrierColorMap veya walkMap değerlerini kesin belirleyemez; generic profile sadece candidate çözüm üretir.",
     shopValidation.warning,
+    ...(layoutRegenerated ? [`Carrier layout ${finalSelection.carrier_layout.length}, seçilen kukla sayısı ${carrierCount}; layout deterministic olarak yeniden kuruldu.`] : []),
     ...missingFields.map((field) => `Preview için veri eksik: ${field}`)
   ];
+  const effectiveFinalSelection = {
+    ...finalSelection,
+    carrier_layout: carrierLayout
+  };
   const recipe = {
     recipe_id: `REC-${String(finalSelection.material || "MAT").slice(0, 3).toUpperCase()}-${carrierCount || "XX"}-${String(finalSelection.pattern_type || "PAT").slice(0, 2).toUpperCase()}-DRAFT`,
     generated_at: new Date().toISOString(),
     source: "finalSelection",
     status: "draft",
     production_ready: shopValidation.production_ready,
-    finalSelection,
+    finalSelection: effectiveFinalSelection,
     technical_sheet: {
       pattern_type: finalSelection.pattern_type,
       material: finalSelection.material,
@@ -145,6 +142,21 @@ export function generateRecipe(state) {
   };
 }
 
+function buildCarrierLayout(finalSelection, carrierCount, colors) {
+  return Array.from({ length: carrierCount }, (_, index) => {
+    const position = index + 1;
+    const markerPositions = markerCarrierPositions(carrierCount, finalSelection.pattern_type);
+    const colorIndex = markerPattern(finalSelection.pattern_type) && colors.length > 1
+      ? (markerPositions.includes(position) ? 1 : 0)
+      : index % colors.length;
+    return {
+      carrier_no: position,
+      color: colors[colorIndex],
+      strand_role: markerPattern(finalSelection.pattern_type) && colorIndex === 1 ? "sheath_marker" : "sheath"
+    };
+  });
+}
+
 function markerPattern(patternType) {
   const value = String(patternType || "").toLowerCase();
   return value.includes("fleck") || value.includes("marker") || value.includes("izli");
@@ -152,9 +164,9 @@ function markerPattern(patternType) {
 
 function markerCarrierPositions(carrierCount, patternType) {
   if (!markerPattern(patternType)) return [];
-  if (carrierCount === 16) return [4, 9, 14];
-  if (carrierCount === 24) return [4, 12, 20];
-  if (carrierCount === 32) return [5, 16, 27];
+  if (carrierCount === 16) return [1, 9];
+  if (carrierCount === 24) return [1, 9, 17];
+  if (carrierCount === 32) return [1, 9, 17, 25];
   const count = Math.max(1, Math.min(3, Math.floor(carrierCount / 5)));
   return Array.from({ length: count }, (_, index) => Math.round(((index + 0.5) * carrierCount) / count));
 }
