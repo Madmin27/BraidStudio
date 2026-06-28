@@ -1,0 +1,23 @@
+{
+  "catalogVersion": "1.0.0",
+  "patternSignatures": {
+    "plain_weave": {
+      "family": "diamond",
+      "visualKey": "checkerboard_or_crisscross",
+      "description": "Her bir iplik sırasıyla bir altından bir üstünden geçer. Kesintisiz simetrik baklava deseni oluşturur.",
+      "expectedComplexity": 1
+    },
+    "diagonal_rib": {
+      "family": "twill",
+      "visualKey": "diagonal_lines_or_v_shape",
+      "description": "İplikler grup halinde hareket eder (2-over-2 veya benzeri). Yüzeyde belirgin eğik çizgiler veya balıksırtı V yapıları görünür.",
+      "expectedComplexity": 3
+    },
+    "spiral_tracer": {
+      "family": "tracer",
+      "visualKey": "continuous_spiral_lines",
+      "description": "Zemin rengi üzerinde tek veya çift yönde spiral şeklinde ilerleyen zıt renkli takip çizgileri (tracer) barındırır.",
+      "expectedComplexity": 2
+    }
+  }
+}
