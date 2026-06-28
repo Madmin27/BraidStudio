@@ -1,0 +1,60 @@
+{
+  "recipeId": "rec_32_dense_twill_sheath",
+  "machineProfileId": "mp_32_high",
+  "status": "industry_candidate",
+  "confidence": 0.73,
+  "basis": [
+    "32 carrier maypole circular candidate",
+    "2_over_2 braid logic",
+    "paired block color sequence for dense diagonal/twill surface",
+    "dense protective sheath style candidate"
+  ],
+  "metadata": {
+    "difficulty": 4,
+    "patternFamily": "twill",
+    "visualSignature": "diagonal_rib",
+    "braidLogic": "2_over_2"
+  },
+  "carrierColorMap": {
+    "1": "black",
+    "2": "black",
+    "3": "silver",
+    "4": "silver",
+    "5": "black",
+    "6": "black",
+    "7": "silver",
+    "8": "silver",
+    "9": "black",
+    "10": "black",
+    "11": "silver",
+    "12": "silver",
+    "13": "black",
+    "14": "black",
+    "15": "silver",
+    "16": "silver",
+    "17": "black",
+    "18": "black",
+    "19": "silver",
+    "20": "silver",
+    "21": "black",
+    "22": "black",
+    "23": "silver",
+    "24": "silver",
+    "25": "black",
+    "26": "black",
+    "27": "silver",
+    "28": "silver",
+    "29": "black",
+    "30": "black",
+    "31": "silver",
+    "32": "silver"
+  },
+  "validation": {
+    "requiresUserConfirmation": true,
+    "requiresShopValidation": true,
+    "shopResult": "untested",
+    "shopScore": null,
+    "shopNotes": "",
+    "lastTestedAt": null
+  }
+}
