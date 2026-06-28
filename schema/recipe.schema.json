@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://braidstudio.local/schema/recipe.schema.json",
+  "title": "BraidStudio Recipe",
+  "type": "object",
+  "required": [
+    "recipeId",
+    "status",
+    "machineProfileId",
+    "patternName",
+    "walkType",
+    "direction",
+    "carrierColorMap",
+    "validation"
+  ],
+  "properties": {
+    "recipeId": { "type": "string" },
+    "status": { "enum": ["candidate", "shop_validated", "rejected"] },
+    "machineProfileId": { "type": "string" },
+    "patternName": { "type": "string" },
+    "productType": { "type": "string" },
+    "walkType": { "type": "string" },
+    "direction": { "enum": ["clockwise", "counterClockwise"] },
+    "carrierColorMap": {
+      "type": "object",
+      "patternProperties": {
+        "^[0-9]+$": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "construction": {
+      "type": "object",
+      "properties": {
+        "material": { "type": "string" },
+        "structure": { "type": "string" },
+        "sheathCount": { "type": "integer", "minimum": 0 },
+        "coreType": { "type": "string" },
+        "floating": { "type": "boolean" }
+      }
+    },
+    "settings": { "type": "object" },
+    "validation": {
+      "type": "object",
+      "required": ["machineProfileRequiredStatus", "recipeRequiredStatusForProduction"],
+      "properties": {
+        "machineProfileRequiredStatus": { "enum": ["shop_measured"] },
+        "recipeRequiredStatusForProduction": { "enum": ["shop_validated"] },
+        "notes": { "type": "string" }
+      }
+    }
+  },
+  "additionalProperties": true
+}
