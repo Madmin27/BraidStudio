@@ -4,6 +4,7 @@ import {
   initialRecipeState
 } from "../src/state.js";
 import { machineProfiles } from "../src/machineProfiles.js";
+import { buildBraidMatrix, getCarrierDirection } from "../src/utils/braidMatrix.js";
 
 const patterns = [
   { id: "diamond", name: "Diamond", carriers: [16, 24], colors: ["siyah", "kırmızı"], material: "polyester", walk: "two-over-two" },
@@ -197,12 +198,20 @@ function buildMismatchReport({ analysis = state.ai_analysis_result, finalSelecti
     }
   }
 
+  const expectedSignature = predictor.visualSignature || candidate?.visualSignature;
   const markerDirections = markerDirectionSummary(finalSelection.carrier_layout, profile);
-  if (markerDirections.markerCount > 1 && markerDirections.directionCount === 1) {
+  if (expectedSignature === "dual_counter_spiral" && markerDirections.markerCount > 1 && markerDirections.directionCount < 2) {
     report.push({
       level: "warn",
-      title: "Tracer taşıyıcıları aynı yönde",
-      message: `Renkli kuklalar sadece ${markerDirections.directions.join(", ")} grubunda. X/dual görünüm değil paralel spiral oluşur.`
+      title: "Dual tracer için yön eksik",
+      message: `Beklenen dual_counter_spiral ama renkli kuklalar ${markerDirections.directions.join(", ")} grubunda. X görünüm oluşmaz.`
+    });
+  }
+  if (expectedSignature === "spiral_tracer" && markerDirections.markerCount > 1 && markerDirections.directionCount > 1) {
+    report.push({
+      level: "warn",
+      title: "Paralel tracer için yön karışık",
+      message: "Beklenen spiral_tracer ama renkli kuklalar iki yönde. Paralel sarmal yerine kesişen iz oluşabilir."
     });
   }
 
@@ -341,7 +350,7 @@ function carrierLayoutFromPrediction(predictions) {
   return [];
 }
 
-function markerLayoutFromColors(carrierCount, colors) {
+function markerLayoutFromColors(carrierCount, colors, visualSignature = "spiral_tracer") {
   const base = colors[0] || "white";
   const accentColors = colors.slice(1);
   const layout = Array.from({ length: carrierCount }, (_, index) => ({
@@ -359,10 +368,11 @@ function markerLayoutFromColors(carrierCount, colors) {
     : accentColors.length >= 2
       ? [accentColors[1], accentColors[0], accentColors[1]]
       : [accentColors[0]];
+  const wantsDual = visualSignature === "dual_counter_spiral";
   const starts = carrierCount === 16
-    ? [1, 8]
+    ? (wantsDual ? [1, 8] : [1, 9])
     : carrierCount === 24
-      ? [1, 8, 17]
+      ? (wantsDual ? [1, 8, 17] : [1, 9, 17])
       : Array.from({ length: Math.max(1, Math.round(carrierCount / 8)) }, (_, index) => 1 + index * Math.max(4, Math.floor(carrierCount / Math.max(1, Math.round(carrierCount / 8)))));
 
   for (const start of starts) {
@@ -401,10 +411,11 @@ function applyAiSuggestionToSelection(analysis) {
   const candidateLayout = carrierLayoutFromColorMap(bestCandidate?.carrierColorMap);
   const predictedLayout = carrierLayoutFromPrediction(predictions);
   const colors = Array.isArray(predictions.colors) && predictions.colors.length ? predictions.colors : ["white", "blue"];
-  const markerLayout = markerLayoutFromColors(normalizedCarrierCount, colors);
+  const visualSignature = predictorResult.visualSignature || fingerprint.predictedSignature || bestCandidate?.visualSignature || predictions.predictedSignature;
+  const markerLayout = markerLayoutFromColors(normalizedCarrierCount, colors, visualSignature);
   const matchedProfile = machineProfiles.find((profile) => profile.carrierCount === normalizedCarrierCount && profile.machineFamily === "maypole_circular");
-  const candidateUsable = candidateLayout.length === normalizedCarrierCount && !hasSameDirectionMarkerConflict(candidateLayout, matchedProfile);
-  const predictedUsable = predictedLayout.length === normalizedCarrierCount && !hasSameDirectionMarkerConflict(predictedLayout, matchedProfile);
+  const candidateUsable = candidateLayout.length === normalizedCarrierCount && !hasMarkerDirectionMismatch(candidateLayout, matchedProfile, visualSignature);
+  const predictedUsable = predictedLayout.length === normalizedCarrierCount && !hasMarkerDirectionMismatch(predictedLayout, matchedProfile, visualSignature);
   logProcess("AI sonucu", "AI/predictor sonucu alındı", {
     model: analysis?.model,
     rawSignature: fingerprint.predictedSignature || predictions.predictedSignature,
@@ -456,7 +467,7 @@ function applyAiSuggestionToSelection(analysis) {
       braidLogic: bestCandidate.braidLogic,
       confidence: bestCandidate.confidence,
       used: candidateUsable,
-      rejectedReason: candidateLayout.length && !candidateUsable ? "marker taşıyıcıları aynı yön grubunda" : null
+      rejectedReason: candidateLayout.length && !candidateUsable ? "marker yönleri visualSignature ile uyuşmuyor" : null
     } : null,
     carrierLayoutCount: state.user_selected_options.carrier_layout.length,
     carrierLayoutPreview: state.user_selected_options.carrier_layout.slice(0, 16)
@@ -467,9 +478,12 @@ function applyAiSuggestionToSelection(analysis) {
   logAnalysis(`${bestCandidate ? `${bestCandidate.recipeId} adayı` : "AI önerisi"} kullanıcı seçimi alanlarına aktarıldı. Reçete Görseli butonuna basınca teknik resim üretilecek.`);
 }
 
-function hasSameDirectionMarkerConflict(carrierLayout = [], machineProfile = null) {
+function hasMarkerDirectionMismatch(carrierLayout = [], machineProfile = null, visualSignature = "") {
   const summary = markerDirectionSummary(carrierLayout, machineProfile);
-  return summary.markerCount > 1 && summary.directionCount === 1;
+  if (summary.markerCount <= 1) return false;
+  if (visualSignature === "dual_counter_spiral") return summary.directionCount < 2;
+  if (visualSignature === "spiral_tracer") return summary.directionCount > 1;
+  return false;
 }
 
 function render() {
@@ -503,6 +517,12 @@ function renderRecipeSheet(recipe) {
   }
 
   const sheet = recipe.technical_sheet;
+  const renderMatrix = buildBraidMatrix({
+    carrierLayout: sheet.carrier_layout,
+    machineProfile: sheet.machineProfile,
+    braidLogic: sheet.braid_walk_type,
+    steps: 34
+  });
   const warnings = recipe.preview.warnings.map((warning) => `<li>${warning}</li>`).join("");
   const title = `${sheet.carrier_count || ""} Kukla ${sheet.material || ""} ${sheet.pattern_type || "Halat"} Reçetesi`.trim();
 
@@ -538,6 +558,12 @@ function renderRecipeSheet(recipe) {
     markerStarts: markerClusterStarts(sheet),
     markerColors: tracerClusterColors(sheet),
     markerDirections: markerDirectionSummary(sheet.carrier_layout, sheet.machineProfile),
+    matrix: {
+      steps: renderMatrix.steps,
+      carrierCount: renderMatrix.carrierCount,
+      cellCount: renderMatrix.steps * renderMatrix.carrierCount,
+      braidLogic: renderMatrix.braidLogic
+    },
     previewConfidence: recipe.preview.previewConfidence,
     warnings: recipe.preview.warnings
   }, buildMismatchReport({ recipe }).some((item) => item.level === "error") ? "error" : "info");
@@ -641,49 +667,38 @@ function renderSteps(steps = []) {
 
 function ropeLines(sheet, width = 760, height = 120, close = false) {
   const id = `ropeClip${width}x${height}${close ? "c" : "m"}`;
-  const isTwill = isTwillWalk(sheet.braid_walk_type);
-  const strandGap = close ? (isTwill ? 12 : 18) : (isTwill ? 13 : 22);
-  const strandStroke = close ? (isTwill ? 9.4 : 2.2) : (isTwill ? 5.4 : 1.45);
-  const tracerStroke = close ? (isTwill ? 12 : 8) : (isTwill ? 9 : 6);
-  const tracerStep = close ? 92 : 124;
-  const tracerLength = close ? 34 : 42;
+  const matrix = buildBraidMatrix({
+    carrierLayout: sheet.carrier_layout,
+    machineProfile: sheet.machineProfile,
+    braidLogic: sheet.braid_walk_type,
+    steps: close ? 42 : 34
+  });
+  const cellW = width / Math.max(matrix.steps, 1);
+  const cellH = height / Math.max(matrix.carrierCount, 1);
+  const strandStroke = close ? Math.max(5, cellH * 0.92) : Math.max(2.4, cellH * 0.82);
   const lines = [];
-  const slope = isTwill ? 1.02 : 1.45;
 
   lines.push(`<defs><clipPath id="${id}"><rect x="0" y="0" width="${width}" height="${height}" rx="${close ? 0 : 3}"/></clipPath></defs>`);
   lines.push(`<g clip-path="url(#${id})">`);
   lines.push(`<rect width="${width}" height="${height}" fill="#f7f8f5"/>`);
 
-  for (let offset = -height * 2; offset < width + height * 2; offset += strandGap) {
-    const x2 = offset + height * slope;
-    lines.push(`<line x1="${offset}" y1="${height}" x2="${x2}" y2="0" stroke="#aeb8b1" stroke-width="${strandStroke + 1.4}" opacity=".48"/>`);
-    lines.push(`<line x1="${offset}" y1="${height}" x2="${x2}" y2="0" stroke="#edf0ec" stroke-width="${strandStroke}" opacity=".98"/>`);
-    lines.push(`<line x1="${offset + strandGap * 0.22}" y1="${height}" x2="${x2 + strandGap * 0.22}" y2="0" stroke="#ffffff" stroke-width="${Math.max(1, strandStroke * 0.25)}" opacity=".9"/>`);
-  }
-
-  for (let offset = -height * 2 + strandGap / 2; offset < width + height * 2; offset += strandGap) {
-    const x2 = offset + height * slope;
-    lines.push(`<line x1="${offset}" y1="0" x2="${x2}" y2="${height}" stroke="#9facA5" stroke-width="${strandStroke + 1.1}" opacity=".38"/>`);
-    lines.push(`<line x1="${offset}" y1="0" x2="${x2}" y2="${height}" stroke="#dfe5df" stroke-width="${strandStroke}" opacity=".98"/>`);
-    lines.push(`<line x1="${offset + strandGap * 0.22}" y1="0" x2="${x2 + strandGap * 0.22}" y2="${height}" stroke="#ffffff" stroke-width="${Math.max(1, strandStroke * 0.22)}" opacity=".72"/>`);
-  }
-
-  const tracerClusters = markerClusters(sheet);
-  for (const cluster of tracerClusters) {
-    const phase = ((cluster.start - 1) / Math.max(1, sheet.carrier_count || 1)) * tracerStep;
-    const reverse = cluster.direction === "counterClockwise";
-    for (let offset = -tracerStep + phase; offset < width + tracerStep; offset += tracerStep) {
-      cluster.colors.forEach((color, index) => {
-        const segmentOffset = offset + index * (tracerLength * 0.72);
-        const y1 = reverse ? 0 : height;
-        const y2 = reverse ? height * 0.58 : height * 0.42;
-        const x2 = segmentOffset + tracerLength * 0.9;
-        lines.push(`<line x1="${segmentOffset}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#59635d" stroke-width="${tracerStroke + 1.4}" stroke-linecap="round" opacity=".32"/>`);
-        lines.push(`<line x1="${segmentOffset}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${colorToHex(color)}" stroke-width="${tracerStroke}" stroke-linecap="round"/>`);
-        lines.push(`<line x1="${segmentOffset + 1}" y1="${y1}" x2="${x2 - 1}" y2="${y2}" stroke="#ffffff" stroke-width="${Math.max(1, tracerStroke * 0.18)}" stroke-linecap="round" opacity=".35"/>`);
-      });
-    }
-  }
+  matrix.cells.forEach((row) => {
+    row.forEach((cell) => {
+      if (!cell.topCarrier) return;
+      const x = cell.time * cellW;
+      const y = cell.column * cellH;
+      const direction = cell.topDirection;
+      const isMarker = cell.topCarrier.color !== mostCommonColor(sheet.color_sequence || []);
+      const x1 = x - cellW * 0.18;
+      const x2 = x + cellW * 1.18;
+      const y1 = direction === "clockwise" ? y + cellH * 0.92 : y + cellH * 0.08;
+      const y2 = direction === "clockwise" ? y + cellH * 0.08 : y + cellH * 0.92;
+      const stroke = isMarker ? strandStroke * 1.08 : strandStroke;
+      lines.push(`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#8f9a93" stroke-width="${stroke + 1.1}" stroke-linecap="round" opacity="${isMarker ? ".4" : ".32"}"/>`);
+      lines.push(`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${colorToHex(cell.visibleColor)}" stroke-width="${stroke}" stroke-linecap="round" opacity="${isMarker ? "1" : ".98"}"/>`);
+      lines.push(`<line x1="${x1 + cellW * 0.18}" y1="${y1}" x2="${x2 - cellW * 0.18}" y2="${y2}" stroke="#fff" stroke-width="${Math.max(0.7, stroke * 0.16)}" stroke-linecap="round" opacity="${isMarker ? ".28" : ".62"}"/>`);
+    });
+  });
 
   lines.push("</g>");
   return lines.join("");
@@ -723,10 +738,7 @@ function tracerClusterColors(sheet) {
 }
 
 function carrierDirection(carrierNo, machineProfile = null) {
-  const groups = machineProfile?.carrierGroups || {};
-  if ((groups.clockwise || groups.trackA || []).includes(carrierNo)) return "clockwise";
-  if ((groups.counterClockwise || groups.trackB || []).includes(carrierNo)) return "counterClockwise";
-  return carrierNo % 2 === 1 ? "clockwise" : "counterClockwise";
+  return getCarrierDirection(carrierNo, machineProfile);
 }
 
 function isTwillWalk(walkType) {
