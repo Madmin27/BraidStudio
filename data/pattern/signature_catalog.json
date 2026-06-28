@@ -1,0 +1,14 @@
+{
+  "patternSignatures": {
+    "plain_weave": {
+      "logic": "alternating",
+      "visualKey": "checkerboard",
+      "expectedComplexity": 1
+    },
+    "diagonal_rib": {
+      "logic": "offset_jump",
+      "visualKey": "twill_line",
+      "expectedComplexity": 3
+    }
+  }
+}
