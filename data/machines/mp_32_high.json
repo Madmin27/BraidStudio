@@ -1,0 +1,12 @@
+{
+  "machineProfileId": "mp_32_high",
+  "machineFamily": "maypole_circular",
+  "carrierCount": 32,
+  "trackModel": "sinusoidal_32",
+  "directionOptions": ["clockwise", "counterClockwise"],
+  "defaultWalk": "2_over_2",
+  "physicalSpecs": {
+    "hornGearCount": 16,
+    "maxRpm": 120
+  }
+}
