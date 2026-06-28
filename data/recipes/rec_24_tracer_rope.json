@@ -1,0 +1,22 @@
+{
+  "recipeId": "rec_24_tracer_rope",
+  "machineProfileId": "mp_24_standard",
+  "metadata": {
+    "difficulty": 2,
+    "patternFamily": "tracer",
+    "visualSignature": "spiral_tracer",
+    "braidLogic": "1_over_1_with_offsets"
+  },
+  "carrierColorMap": {
+    "1": "red", "2": "white", "3": "white", "4": "white",
+    "5": "white", "6": "white", "7": "red", "8": "white",
+    "9": "white", "10": "white", "11": "white", "12": "white",
+    "13": "red", "14": "white", "15": "white", "16": "white",
+    "17": "white", "18": "white", "19": "red", "20": "white",
+    "21": "white", "22": "white", "23": "white", "24": "white"
+  },
+  "settings": {
+    "braidAngle": 42,
+    "tensionLevel": "high"
+  }
+}
