@@ -1,4 +1,4 @@
-import { buildBraidMatrix } from "./braidMatrix.js";
+import { buildBraidMatrix, getCarrierDirection } from "./braidMatrix.js";
 
 const FALLBACK_COLORS = {
   white: "#f8faf9",
@@ -24,46 +24,15 @@ export function drawMainRopeCanvas(canvas, sheet, options = {}) {
     braidLogic: sheet.braid_walk_type,
     steps: close ? 34 : 54
   });
-  const cellW = width / Math.max(matrix.steps, 1);
-  const cellH = height / Math.max(matrix.carrierCount, 1);
-  const strandWidth = close ? Math.max(12, cellH * 1.35) : Math.max(5.5, cellH * 1.02);
-  const baseColor = mostCommonColor(sheet.color_sequence || []);
 
   ctx.clearRect(0, 0, width, height);
-  ctx.fillStyle = "#f3f5f1";
-  ctx.fillRect(0, 0, width, height);
-
   ctx.save();
   roundedClip(ctx, 0, 0, width, height, close ? 0 : 4);
-  ctx.fillStyle = "#eef1ed";
-  ctx.fillRect(0, 0, width, height);
-
-  matrix.cells.forEach((row) => {
-    row.forEach((cell) => {
-      if (!cell.topCarrier) return;
-      const x = cell.time * cellW;
-      const y = cell.column * cellH;
-      const direction = cell.topDirection;
-      const color = cell.visibleColor || baseColor;
-      const isMarker = color !== baseColor;
-      const x1 = x - cellW * 0.22;
-      const x2 = x + cellW * 1.22;
-      const y1 = direction === "clockwise" ? y + cellH * 0.96 : y + cellH * 0.04;
-      const y2 = direction === "clockwise" ? y + cellH * 0.04 : y + cellH * 0.96;
-      const widthScale = isMarker ? 1.12 : 1;
-
-      drawVolumetricStrand(ctx, {
-        x1,
-        y1,
-        x2,
-        y2,
-        color,
-        lineWidth: strandWidth * widthScale,
-        shadowAlpha: isMarker ? 0.34 : 0.22,
-        highlightAlpha: isMarker ? 0.25 : 0.62
-      });
-    });
-  });
+  if (close) {
+    drawCloseTextileView(ctx, sheet, width, height);
+  } else {
+    drawTechnicalRopeView(ctx, sheet, width, height);
+  }
 
   ctx.restore();
   return {
@@ -71,6 +40,208 @@ export function drawMainRopeCanvas(canvas, sheet, options = {}) {
     carrierCount: matrix.carrierCount,
     cellCount: matrix.steps * matrix.carrierCount
   };
+}
+
+function drawTechnicalRopeView(ctx, sheet, width, height) {
+  ctx.fillStyle = "#fbfbf8";
+  ctx.fillRect(0, 0, width, height);
+  drawFineBraidLattice(ctx, width, height, {
+    gap: Math.max(15, height / 5.3),
+    stroke: 1.45,
+    alpha: 0.72
+  });
+  drawTracerBands(ctx, sheet, width, height, {
+    repeat: width / 4.7,
+    segmentLength: height * 0.25,
+    segmentGap: height * 0.115,
+    lineWidth: Math.max(8, height * 0.095),
+    bandOffset: height * 0.10,
+    technical: true
+  });
+}
+
+function drawCloseTextileView(ctx, sheet, width, height) {
+  ctx.fillStyle = "#f5f4ef";
+  ctx.fillRect(0, 0, width, height);
+  drawVolumetricWeave(ctx, width, height);
+  drawTracerBands(ctx, sheet, width, height, {
+    repeat: width / 2.2,
+    segmentLength: height * 0.105,
+    segmentGap: height * 0.052,
+    lineWidth: Math.max(18, height * 0.075),
+    bandOffset: height * 0.18,
+    technical: false
+  });
+  const shadow = ctx.createLinearGradient(0, height * 0.70, 0, height);
+  shadow.addColorStop(0, "rgba(255,255,255,0)");
+  shadow.addColorStop(1, "rgba(67,54,42,0.42)");
+  ctx.fillStyle = shadow;
+  ctx.fillRect(0, height * 0.62, width, height * 0.38);
+}
+
+function drawFineBraidLattice(ctx, width, height, { gap, stroke, alpha }) {
+  ctx.save();
+  ctx.lineWidth = stroke;
+  ctx.strokeStyle = `rgba(90, 98, 93, ${alpha})`;
+  for (let x = -height * 3; x < width + height * 3; x += gap) {
+    ctx.beginPath();
+    ctx.moveTo(x, height);
+    ctx.lineTo(x + height * 1.18, 0);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(x, 0);
+    ctx.lineTo(x + height * 1.18, height);
+    ctx.stroke();
+  }
+  ctx.lineWidth = Math.max(0.8, stroke * 0.55);
+  ctx.strokeStyle = "rgba(255, 255, 255, 0.72)";
+  for (let x = -height * 3 + gap * 0.42; x < width + height * 3; x += gap) {
+    ctx.beginPath();
+    ctx.moveTo(x, height);
+    ctx.lineTo(x + height * 1.18, 0);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(x, 0);
+    ctx.lineTo(x + height * 1.18, height);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+function drawVolumetricWeave(ctx, width, height) {
+  const gap = Math.max(26, height / 8);
+  const lineWidth = gap * 0.82;
+  ctx.save();
+  for (let x = -height * 3; x < width + height * 3; x += gap) {
+    drawVolumetricStrand(ctx, {
+      x1: x,
+      y1: height,
+      x2: x + height * 1.18,
+      y2: 0,
+      color: "white",
+      lineWidth,
+      shadowAlpha: 0.34,
+      highlightAlpha: 0.78
+    });
+  }
+  for (let x = -height * 3 + gap * 0.48; x < width + height * 3; x += gap) {
+    drawVolumetricStrand(ctx, {
+      x1: x,
+      y1: 0,
+      x2: x + height * 1.18,
+      y2: height,
+      color: "white",
+      lineWidth,
+      shadowAlpha: 0.30,
+      highlightAlpha: 0.62
+    });
+  }
+  ctx.restore();
+}
+
+function drawTracerBands(ctx, sheet, width, height, options) {
+  const clusters = markerClusters(sheet);
+  const visibleClusters = clusters.length ? clusters : fallbackAccentClusters(sheet);
+  const slope = height * 0.82;
+
+  visibleClusters.forEach((cluster, clusterIndex) => {
+    const reverse = cluster.direction === "counterClockwise";
+    const phase = (cluster.start / Math.max(1, sheet.carrier_count || sheet.color_sequence?.length || 1)) * options.repeat;
+    for (let startX = -options.repeat + phase; startX < width + options.repeat; startX += options.repeat) {
+      const shiftedX = startX + clusterIndex * options.bandOffset;
+      const y1 = reverse ? 0 : height;
+      const y2 = reverse ? height : 0;
+      drawSegmentedBand(ctx, {
+        x1: shiftedX,
+        y1,
+        x2: shiftedX + slope,
+        y2,
+        colors: cluster.colors,
+        lineWidth: options.lineWidth,
+        segmentLength: options.segmentLength,
+        segmentGap: options.segmentGap,
+        technical: options.technical
+      });
+    }
+  });
+}
+
+function drawSegmentedBand(ctx, { x1, y1, x2, y2, colors, lineWidth, segmentLength, segmentGap, technical }) {
+  const dx = x2 - x1;
+  const dy = y2 - y1;
+  const length = Math.hypot(dx, dy);
+  const ux = dx / length;
+  const uy = dy / length;
+  const total = segmentLength + segmentGap;
+  const palette = colors.length ? colors : ["red"];
+
+  for (let distance = 0, index = 0; distance < length; distance += total, index += 1) {
+    const color = palette[index % palette.length];
+    const sx = x1 + ux * distance;
+    const sy = y1 + uy * distance;
+    const ex = x1 + ux * Math.min(distance + segmentLength, length);
+    const ey = y1 + uy * Math.min(distance + segmentLength, length);
+    if (technical) {
+      ctx.save();
+      ctx.lineCap = "butt";
+      ctx.strokeStyle = colorToHex(color);
+      ctx.lineWidth = lineWidth;
+      ctx.beginPath();
+      ctx.moveTo(sx, sy);
+      ctx.lineTo(ex, ey);
+      ctx.stroke();
+      ctx.restore();
+    } else {
+      drawVolumetricStrand(ctx, {
+        x1: sx,
+        y1: sy,
+        x2: ex,
+        y2: ey,
+        color,
+        lineWidth,
+        shadowAlpha: 0.42,
+        highlightAlpha: 0.28
+      });
+    }
+  }
+}
+
+function markerClusters(sheet) {
+  const carriers = Array.isArray(sheet.carrier_layout) ? sheet.carrier_layout : [];
+  const base = mostCommonColor(sheet.color_sequence || carriers.map((carrier) => carrier.color));
+  const markers = carriers.filter((carrier) => carrier.color !== base);
+  const clusters = [];
+
+  for (const marker of markers) {
+    const previous = markers.find((item) => item.carrier_no === marker.carrier_no - 1);
+    if (previous) continue;
+    const colors = [];
+    let current = marker.carrier_no;
+    while (markers.find((item) => item.carrier_no === current)) {
+      const item = markers.find((candidate) => candidate.carrier_no === current);
+      colors.push(item.color);
+      current += 1;
+    }
+    clusters.push({
+      start: marker.carrier_no,
+      colors,
+      direction: getCarrierDirection(marker.carrier_no, sheet.machineProfile)
+    });
+  }
+
+  return clusters;
+}
+
+function fallbackAccentClusters(sheet) {
+  const sequence = sheet.color_sequence || [];
+  const base = mostCommonColor(sequence);
+  const accents = [...new Set(sequence.filter((color) => color !== base))];
+  if (!accents.length) return [];
+  return [{
+    start: 1,
+    colors: accents,
+    direction: "clockwise"
+  }];
 }
 
 export function drawWalkDiagramCanvas(canvas, sheet) {

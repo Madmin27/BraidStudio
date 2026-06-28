@@ -25,3 +25,4 @@ PNG üretimi artık `Reçete Görseli` sonrası otomatik başlamaz; yalnızca `P
 Kukladan desene çizim için ortak `braidMatrix` çekirdeği eklendi: CW `+t`, CCW `-t`, 2-over-2 üstte kalma kuralı ve renderer matrix hücre çizimi aynı matematikten beslenir.
 Teknik sheet'ten `Makara görünümü` ve `Desen şeması` blokları kaldırıldı. Ana/yakın halat görünümü matrix tabanlı SVG stroke'lara gradient + drop shadow hacim katmanı ekler.
 Ana halat, yakın görünüm ve kukla yürüyüş diyagramı için Canvas renderer çekirdeği eklendi. PNG export sırasında canvas bitmap'leri data URL imajlara dönüştürülerek technical sheet çıktısına taşınır.
+Halat görünümleri referans formata yaklaştırıldı: ana görünüm teknik gri örgü kafesi + segmentli tracer bandı, yakın görünüm hacimli beyaz tekstil örgüsü + segmentli tracer bandı olarak Canvas'ta çizilir.
