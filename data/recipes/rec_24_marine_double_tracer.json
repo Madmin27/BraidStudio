@@ -1,0 +1,52 @@
+{
+  "recipeId": "rec_24_marine_double_tracer",
+  "machineProfileId": "mp_24_standard",
+  "status": "industry_candidate",
+  "confidence": 0.76,
+  "basis": [
+    "24 carrier maypole circular candidate",
+    "1_over_1 braid logic",
+    "white technical rope background with four red tracer carriers",
+    "marine rope identification tracer style candidate"
+  ],
+  "metadata": {
+    "difficulty": 2,
+    "patternFamily": "tracer",
+    "visualSignature": "spiral_tracer",
+    "braidLogic": "1_over_1"
+  },
+  "carrierColorMap": {
+    "1": "red",
+    "2": "white",
+    "3": "white",
+    "4": "white",
+    "5": "white",
+    "6": "white",
+    "7": "red",
+    "8": "white",
+    "9": "white",
+    "10": "white",
+    "11": "white",
+    "12": "white",
+    "13": "red",
+    "14": "white",
+    "15": "white",
+    "16": "white",
+    "17": "white",
+    "18": "white",
+    "19": "red",
+    "20": "white",
+    "21": "white",
+    "22": "white",
+    "23": "white",
+    "24": "white"
+  },
+  "validation": {
+    "requiresUserConfirmation": true,
+    "requiresShopValidation": true,
+    "shopResult": "untested",
+    "shopScore": null,
+    "shopNotes": "",
+    "lastTestedAt": null
+  }
+}
