@@ -1,0 +1,40 @@
+{
+  "recipeId": "rec_12_medical_dual_trace",
+  "machineProfileId": "mp_12_mid",
+  "status": "industry_candidate",
+  "confidence": 0.7,
+  "basis": [
+    "12 carrier maypole circular candidate",
+    "1_over_1 braid logic",
+    "two blue tracer carriers on white background",
+    "medical / clean identification sleeve style candidate"
+  ],
+  "metadata": {
+    "difficulty": 2,
+    "patternFamily": "tracer",
+    "visualSignature": "single_spiral_tracer",
+    "braidLogic": "1_over_1"
+  },
+  "carrierColorMap": {
+    "1": "blue",
+    "2": "white",
+    "3": "white",
+    "4": "white",
+    "5": "white",
+    "6": "white",
+    "7": "blue",
+    "8": "white",
+    "9": "white",
+    "10": "white",
+    "11": "white",
+    "12": "white"
+  },
+  "validation": {
+    "requiresUserConfirmation": true,
+    "requiresShopValidation": true,
+    "shopResult": "untested",
+    "shopScore": null,
+    "shopNotes": "",
+    "lastTestedAt": null
+  }
+}
