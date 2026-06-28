@@ -26,3 +26,4 @@ Kukladan desene çizim için ortak `braidMatrix` çekirdeği eklendi: CW `+t`, C
 Teknik sheet'ten `Makara görünümü` ve `Desen şeması` blokları kaldırıldı. Ana/yakın halat görünümü matrix tabanlı SVG stroke'lara gradient + drop shadow hacim katmanı ekler.
 Ana halat, yakın görünüm ve kukla yürüyüş diyagramı için Canvas renderer çekirdeği eklendi. PNG export sırasında canvas bitmap'leri data URL imajlara dönüştürülerek technical sheet çıktısına taşınır.
 Halat görünümleri referans formata yaklaştırıldı: ana görünüm teknik gri örgü kafesi + segmentli tracer bandı, yakın görünüm hacimli beyaz tekstil örgüsü + segmentli tracer bandı olarak Canvas'ta çizilir.
+Canvas halat renderer çizgi/tracer-band modelinden hücre tabanlı tekstil modeline geçirildi; her matrix hücresinde 2-over-2 üstte kalan carrier'ın rengi gradyanlı oval dilim olarak çizilir.
