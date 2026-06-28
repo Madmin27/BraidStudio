@@ -21,3 +21,4 @@ Taşıyıcı sayısı uyuşmayan solver adayı teknik sheet'e aktarılmaz. 3 ren
 Analiz, predictor, candidate seçimi, finalSelection, renderer girdisi, PNG üretimi ve tutarsızlık raporu için görünür süreç logları eklendi.
 16 kukla marker yerleşiminde aynı-yön `[1,9]` yerine zıt-yön `[1,8]` varsayımı kullanıldı; aynı gruptaki tracer adayları finalSelection'a otomatik alınmaz.
 SVG preview 2-over-2 için daha dolu beyaz zemin örgüsü, zıt yön marker çizimi ve tüm kuklaları gösteren walkMap diyagramı üretir.
+PNG üretimi artık `Reçete Görseli` sonrası otomatik başlamaz; yalnızca `PNG indir` butonuyla başlar. PNG render için foreignObject iç SVG namespace ve data URL yükleme akışı sağlamlaştırıldı.
