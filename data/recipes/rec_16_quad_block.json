@@ -1,0 +1,28 @@
+{
+  "recipeId": "rec_16_quad_block",
+  "machineProfileId": "mp_16_standard",
+  "metadata": {
+    "difficulty": 2,
+    "patternFamily": "stripe",
+    "visualSignature": "block_striped_segment",
+    "braidLogic": "1_over_1"
+  },
+  "carrierColorMap": {
+    "1": "green",
+    "2": "green",
+    "3": "green",
+    "4": "green",
+    "5": "brown",
+    "6": "brown",
+    "7": "brown",
+    "8": "brown",
+    "9": "green",
+    "10": "green",
+    "11": "green",
+    "12": "green",
+    "13": "brown",
+    "14": "brown",
+    "15": "brown",
+    "16": "brown"
+  }
+}
