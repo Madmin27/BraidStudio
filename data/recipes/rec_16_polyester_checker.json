@@ -1,0 +1,44 @@
+{
+  "recipeId": "rec_16_polyester_checker",
+  "machineProfileId": "mp_16_standard",
+  "status": "mathematical_candidate",
+  "confidence": 0.74,
+  "basis": [
+    "16 carrier maypole circular candidate",
+    "1_over_1 braid logic",
+    "strict alternating color period",
+    "plain_weave / checker-like visual signature candidate"
+  ],
+  "metadata": {
+    "difficulty": 1,
+    "patternFamily": "diamond",
+    "visualSignature": "plain_weave",
+    "braidLogic": "1_over_1"
+  },
+  "carrierColorMap": {
+    "1": "white",
+    "2": "black",
+    "3": "white",
+    "4": "black",
+    "5": "white",
+    "6": "black",
+    "7": "white",
+    "8": "black",
+    "9": "white",
+    "10": "black",
+    "11": "white",
+    "12": "black",
+    "13": "white",
+    "14": "black",
+    "15": "white",
+    "16": "black"
+  },
+  "validation": {
+    "requiresUserConfirmation": true,
+    "requiresShopValidation": true,
+    "shopResult": "untested",
+    "shopScore": null,
+    "shopNotes": "",
+    "lastTestedAt": null
+  }
+}
