@@ -1,0 +1,36 @@
+{
+  "recipeId": "rec_24_military_khaki",
+  "machineProfileId": "mp_24_standard",
+  "metadata": {
+    "difficulty": 2,
+    "patternFamily": "diamond",
+    "visualSignature": "plain_weave",
+    "braidLogic": "1_over_1"
+  },
+  "carrierColorMap": {
+    "1": "khaki",
+    "2": "khaki",
+    "3": "olive",
+    "4": "olive",
+    "5": "khaki",
+    "6": "khaki",
+    "7": "olive",
+    "8": "olive",
+    "9": "khaki",
+    "10": "khaki",
+    "11": "olive",
+    "12": "olive",
+    "13": "khaki",
+    "14": "khaki",
+    "15": "olive",
+    "16": "olive",
+    "17": "khaki",
+    "18": "khaki",
+    "19": "olive",
+    "20": "olive",
+    "21": "khaki",
+    "22": "khaki",
+    "23": "olive",
+    "24": "olive"
+  }
+}
