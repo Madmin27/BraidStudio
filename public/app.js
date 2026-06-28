@@ -55,12 +55,16 @@ const downloadPngButton = document.querySelector("#downloadPngButton");
 const printPdfButton = document.querySelector("#printPdfButton");
 const recipeImagePreview = document.querySelector("#recipeImagePreview");
 const recipeImageOutput = document.querySelector(".recipe-image-output");
+const processLog = document.querySelector("#processLog");
+const processStatus = document.querySelector("#processStatus");
+const mismatchReport = document.querySelector("#mismatchReport");
 recipeImagePreview.addEventListener("error", () => {
   recipeImagePreview.hidden = true;
   recipeImagePreview.removeAttribute("src");
   recipeImageOutput.hidden = true;
 });
 const analysisSteps = [];
+const processSteps = [];
 let latestRecipePngUrl = "";
 let recipeImageRenderTimer = null;
 let recipeImageRequested = false;
@@ -91,6 +95,131 @@ function logAnalysis(message) {
   const time = new Date().toLocaleTimeString("tr-TR");
   analysisSteps.unshift(`${time} - ${message}`);
   analysisLog.innerHTML = analysisSteps.slice(0, 8).map((step) => `<div>${step}</div>`).join("");
+}
+
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+
+function logProcess(stage, message, details = {}, status = "info") {
+  const item = {
+    time: new Date().toLocaleTimeString("tr-TR"),
+    stage,
+    message,
+    details,
+    status
+  };
+  processSteps.unshift(item);
+  console.info("[BraidStudio]", stage, message, details);
+  renderProcessLog();
+}
+
+function renderProcessLog() {
+  if (!processLog) return;
+  processStatus.textContent = processSteps[0]?.message || "Bekliyor";
+  processLog.innerHTML = processSteps.slice(0, 18).map((step) => `
+    <details class="process-item ${step.status}" ${step.status === "error" || step.status === "warn" ? "open" : ""}>
+      <summary><span>${escapeHtml(step.time)}</span><strong>${escapeHtml(step.stage)}</strong>${escapeHtml(step.message)}</summary>
+      <pre>${escapeHtml(JSON.stringify(step.details || {}, null, 2))}</pre>
+    </details>
+  `).join("");
+}
+
+function updateMismatchReport(report = []) {
+  if (!mismatchReport) return;
+  if (!report.length) {
+    mismatchReport.innerHTML = `<div class="mismatch-ok">Tutarsızlık yok.</div>`;
+    return;
+  }
+  mismatchReport.innerHTML = report.map((item) => `
+    <div class="mismatch-${item.level}">
+      <strong>${escapeHtml(item.title)}</strong>
+      <span>${escapeHtml(item.message)}</span>
+    </div>
+  `).join("");
+}
+
+function buildMismatchReport({ analysis = state.ai_analysis_result, finalSelection = state.user_selected_options, recipe = state.generated_recipe } = {}) {
+  const report = [];
+  const predictions = analysis?.predictions || {};
+  const predictor = predictions.predictor_result || analysis?.predictor_result || {};
+  const structural = predictions.structuralAnalysis || predictions.fingerprint?.structuralAnalysis || {};
+  const selectedCarrierCount = Number(finalSelection.carrier_count || 0);
+  const aiCarrierCount = Number(structural.carrierCount || predictions.estimatedCarrierCount || predictions.estimated_carrier_count || 0);
+  const layoutCount = Array.isArray(finalSelection.carrier_layout) ? finalSelection.carrier_layout.length : 0;
+  const candidate = finalSelection.ai_selected_candidate;
+  const profile = machineProfiles.find((item) => item.machineProfileId === finalSelection.machine_profile_id);
+
+  if (aiCarrierCount && selectedCarrierCount && aiCarrierCount !== selectedCarrierCount) {
+    report.push({
+      level: "warn",
+      title: "Kukla sayısı farkı",
+      message: `AI ${aiCarrierCount} tahmin etti, finalSelection ${selectedCarrierCount} kullanıyor. Reçete finalSelection'a göre çizilir.`
+    });
+  }
+
+  if (layoutCount && selectedCarrierCount && layoutCount !== selectedCarrierCount) {
+    report.push({
+      level: "error",
+      title: "Carrier layout sayısı hatalı",
+      message: `carrier_layout ${layoutCount}, seçilen kukla sayısı ${selectedCarrierCount}. Desen burada bozulur.`
+    });
+  }
+
+  if (candidate?.recipeId && candidate.visualSignature && predictor.visualSignature && candidate.visualSignature !== predictor.visualSignature) {
+    report.push({
+      level: "warn",
+      title: "Candidate / predictor imzası farklı",
+      message: `Candidate ${candidate.visualSignature}, predictor ${predictor.visualSignature}.`
+    });
+  }
+
+  if (predictor.analysis?.braidLogic && finalSelection.braid_walk_type && normalizeWalkType(predictor.analysis.braidLogic, finalSelection.colors) !== finalSelection.braid_walk_type) {
+    report.push({
+      level: "error",
+      title: "Yürüyüş tipi tutarsız",
+      message: `Predictor ${predictor.analysis.braidLogic}, kullanıcı seçimi ${finalSelection.braid_walk_type}. Desen mekaniği burada kopar.`
+    });
+  }
+
+  const finalColors = finalSelection.colors || [];
+  const layoutColors = new Set((finalSelection.carrier_layout || []).map((carrier) => carrier.color));
+  for (const color of finalColors.slice(1)) {
+    if (layoutCount && !layoutColors.has(color)) {
+      report.push({
+        level: "error",
+        title: "Renk carrier layout'ta yok",
+        message: `${color} renk listesinde var ama carrier_layout içinde yok. Tracer çizimi eksik çıkar.`
+      });
+    }
+  }
+
+  const markerDirections = markerDirectionSummary(finalSelection.carrier_layout, profile);
+  if (markerDirections.markerCount > 1 && markerDirections.directionCount === 1) {
+    report.push({
+      level: "warn",
+      title: "Tracer taşıyıcıları aynı yönde",
+      message: `Renkli kuklalar sadece ${markerDirections.directions.join(", ")} grubunda. X/dual görünüm değil paralel spiral oluşur.`
+    });
+  }
+
+  if (recipe?.technical_sheet) {
+    const sheet = recipe.technical_sheet;
+    if (sheet.carrier_layout.length !== sheet.carrier_count) {
+      report.push({
+        level: "error",
+        title: "Renderer girdisi hatalı",
+        message: `Sheet carrier_layout ${sheet.carrier_layout.length}, carrier_count ${sheet.carrier_count}.`
+      });
+    }
+  }
+
+  return report;
 }
 
 function fileToBase64(file) {
@@ -233,9 +362,9 @@ function markerLayoutFromColors(carrierCount, colors) {
       ? [accentColors[1], accentColors[0], accentColors[1]]
       : [accentColors[0]];
   const starts = carrierCount === 16
-    ? [1, 9]
+    ? [1, 8]
     : carrierCount === 24
-      ? [1, 9, 17]
+      ? [1, 8, 17]
       : Array.from({ length: Math.max(1, Math.round(carrierCount / 8)) }, (_, index) => 1 + index * Math.max(4, Math.floor(carrierCount / Math.max(1, Math.round(carrierCount / 8)))));
 
   for (const start of starts) {
@@ -252,6 +381,17 @@ function markerLayoutFromColors(carrierCount, colors) {
   return layout;
 }
 
+function markerDirectionSummary(carrierLayout = [], machineProfile = null) {
+  const base = mostCommonColor(carrierLayout.map((carrier) => carrier.color));
+  const markers = carrierLayout.filter((carrier) => carrier.color !== base);
+  const directions = [...new Set(markers.map((carrier) => carrierDirection(carrier.carrier_no, machineProfile)))];
+  return {
+    markerCount: markers.length,
+    directionCount: directions.filter((direction) => direction !== "unknown").length,
+    directions
+  };
+}
+
 function applyAiSuggestionToSelection(analysis) {
   const predictions = analysis?.predictions || {};
   const fingerprint = predictions.fingerprint || {};
@@ -264,11 +404,25 @@ function applyAiSuggestionToSelection(analysis) {
   const predictedLayout = carrierLayoutFromPrediction(predictions);
   const colors = Array.isArray(predictions.colors) && predictions.colors.length ? predictions.colors : ["white", "blue"];
   const markerLayout = markerLayoutFromColors(normalizedCarrierCount, colors);
+  const matchedProfile = machineProfiles.find((profile) => profile.carrierCount === normalizedCarrierCount && profile.machineFamily === "maypole_circular");
+  const candidateUsable = candidateLayout.length === normalizedCarrierCount && !hasSameDirectionMarkerConflict(candidateLayout, matchedProfile);
+  const predictedUsable = predictedLayout.length === normalizedCarrierCount && !hasSameDirectionMarkerConflict(predictedLayout, matchedProfile);
+  logProcess("AI sonucu", "AI/predictor sonucu alındı", {
+    model: analysis?.model,
+    rawSignature: fingerprint.predictedSignature || predictions.predictedSignature,
+    predictorSignature: predictorResult.visualSignature,
+    predictorReliable: predictorResult.isReliable,
+    predictorWarnings: predictorResult.warnings,
+    carrierCount: normalizedCarrierCount,
+    colors,
+    predictorBraidLogic: predictorResult.analysis?.braidLogic,
+    structuralBraidLogic: structuralAnalysis.braidLogic,
+    recipeCandidateCount: analysis?.recipe_candidates?.length || 0
+  });
   patternSelect.value = normalizePattern(predictorResult.visualSignature || fingerprint.predictedSignature || predictions.predictedSignature || predictions.visualSignature || predictions.pattern_type);
   colorsInput.value = colors.join(", ");
   materialSelect.value = normalizeMaterial(predictions.material || predictions.estimated_material);
   carrierSelect.value = String(normalizedCarrierCount);
-  const matchedProfile = machineProfiles.find((profile) => profile.carrierCount === Number(carrierSelect.value) && profile.machineFamily === "maypole_circular");
   machineProfileSelect.value = matchedProfile?.machineProfileId || "mp_16_std";
   walkTypeSelect.value = normalizeWalkType(predictorResult.analysis?.braidLogic || bestCandidate?.braidLogic || structuralAnalysis.braidLogic || predictions.braid_walk_type, colors);
   sheathInput.value = materialSelect.value;
@@ -277,11 +431,13 @@ function applyAiSuggestionToSelection(analysis) {
 
   syncSelectionState();
   state = applyUserSelection(state, {
-    carrier_layout: candidateLayout.length === normalizedCarrierCount
+    carrier_layout: candidateUsable
       ? candidateLayout
       : markerLayout.length
         ? markerLayout
-        : predictedLayout,
+        : predictedUsable
+          ? predictedLayout
+          : predictedLayout,
     ai_selected_candidate: bestCandidate ? {
       recipeId: bestCandidate.recipeId,
       confidence: bestCandidate.confidence,
@@ -290,9 +446,32 @@ function applyAiSuggestionToSelection(analysis) {
     } : null,
     ai_suggestion_applied_at: new Date().toISOString()
   });
+  logProcess("Kullanıcı seçimine aktarım", "AI önerisi finalSelection alanlarına aktarıldı", {
+    selectedPattern: patternSelect.value,
+    selectedWalkType: walkTypeSelect.value,
+    selectedCarrierCount: Number(carrierSelect.value),
+    selectedColors: colors,
+    candidate: bestCandidate ? {
+      recipeId: bestCandidate.recipeId,
+      visualSignature: bestCandidate.visualSignature,
+      carrierMapCount: Object.keys(bestCandidate.carrierColorMap || {}).length,
+      braidLogic: bestCandidate.braidLogic,
+      confidence: bestCandidate.confidence,
+      used: candidateUsable,
+      rejectedReason: candidateLayout.length && !candidateUsable ? "marker taşıyıcıları aynı yön grubunda" : null
+    } : null,
+    carrierLayoutCount: state.user_selected_options.carrier_layout.length,
+    carrierLayoutPreview: state.user_selected_options.carrier_layout.slice(0, 16)
+  }, buildMismatchReport().some((item) => item.level === "error") ? "error" : "info");
+  updateMismatchReport(buildMismatchReport());
   clearGeneratedRecipe();
   generateButton.disabled = false;
   logAnalysis(`${bestCandidate ? `${bestCandidate.recipeId} adayı` : "AI önerisi"} kullanıcı seçimi alanlarına aktarıldı. Reçete Görseli butonuna basınca teknik resim üretilecek.`);
+}
+
+function hasSameDirectionMarkerConflict(carrierLayout = [], machineProfile = null) {
+  const summary = markerDirectionSummary(carrierLayout, machineProfile);
+  return summary.markerCount > 1 && summary.directionCount === 1;
 }
 
 function render() {
@@ -311,6 +490,7 @@ function clearGeneratedRecipe() {
   recipeImageOutput.hidden = true;
   recipeImagePreview.hidden = true;
   recipeImagePreview.removeAttribute("src");
+  updateMismatchReport(buildMismatchReport());
 }
 
 function renderRecipeSheet(recipe) {
@@ -352,6 +532,20 @@ function renderRecipeSheet(recipe) {
     <section class="ts-block"><h3>Onay / kontrol</h3>${renderKeyValues([["Hazırlayan", "BraidStudio"], ["Kontrol", "________"], ["Onay", recipe.shop_validation.production_ready ? "ONAYLI" : "Bekliyor"]])}</section>
     <section class="ts-block"><h3>Kullanım alanları</h3><div class="usage-icons"><span>Yelken</span><span>Marina</span><span>Endüstriyel</span><span>Mooring</span></div></section>
   `;
+  logProcess("Renderer girdisi", "Teknik sheet DOM üretildi", {
+    recipeId: recipe.recipe_id,
+    patternType: sheet.pattern_type,
+    carrierCount: sheet.carrier_count,
+    walkType: sheet.braid_walk_type,
+    colorSequence: sheet.color_sequence,
+    carrierLayoutCount: sheet.carrier_layout.length,
+    markerStarts: markerClusterStarts(sheet),
+    markerColors: tracerClusterColors(sheet),
+    markerDirections: markerDirectionSummary(sheet.carrier_layout, sheet.machineProfile),
+    previewConfidence: recipe.preview.previewConfidence,
+    warnings: recipe.preview.warnings
+  }, buildMismatchReport({ recipe }).some((item) => item.level === "error") ? "error" : "info");
+  updateMismatchReport(buildMismatchReport({ recipe }));
   if (recipeImageRequested) {
     scheduleRecipeImagePreview();
   }
@@ -429,15 +623,26 @@ function scheduleRecipeImagePreview() {
   clearTimeout(recipeImageRenderTimer);
   recipeImageRenderTimer = setTimeout(async () => {
     try {
+      logProcess("PNG üretimi", "PNG render başladı", {
+        recipeId: state.generated_recipe.recipe_id,
+        sheetBlocks: recipeSheet.querySelectorAll(".ts-block").length
+      });
       latestRecipePngUrl = await renderRecipeSheetToPng();
       recipeImagePreview.src = latestRecipePngUrl;
       recipeImageOutput.hidden = false;
       recipeImagePreview.hidden = false;
+      logProcess("PNG üretimi", "PNG render tamamlandı", {
+        bytesApprox: latestRecipePngUrl.length
+      });
       logAnalysis("Reçete görseli üretildi.");
     } catch (error) {
       recipeImageOutput.hidden = true;
       recipeImagePreview.hidden = true;
       recipeImagePreview.removeAttribute("src");
+      logProcess("PNG üretimi", "PNG render hata verdi", {
+        error: error.message,
+        fallback: "PNG indir butonunda SVG fallback kullanılacak"
+      }, "error");
       logAnalysis(`Teknik reçete resmi üretilemedi: ${error.message}`);
     }
   }, 120);
@@ -471,44 +676,45 @@ function renderSteps(steps = []) {
 function ropeLines(sheet, width = 760, height = 120, close = false) {
   const id = `ropeClip${width}x${height}${close ? "c" : "m"}`;
   const isTwill = isTwillWalk(sheet.braid_walk_type);
-  const strandGap = close ? (isTwill ? 12 : 18) : (isTwill ? 15 : 22);
-  const strandStroke = close ? (isTwill ? 5.8 : 2.2) : (isTwill ? 3.6 : 1.45);
-  const tracerStroke = close ? (isTwill ? 10 : 8) : (isTwill ? 8 : 6);
-  const tracerStep = close ? 86 : 118;
-  const tracerLength = close ? 28 : 36;
+  const strandGap = close ? (isTwill ? 12 : 18) : (isTwill ? 13 : 22);
+  const strandStroke = close ? (isTwill ? 9.4 : 2.2) : (isTwill ? 5.4 : 1.45);
+  const tracerStroke = close ? (isTwill ? 12 : 8) : (isTwill ? 9 : 6);
+  const tracerStep = close ? 92 : 124;
+  const tracerLength = close ? 34 : 42;
   const lines = [];
+  const slope = isTwill ? 1.02 : 1.45;
 
   lines.push(`<defs><clipPath id="${id}"><rect x="0" y="0" width="${width}" height="${height}" rx="${close ? 0 : 3}"/></clipPath></defs>`);
   lines.push(`<g clip-path="url(#${id})">`);
-  lines.push(`<rect width="${width}" height="${height}" fill="#fbfbf8"/>`);
+  lines.push(`<rect width="${width}" height="${height}" fill="#f7f8f5"/>`);
 
   for (let offset = -height * 2; offset < width + height * 2; offset += strandGap) {
-    lines.push(`<line x1="${offset}" y1="${height}" x2="${offset + height * 1.45}" y2="0" stroke="${isTwill ? "#dfe4df" : "#aeb8b1"}" stroke-width="${strandStroke}" opacity=".98"/>`);
-    lines.push(`<line x1="${offset}" y1="0" x2="${offset + height * 1.45}" y2="${height}" stroke="${isTwill ? "#cfd7d1" : "#ccd3ce"}" stroke-width="${strandStroke}" opacity=".98"/>`);
-    if (isTwill) {
-      lines.push(`<line x1="${offset + strandGap * 0.45}" y1="${height}" x2="${offset + height * 1.45 + strandGap * 0.45}" y2="0" stroke="#f9fbf9" stroke-width="${Math.max(1.2, strandStroke * 0.28)}" opacity=".75"/>`);
-    }
+    const x2 = offset + height * slope;
+    lines.push(`<line x1="${offset}" y1="${height}" x2="${x2}" y2="0" stroke="#aeb8b1" stroke-width="${strandStroke + 1.4}" opacity=".48"/>`);
+    lines.push(`<line x1="${offset}" y1="${height}" x2="${x2}" y2="0" stroke="#edf0ec" stroke-width="${strandStroke}" opacity=".98"/>`);
+    lines.push(`<line x1="${offset + strandGap * 0.22}" y1="${height}" x2="${x2 + strandGap * 0.22}" y2="0" stroke="#ffffff" stroke-width="${Math.max(1, strandStroke * 0.25)}" opacity=".9"/>`);
   }
 
   for (let offset = -height * 2 + strandGap / 2; offset < width + height * 2; offset += strandGap) {
-    lines.push(`<line x1="${offset}" y1="${height}" x2="${offset + height * 1.45}" y2="0" stroke="#ffffff" stroke-width="${Math.max(0.7, strandStroke / 2)}" opacity=".65"/>`);
-    lines.push(`<line x1="${offset}" y1="0" x2="${offset + height * 1.45}" y2="${height}" stroke="#ffffff" stroke-width="${Math.max(0.7, strandStroke / 2)}" opacity=".45"/>`);
+    const x2 = offset + height * slope;
+    lines.push(`<line x1="${offset}" y1="0" x2="${x2}" y2="${height}" stroke="#9facA5" stroke-width="${strandStroke + 1.1}" opacity=".38"/>`);
+    lines.push(`<line x1="${offset}" y1="0" x2="${x2}" y2="${height}" stroke="#dfe5df" stroke-width="${strandStroke}" opacity=".98"/>`);
+    lines.push(`<line x1="${offset + strandGap * 0.22}" y1="0" x2="${x2 + strandGap * 0.22}" y2="${height}" stroke="#ffffff" stroke-width="${Math.max(1, strandStroke * 0.22)}" opacity=".72"/>`);
   }
 
-  const tracerStarts = markerClusterStarts(sheet);
-  const clusterColors = tracerClusterColors(sheet);
-  const carrierCount = Math.max(1, sheet.carrier_count || sheet.color_sequence.length || 1);
-  for (const carrierNo of tracerStarts) {
-    const phase = ((carrierNo - 1) / carrierCount) * tracerStep;
-    const reverse = carrierNo % 2 === 0;
+  const tracerClusters = markerClusters(sheet);
+  for (const cluster of tracerClusters) {
+    const phase = ((cluster.start - 1) / Math.max(1, sheet.carrier_count || 1)) * tracerStep;
+    const reverse = cluster.direction === "counterClockwise";
     for (let offset = -tracerStep + phase; offset < width + tracerStep; offset += tracerStep) {
-      clusterColors.forEach((color, index) => {
+      cluster.colors.forEach((color, index) => {
         const segmentOffset = offset + index * (tracerLength * 0.72);
         const y1 = reverse ? 0 : height;
-        const y2 = reverse ? height * 0.46 : height * 0.54;
-        const yy1 = reverse ? y2 : y1;
-        const yy2 = reverse ? y1 + height * 0.54 : y2;
-        lines.push(`<line x1="${segmentOffset}" y1="${yy1}" x2="${segmentOffset + tracerLength * 0.62}" y2="${yy2}" stroke="${colorToHex(color)}" stroke-width="${tracerStroke}" stroke-linecap="round"/>`);
+        const y2 = reverse ? height * 0.58 : height * 0.42;
+        const x2 = segmentOffset + tracerLength * 0.9;
+        lines.push(`<line x1="${segmentOffset}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#59635d" stroke-width="${tracerStroke + 1.4}" stroke-linecap="round" opacity=".32"/>`);
+        lines.push(`<line x1="${segmentOffset}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${colorToHex(color)}" stroke-width="${tracerStroke}" stroke-linecap="round"/>`);
+        lines.push(`<line x1="${segmentOffset + 1}" y1="${y1}" x2="${x2 - 1}" y2="${y2}" stroke="#ffffff" stroke-width="${Math.max(1, tracerStroke * 0.18)}" stroke-linecap="round" opacity=".35"/>`);
       });
     }
   }
@@ -517,29 +723,44 @@ function ropeLines(sheet, width = 760, height = 120, close = false) {
   return lines.join("");
 }
 
-function markerClusterStarts(sheet) {
+function markerClusters(sheet) {
   const carriers = Array.isArray(sheet.carrier_layout) ? sheet.carrier_layout : [];
   const sequence = sheet.color_sequence || [];
   const base = mostCommonColor(sequence);
   const markers = carriers.filter((carrier) => carrier.color !== base);
-  if (!markers.length) return [];
-  const starts = [];
+  const clusters = [];
   for (const marker of markers) {
     const previous = markers.find((item) => item.carrier_no === marker.carrier_no - 1);
-    if (!previous) starts.push(marker.carrier_no);
+    if (previous) continue;
+    const colors = [];
+    let current = marker.carrier_no;
+    while (markers.find((item) => item.carrier_no === current)) {
+      const item = markers.find((candidate) => candidate.carrier_no === current);
+      colors.push(item.color);
+      current += 1;
+    }
+    clusters.push({
+      start: marker.carrier_no,
+      colors,
+      direction: carrierDirection(marker.carrier_no, sheet.machineProfile)
+    });
   }
-  return starts;
+  return clusters;
+}
+
+function markerClusterStarts(sheet) {
+  return markerClusters(sheet).map((cluster) => cluster.start);
 }
 
 function tracerClusterColors(sheet) {
-  const sequence = sheet.color_sequence || [];
-  const base = mostCommonColor(sequence);
-  const accents = [...new Set(sequence.filter((color) => color !== base))];
-  const yellow = accents.find((color) => String(color).toLowerCase().includes("yellow") || String(color).toLowerCase().includes("sarı"));
-  const black = accents.find((color) => String(color).toLowerCase().includes("black") || String(color).toLowerCase().includes("siyah"));
-  if (yellow && black) return [black, yellow, black];
-  if (accents.length >= 2) return [accents[1], accents[0], accents[1]];
-  return accents.length ? [accents[0]] : [];
+  return markerClusters(sheet).map((cluster) => cluster.colors.join("+"));
+}
+
+function carrierDirection(carrierNo, machineProfile = null) {
+  const groups = machineProfile?.carrierGroups || {};
+  if ((groups.clockwise || groups.trackA || []).includes(carrierNo)) return "clockwise";
+  if ((groups.counterClockwise || groups.trackB || []).includes(carrierNo)) return "counterClockwise";
+  return carrierNo % 2 === 1 ? "clockwise" : "counterClockwise";
 }
 
 function isTwillWalk(walkType) {
@@ -596,30 +817,44 @@ function renderCarrierRingSvg(sheet) {
 }
 
 function renderWalkSvg(sheet) {
-  const count = Math.min(sheet.carrier_count || 16, 24);
-  const rows = 5;
-  const cols = count;
-  const cellW = 320 / Math.max(cols - 1, 1);
-  const cellH = 26;
-  const lines = [];
+  const count = Math.min(sheet.carrier_count || 16, 32);
+  const steps = Array.isArray(sheet.walkMap?.steps) ? sheet.walkMap.steps.slice(0, 8) : [];
+  const base = mostCommonColor(sheet.color_sequence || []);
+  const paths = [];
   const grid = [];
-  for (let col = 0; col < cols; col += 1) {
-    const x = 20 + col * cellW;
-    grid.push(`<text x="${x}" y="16" text-anchor="middle" font-size="8">${col + 1}</text>`);
+  const x0 = 42;
+  const y0 = 22;
+  const plotW = 286;
+  const plotH = 112;
+  const stepW = plotW / Math.max(steps.length, 1);
+
+  for (let row = 0; row < count; row += 1) {
+    const y = y0 + (row / Math.max(count - 1, 1)) * plotH;
+    grid.push(`<line x1="${x0}" y1="${y}" x2="${x0 + plotW}" y2="${y}" stroke="#e0e4e0" stroke-width=".7"/>`);
+    if (row % 2 === 0) grid.push(`<text x="18" y="${y + 3}" font-size="7">${row + 1}</text>`);
   }
-  for (let row = 0; row < rows; row += 1) {
-    for (let col = 0; col < cols; col += 1) {
-      const x1 = 20 + col * cellW;
-      const next = row % 2 === 0 ? Math.min(col + 1, cols - 1) : Math.max(col - 1, 0);
-      const x2 = 20 + next * cellW;
-      const y1 = 30 + row * cellH;
-      const y2 = 30 + (row + 1) * cellH;
-      const color = colorToHex(sheet.color_sequence[col % sheet.color_sequence.length]);
-      lines.push(`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${color}" stroke-width="1.8"/><circle cx="${x1}" cy="${y1}" r="2.8" fill="${color}" stroke="#111"/>`);
-    }
+  for (let stepIndex = 0; stepIndex <= steps.length; stepIndex += 1) {
+    const x = x0 + stepIndex * stepW;
+    grid.push(`<line x1="${x}" y1="${y0}" x2="${x}" y2="${y0 + plotH}" stroke="#c8d0ca" stroke-width=".7"/>`);
+    grid.push(`<text x="${x}" y="16" text-anchor="middle" font-size="7">${stepIndex}</text>`);
+  }
+
+  for (const carrier of sheet.carrier_layout || []) {
+    let currentPosition = carrier.carrier_no;
+    const points = [`${x0},${y0 + ((currentPosition - 1) / Math.max(count - 1, 1)) * plotH}`];
+    steps.forEach((step, stepIndex) => {
+      const move = step.moves.find((item) => item.carrier_no === carrier.carrier_no);
+      currentPosition = move?.to || currentPosition;
+      const x = x0 + (stepIndex + 1) * stepW;
+      const y = y0 + ((currentPosition - 1) / Math.max(count - 1, 1)) * plotH;
+      points.push(`${x},${y}`);
+    });
+    const isMarker = carrier.color !== base;
+    paths.push(`<polyline points="${points.join(" ")}" fill="none" stroke="${colorToHex(carrier.color)}" stroke-width="${isMarker ? 2.4 : 1.1}" opacity="${isMarker ? ".95" : ".44"}"/>`);
+    paths.push(`<circle cx="${x0}" cy="${points[0].split(",")[1]}" r="${isMarker ? 3 : 1.8}" fill="${colorToHex(carrier.color)}" stroke="#111" stroke-width=".5"/>`);
   }
   const status = sheet.walkMap?.status || "generic_candidate";
-  return `<svg viewBox="0 0 360 180" role="img"><rect width="360" height="180" fill="#fff" stroke="#111"/>${grid.join("")}${lines.join("")}<text x="18" y="146" font-size="9">${sheet.walkMap?.machineProfileId || ""}</text><text x="18" y="159" font-size="9">${sheet.machineProfile.trackModel}</text><text x="18" y="172" font-size="9">${status} - shop ölçümü gerekir</text></svg>`;
+  return `<svg viewBox="0 0 360 180" role="img"><rect width="360" height="180" fill="#fff" stroke="#111"/>${grid.join("")}${paths.join("")}<text x="18" y="148" font-size="9">${sheet.walkMap?.machineProfileId || ""}</text><text x="18" y="161" font-size="9">${sheet.machineProfile.trackModel}</text><text x="18" y="174" font-size="9">${status} - shop ölçümü gerekir</text></svg>`;
 }
 
 function applyPattern(patternId) {
@@ -653,6 +888,12 @@ imageInput.addEventListener("change", async () => {
   imageStatus.textContent = "Yüklendi";
   clearGeneratedRecipe();
   generateButton.disabled = true;
+  logProcess("Görsel yükleme", "Görsel yüklendi", {
+    name: file.name,
+    type: file.type,
+    size: file.size,
+    imageHash: imageHash.slice(0, 16)
+  });
   logAnalysis(`Görsel hazır. AI analiz için butona bas: ${imageHash.slice(0, 12)}`);
   render();
 });
@@ -666,9 +907,17 @@ analyzeButton.addEventListener("click", async () => {
   analyzeButton.disabled = true;
   analyzeButton.textContent = "Analiz ediliyor...";
   imageStatus.textContent = "Analiz ediliyor";
+  logProcess("AI analiz", "Analiz başlatıldı", {
+    imageHash: currentImage.imageHash.slice(0, 16),
+    fileType: currentImage.file.type,
+    forceRefresh: true
+  });
   logAnalysis("Görsel base64 hazırlanıyor.");
   try {
     const dataBase64 = await fileToBase64(currentImage.file);
+    logProcess("AI analiz", "Görsel base64 hazırlandı", {
+      base64Length: dataBase64.length
+    });
     logAnalysis("Backend /api/analyze-image isteği gönderildi.");
     const response = await fetch("/api/analyze-image", {
       method: "POST",
@@ -687,10 +936,22 @@ analyzeButton.addEventListener("click", async () => {
     saveCachedAnalysis(payload.analysis);
     state = { ...state, ai_analysis_result: payload.analysis };
     imageStatus.textContent = "Analiz tamamlandı";
+    logProcess("AI analiz", "Backend analiz cevabı alındı", {
+      cache: payload.cache,
+      provider: payload.analysis.provider,
+      model: payload.analysis.model,
+      durationMs: payload.analysis.duration_ms,
+      predictions: payload.analysis.predictions,
+      predictorResult: payload.analysis.predictor_result,
+      candidateCount: payload.analysis.recipe_candidates?.length || 0
+    });
     logAnalysis(`${payload.cache === "refresh" ? "Cache bypass edildi, yeni OpenRouter cevabı alındı" : "OpenRouter cevabı alındı"}: ${payload.analysis.model}`);
     applyAiSuggestionToSelection(payload.analysis);
   } catch (error) {
     imageStatus.textContent = `Hata: ${error.message}`;
+    logProcess("AI analiz", "Analiz hata verdi", {
+      error: error.message
+    }, "error");
     logAnalysis(`Hata: ${error.message}`);
   } finally {
     analyzeButton.disabled = false;
@@ -701,9 +962,24 @@ analyzeButton.addEventListener("click", async () => {
 
 generateButton.addEventListener("click", () => {
   syncSelectionState();
+  logProcess("Reçete üretimi", "Reçete üretimi başlatıldı", {
+    finalSelection: state.user_selected_options,
+    mismatchBeforeGenerate: buildMismatchReport()
+  }, buildMismatchReport().some((item) => item.level === "error") ? "error" : "info");
   state = generateRecipe(state);
   recipeImageRequested = true;
   latestRecipePngUrl = "";
+  logProcess("Reçete üretimi", "generated_recipe oluşturuldu", {
+    recipeId: state.generated_recipe.recipe_id,
+    productionReady: state.generated_recipe.production_ready,
+    technicalSheet: {
+      carrierCount: state.generated_recipe.technical_sheet.carrier_count,
+      walkType: state.generated_recipe.technical_sheet.braid_walk_type,
+      colorSequence: state.generated_recipe.technical_sheet.color_sequence,
+      carrierLayoutCount: state.generated_recipe.technical_sheet.carrier_layout.length
+    }
+  });
+  updateMismatchReport(buildMismatchReport({ recipe: state.generated_recipe }));
   render();
 });
 
@@ -711,6 +987,10 @@ selectionForm.addEventListener("change", () => {
   selectedPatternId = patternSelect.value;
   syncSelectionState();
   clearGeneratedRecipe();
+  logProcess("Kullanıcı değişikliği", "Final seçim manuel değişti, eski reçete temizlendi", {
+    finalSelection: state.user_selected_options,
+    mismatch: buildMismatchReport()
+  });
   render();
 });
 
@@ -731,6 +1011,9 @@ downloadPngButton.addEventListener("click", async () => {
     link.click();
   } catch (error) {
     logAnalysis(`PNG üretilemedi, SVG indiriliyor: ${error.message}`);
+    logProcess("PNG indirme", "PNG indirilemedi, SVG fallback indirildi", {
+      error: error.message
+    }, "warn");
     downloadRecipeSvgFallback();
   }
 });

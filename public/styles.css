@@ -218,6 +218,100 @@ dd {
   margin-top: 14px;
 }
 
+.process-panel {
+  margin-top: 14px;
+}
+
+.process-log {
+  display: grid;
+  gap: 8px;
+  max-height: 420px;
+  overflow: auto;
+}
+
+.process-item {
+  border: 1px solid #d8e0dc;
+  border-radius: 6px;
+  background: #fbfcfb;
+  padding: 8px 10px;
+}
+
+.process-item.warn {
+  border-color: #d8b44a;
+  background: #fff9e8;
+}
+
+.process-item.error {
+  border-color: #c84a4a;
+  background: #fff0f0;
+}
+
+.process-item summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.process-item summary span {
+  color: #64726b;
+  font-size: 12px;
+}
+
+.process-item summary strong {
+  min-width: 132px;
+  color: #16201c;
+}
+
+.process-item pre {
+  min-height: 0;
+  max-height: 260px;
+  margin-top: 8px;
+  padding: 10px;
+  border-radius: 6px;
+  font-size: 11px;
+  white-space: pre-wrap;
+}
+
+.mismatch-report {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.mismatch-ok,
+.mismatch-info,
+.mismatch-warn,
+.mismatch-error {
+  display: grid;
+  gap: 3px;
+  border-radius: 6px;
+  padding: 10px 12px;
+  font-size: 13px;
+}
+
+.mismatch-ok {
+  border: 1px solid #b8d8cb;
+  background: #effaf5;
+  color: #0f684f;
+  font-weight: 800;
+}
+
+.mismatch-warn {
+  border: 1px solid #d8b44a;
+  background: #fff9e8;
+}
+
+.mismatch-error {
+  border: 1px solid #c84a4a;
+  background: #fff0f0;
+}
+
+.mismatch-report strong {
+  font-weight: 900;
+}
+
 .pattern-album {
   display: grid;
   grid-template-columns: repeat(6, minmax(0, 1fr));
