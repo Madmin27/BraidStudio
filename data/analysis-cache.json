@@ -1,0 +1,609 @@
+{
+  "openrouter:google/gemini-2.5-flash:valid-png-openrouter-smoke": {
+    "image_hash": "valid-png-openrouter-smoke",
+    "provider": "openrouter",
+    "model": "google/gemini-2.5-flash",
+    "analyzed_at": "2026-06-28T12:06:19.828Z",
+    "predictions": {
+      "pattern_type": "unknown",
+      "colors": [],
+      "material": "unknown",
+      "carrier_count": null,
+      "machine_fit": "requires_user_confirmation",
+      "braid_walk_type": "unknown",
+      "sheath": null,
+      "core": null,
+      "confidence": "low",
+      "warning": "AI sonucu üretim gerçeği değildir; final reçete kullanıcı seçimiyle üretilir."
+    }
+  },
+  "openrouter:google/gemini-2.5-flash:visible-ai-log-smoke-1": {
+    "image_hash": "visible-ai-log-smoke-1",
+    "provider": "openrouter",
+    "model": "google/gemini-2.5-flash",
+    "analyzed_at": "2026-06-28T12:09:17.620Z",
+    "duration_ms": 2083,
+    "predictions": {
+      "pattern_type": "unknown",
+      "colors": [],
+      "material": "unknown",
+      "carrier_count": null,
+      "machine_fit": "requires_user_confirmation",
+      "braid_walk_type": "unknown",
+      "sheath": null,
+      "core": null,
+      "confidence": "low",
+      "warning": "AI sonucu üretim gerçeği değildir; final reçete kullanıcı seçimiyle üretilir."
+    },
+    "raw_text": "{\n  \"pattern_type\": null,\n  \"colors\": [],\n  \"material\": null,\n  \"carrier_count\": null,\n  \"machine_fit\": null,\n  \"braid_walk_type\": null,\n  \"sheath\": null,\n  \"core\": null,\n  \"confidence\": \"low\"\n}",
+    "usage": {
+      "prompt_tokens": 339,
+      "completion_tokens": 76,
+      "total_tokens": 415,
+      "cost": 0.0002917,
+      "is_byok": false,
+      "prompt_tokens_details": {
+        "cached_tokens": 0,
+        "cache_write_tokens": 0,
+        "audio_tokens": 0,
+        "video_tokens": 0
+      },
+      "cost_details": {
+        "upstream_inference_cost": 0.0002917,
+        "upstream_inference_prompt_cost": 0.0001017,
+        "upstream_inference_completions_cost": 0.00019
+      },
+      "completion_tokens_details": {
+        "reasoning_tokens": 0,
+        "image_tokens": 0,
+        "audio_tokens": 0
+      }
+    }
+  },
+  "openrouter:google/gemini-2.5-flash:045566d075e427b09361366b17cafc951c0d47b3414cd3bdc647be7dfd216248": {
+    "image_hash": "045566d075e427b09361366b17cafc951c0d47b3414cd3bdc647be7dfd216248",
+    "provider": "openrouter",
+    "model": "google/gemini-2.5-flash",
+    "analyzed_at": "2026-06-28T12:10:33.836Z",
+    "duration_ms": 2076,
+    "predictions": {
+      "pattern_type": "solid_with_markers",
+      "colors": [
+        "white",
+        "blue"
+      ],
+      "material": "unknown",
+      "carrier_count": null,
+      "machine_fit": "unknown",
+      "braid_walk_type": "unknown",
+      "sheath": "braided",
+      "core": "unknown",
+      "confidence": "low",
+      "warning": "AI sonucu üretim gerçeği değildir; final reçete kullanıcı seçimiyle üretilir."
+    },
+    "raw_text": "{\n  \"pattern_type\": \"solid_with_markers\",\n  \"colors\": [\n    \"white\",\n    \"blue\"\n  ],\n  \"material\": \"unknown\",\n  \"carrier_count\": \"unknown\",\n  \"machine_fit\": \"unknown\",\n  \"braid_walk_type\": \"unknown\",\n  \"sheath\": \"braided\",\n  \"core\": \"unknown\",\n  \"confidence\": \"low\"\n}",
+    "usage": {
+      "prompt_tokens": 1370,
+      "completion_tokens": 103,
+      "total_tokens": 1473,
+      "cost": 0.0006685,
+      "is_byok": false,
+      "prompt_tokens_details": {
+        "cached_tokens": 0,
+        "cache_write_tokens": 0,
+        "audio_tokens": 0,
+        "video_tokens": 0
+      },
+      "cost_details": {
+        "upstream_inference_cost": 0.0006685,
+        "upstream_inference_prompt_cost": 0.000411,
+        "upstream_inference_completions_cost": 0.0002575
+      },
+      "completion_tokens_details": {
+        "reasoning_tokens": 0,
+        "image_tokens": 0,
+        "audio_tokens": 0
+      }
+    }
+  },
+  "openrouter:google/gemini-2.5-flash:carrier-layout-v2:6b468bdc26b346c1eb601d587b97091fd4384f44190be4a53a651c32dccd0b23": {
+    "image_hash": "6b468bdc26b346c1eb601d587b97091fd4384f44190be4a53a651c32dccd0b23",
+    "provider": "openrouter",
+    "model": "google/gemini-2.5-flash",
+    "prompt_version": "carrier-layout-v2",
+    "analyzed_at": "2026-06-28T13:34:31.552Z",
+    "duration_ms": 4701,
+    "predictions": {
+      "pattern_type": "solid_with_flecks",
+      "colors": [
+        "white",
+        "blue"
+      ],
+      "material": "polyester",
+      "estimated_material": "polyester",
+      "carrier_count": 16,
+      "estimated_carrier_count": 16,
+      "estimated_color_sequence": [
+        "white",
+        "white",
+        "white",
+        "blue",
+        "white",
+        "white",
+        "white",
+        "blue",
+        "white",
+        "white",
+        "white",
+        "blue",
+        "white",
+        "white",
+        "white",
+        "blue"
+      ],
+      "estimated_carrier_layout": [
+        {
+          "carrier_no": 1,
+          "color": "white",
+          "role": "sheath"
+        },
+        {
+          "carrier_no": 2,
+          "color": "white",
+          "role": "sheath"
+        },
+        {
+          "carrier_no": 3,
+          "color": "white",
+          "role": "sheath"
+        },
+        {
+          "carrier_no": 4,
+          "color": "blue",
+          "role": "marker"
+        },
+        {
+          "carrier_no": 5,
+          "color": "white",
+          "role": "sheath"
+        },
+        {
+          "carrier_no": 6,
+          "color": "white",
+          "role": "sheath"
+        },
+        {
+          "carrier_no": 7,
+          "color": "white",
+          "role": "sheath"
+        },
+        {
+          "carrier_no": 8,
+          "color": "blue",
+          "role": "marker"
+        },
+        {
+          "carrier_no": 9,
+          "color": "white",
+          "role": "sheath"
+        },
+        {
+          "carrier_no": 10,
+          "color": "white",
+          "role": "sheath"
+        },
+        {
+          "carrier_no": 11,
+          "color": "white",
+          "role": "sheath"
+        },
+        {
+          "carrier_no": 12,
+          "color": "blue",
+          "role": "marker"
+        },
+        {
+          "carrier_no": 13,
+          "color": "white",
+          "role": "sheath"
+        },
+        {
+          "carrier_no": 14,
+          "color": "white",
+          "role": "sheath"
+        },
+        {
+          "carrier_no": 15,
+          "color": "white",
+          "role": "sheath"
+        },
+        {
+          "carrier_no": 16,
+          "color": "blue",
+          "role": "marker"
+        }
+      ],
+      "estimated_layout_basis": "visual_observation_of_repeating_pattern",
+      "machine_fit": "standard",
+      "braid_walk_type": "standard",
+      "sheath": "true",
+      "core": "true",
+      "confidence": "medium",
+      "warning": "AI sonucu üretim gerçeği değildir; final reçete kullanıcı seçimiyle üretilir."
+    },
+    "raw_text": "{\n  \"pattern_type\": \"solid_with_flecks\",\n  \"colors\": [\n    \"white\",\n    \"blue\"\n  ],\n  \"material\": null,\n  \"estimated_material\": \"polyester\",\n  \"carrier_count\": null,\n  \"estimated_carrier_count\": 16,\n  \"estimated_color_sequence\": [\n    \"white\",\n    \"white\",\n    \"white\",\n    \"blue\",\n    \"white\",\n    \"white\",\n    \"white\",\n    \"blue\",\n    \"white\",\n    \"white\",\n    \"white\",\n    \"blue\",\n    \"white\",\n    \"white\",\n    \"white\",\n    \"blue\"\n  ],\n  \"estimated_carrier_layout\": [\n    {\n      \"carrier_no\": 1,\n      \"color\": \"white\",\n      \"role\": \"sheath\"\n    },\n    {\n      \"carrier_no\": 2,\n      \"color\": \"white\",\n      \"role\": \"sheath\"\n    },\n    {\n      \"carrier_no\": 3,\n      \"color\": \"white\",\n      \"role\": \"sheath\"\n    },\n    {\n      \"carrier_no\": 4,\n      \"color\": \"blue\",\n      \"role\": \"marker\"\n    },\n    {\n      \"carrier_no\": 5,\n      \"color\": \"white\",\n      \"role\": \"sheath\"\n    },\n    {\n      \"carrier_no\": 6,\n      \"color\": \"white\",\n      \"role\": \"sheath\"\n    },\n    {\n      \"carrier_no\": 7,\n      \"color\": \"white\",\n      \"role\": \"sheath\"\n    },\n    {\n      \"carrier_no\": 8,\n      \"color\": \"blue\",\n      \"role\": \"marker\"\n    },\n    {\n      \"carrier_no\": 9,\n      \"color\": \"white\",\n      \"role\": \"sheath\"\n    },\n    {\n      \"carrier_no\": 10,\n      \"color\": \"white\",\n      \"role\": \"sheath\"\n    },\n    {\n      \"carrier_no\": 11,\n      \"color\": \"white\",\n      \"role\": \"sheath\"\n    },\n    {\n      \"carrier_no\": 12,\n      \"color\": \"blue\",\n      \"role\": \"marker\"\n    },\n    {\n      \"carrier_no\": 13,\n      \"color\": \"white\",\n      \"role\": \"sheath\"\n    },\n    {\n      \"carrier_no\": 14,\n      \"color\": \"white\",\n      \"role\": \"sheath\"\n    },\n    {\n      \"carrier_no\": 15,\n      \"color\": \"white\",\n      \"role\": \"sheath\"\n    },\n    {\n      \"carrier_no\": 16,\n      \"color\": \"blue\",\n      \"role\": \"marker\"\n    }\n  ],\n  \"estimated_layout_basis\": \"visual_observation_of_repeating_pattern\",\n  \"machine_fit\": \"standard\",\n  \"braid_walk_type\": \"standard\",\n  \"sheath\": true,\n  \"core\": true,\n  \"confidence\": \"medium\"\n}",
+    "usage": {
+      "prompt_tokens": 1519,
+      "completion_tokens": 781,
+      "total_tokens": 2300,
+      "cost": 0.0024082,
+      "is_byok": false,
+      "prompt_tokens_details": {
+        "cached_tokens": 0,
+        "cache_write_tokens": 0,
+        "audio_tokens": 0,
+        "video_tokens": 0
+      },
+      "cost_details": {
+        "upstream_inference_cost": 0.0024082,
+        "upstream_inference_prompt_cost": 0.0004557,
+        "upstream_inference_completions_cost": 0.0019525
+      },
+      "completion_tokens_details": {
+        "reasoning_tokens": 0,
+        "image_tokens": 0,
+        "audio_tokens": 0
+      }
+    }
+  },
+  "openrouter:google/gemini-2.5-flash:carrier-layout-v2:045566d075e427b09361366b17cafc951c0d47b3414cd3bdc647be7dfd216248": {
+    "image_hash": "045566d075e427b09361366b17cafc951c0d47b3414cd3bdc647be7dfd216248",
+    "provider": "openrouter",
+    "model": "google/gemini-2.5-flash",
+    "prompt_version": "carrier-layout-v2",
+    "analyzed_at": "2026-06-28T13:12:10.607Z",
+    "duration_ms": 4543,
+    "predictions": {
+      "pattern_type": "solid_with_flecks",
+      "colors": [
+        "white",
+        "blue"
+      ],
+      "material": "polyester",
+      "estimated_material": "polyester",
+      "carrier_count": 16,
+      "estimated_carrier_count": 16,
+      "estimated_color_sequence": [
+        "white",
+        "white",
+        "white",
+        "blue",
+        "white",
+        "white",
+        "white",
+        "blue",
+        "white",
+        "white",
+        "white",
+        "blue",
+        "white",
+        "white",
+        "white",
+        "blue"
+      ],
+      "estimated_carrier_layout": [
+        {
+          "carrier_no": 1,
+          "color": "white",
+          "role": "sheath"
+        },
+        {
+          "carrier_no": 2,
+          "color": "white",
+          "role": "sheath"
+        },
+        {
+          "carrier_no": 3,
+          "color": "white",
+          "role": "sheath"
+        },
+        {
+          "carrier_no": 4,
+          "color": "white",
+          "role": "sheath"
+        },
+        {
+          "carrier_no": 5,
+          "color": "white",
+          "role": "sheath"
+        },
+        {
+          "carrier_no": 6,
+          "color": "white",
+          "role": "sheath"
+        },
+        {
+          "carrier_no": 7,
+          "color": "white",
+          "role": "sheath"
+        },
+        {
+          "carrier_no": 8,
+          "color": "white",
+          "role": "sheath"
+        },
+        {
+          "carrier_no": 9,
+          "color": "white",
+          "role": "sheath"
+        },
+        {
+          "carrier_no": 10,
+          "color": "white",
+          "role": "sheath"
+        },
+        {
+          "carrier_no": 11,
+          "color": "white",
+          "role": "sheath"
+        },
+        {
+          "carrier_no": 12,
+          "color": "white",
+          "role": "sheath"
+        },
+        {
+          "carrier_no": 13,
+          "color": "blue",
+          "role": "sheath"
+        },
+        {
+          "carrier_no": 14,
+          "color": "blue",
+          "role": "sheath"
+        },
+        {
+          "carrier_no": 15,
+          "color": "blue",
+          "role": "sheath"
+        },
+        {
+          "carrier_no": 16,
+          "color": "blue",
+          "role": "sheath"
+        }
+      ],
+      "estimated_layout_basis": "visual_inspection_of_fleck_distribution",
+      "machine_fit": "requires_user_confirmation",
+      "braid_walk_type": "unknown",
+      "sheath": "true",
+      "core": "true",
+      "confidence": "medium",
+      "warning": "AI sonucu üretim gerçeği değildir; final reçete kullanıcı seçimiyle üretilir."
+    },
+    "raw_text": "{\n  \"pattern_type\": \"solid_with_flecks\",\n  \"colors\": [\n    \"white\",\n    \"blue\"\n  ],\n  \"material\": null,\n  \"estimated_material\": \"polyester\",\n  \"carrier_count\": null,\n  \"estimated_carrier_count\": 16,\n  \"estimated_color_sequence\": \"W W W W W W W W W W W W B B B B\",\n  \"estimated_carrier_layout\": [\n    {\n      \"carrier_no\": 1,\n      \"color\": \"white\",\n      \"role\": \"sheath\"\n    },\n    {\n      \"carrier_no\": 2,\n      \"color\": \"white\",\n      \"role\": \"sheath\"\n    },\n    {\n      \"carrier_no\": 3,\n      \"color\": \"white\",\n      \"role\": \"sheath\"\n    },\n    {\n      \"carrier_no\": 4,\n      \"color\": \"white\",\n      \"role\": \"sheath\"\n    },\n    {\n      \"carrier_no\": 5,\n      \"color\": \"white\",\n      \"role\": \"sheath\"\n    },\n    {\n      \"carrier_no\": 6,\n      \"color\": \"white\",\n      \"role\": \"sheath\"\n    },\n    {\n      \"carrier_no\": 7,\n      \"color\": \"white\",\n      \"role\": \"sheath\"\n    },\n    {\n      \"carrier_no\": 8,\n      \"color\": \"white\",\n      \"role\": \"sheath\"\n    },\n    {\n      \"carrier_no\": 9,\n      \"color\": \"white\",\n      \"role\": \"sheath\"\n    },\n    {\n      \"carrier_no\": 10,\n      \"color\": \"white\",\n      \"role\": \"sheath\"\n    },\n    {\n      \"carrier_no\": 11,\n      \"color\": \"white\",\n      \"role\": \"sheath\"\n    },\n    {\n      \"carrier_no\": 12,\n      \"color\": \"white\",\n      \"role\": \"sheath\"\n    },\n    {\n      \"carrier_no\": 13,\n      \"color\": \"blue\",\n      \"role\": \"sheath\"\n    },\n    {\n      \"carrier_no\": 14,\n      \"color\": \"blue\",\n      \"role\": \"sheath\"\n    },\n    {\n      \"carrier_no\": 15,\n      \"color\": \"blue\",\n      \"role\": \"sheath\"\n    },\n    {\n      \"carrier_no\": 16,\n      \"color\": \"blue\",\n      \"role\": \"sheath\"\n    }\n  ],\n  \"estimated_layout_basis\": \"visual_inspection_of_fleck_distribution\",\n  \"machine_fit\": null,\n  \"braid_walk_type\": null,\n  \"sheath\": true,\n  \"core\": true,\n  \"confidence\": \"medium\"\n}",
+    "usage": {
+      "prompt_tokens": 1519,
+      "completion_tokens": 717,
+      "total_tokens": 2236,
+      "cost": 0.0022482,
+      "is_byok": false,
+      "prompt_tokens_details": {
+        "cached_tokens": 0,
+        "cache_write_tokens": 0,
+        "audio_tokens": 0,
+        "video_tokens": 0
+      },
+      "cost_details": {
+        "upstream_inference_cost": 0.0022482,
+        "upstream_inference_prompt_cost": 0.0004557,
+        "upstream_inference_completions_cost": 0.0017925
+      },
+      "completion_tokens_details": {
+        "reasoning_tokens": 0,
+        "image_tokens": 0,
+        "audio_tokens": 0
+      }
+    }
+  },
+  "openrouter:google/gemini-2.5-flash:carrier-layout-v2:force-cache-bypass-smoke": {
+    "image_hash": "force-cache-bypass-smoke",
+    "provider": "openrouter",
+    "model": "google/gemini-2.5-flash",
+    "prompt_version": "carrier-layout-v2",
+    "analyzed_at": "2026-06-28T13:10:00.071Z",
+    "duration_ms": 2725,
+    "predictions": {
+      "pattern_type": "unknown",
+      "colors": [],
+      "material": "polyester",
+      "estimated_material": "polyester",
+      "carrier_count": null,
+      "estimated_carrier_count": null,
+      "estimated_color_sequence": [],
+      "estimated_carrier_layout": [],
+      "estimated_layout_basis": "AI estimate plus deterministic fallback; user must confirm machine/shop setup.",
+      "machine_fit": "requires_user_confirmation",
+      "braid_walk_type": "unknown",
+      "sheath": "braided sheath",
+      "core": "unknown",
+      "confidence": "low",
+      "warning": "AI sonucu üretim gerçeği değildir; final reçete kullanıcı seçimiyle üretilir."
+    },
+    "raw_text": "{\n  \"pattern_type\": null,\n  \"colors\": [],\n  \"material\": null,\n  \"estimated_material\": null,\n  \"carrier_count\": null,\n  \"estimated_carrier_count\": null,\n  \"estimated_color_sequence\": null,\n  \"estimated_carrier_layout\": [],\n  \"estimated_layout_basis\": null,\n  \"machine_fit\": null,\n  \"braid_walk_type\": null,\n  \"sheath\": null,\n  \"core\": null,\n  \"confidence\": \"low\"\n}",
+    "usage": {
+      "prompt_tokens": 488,
+      "completion_tokens": 130,
+      "total_tokens": 618,
+      "cost": 0.0004714,
+      "is_byok": false,
+      "prompt_tokens_details": {
+        "cached_tokens": 0,
+        "cache_write_tokens": 0,
+        "audio_tokens": 0,
+        "video_tokens": 0
+      },
+      "cost_details": {
+        "upstream_inference_cost": 0.0004714,
+        "upstream_inference_prompt_cost": 0.0001464,
+        "upstream_inference_completions_cost": 0.000325
+      },
+      "completion_tokens_details": {
+        "reasoning_tokens": 0,
+        "image_tokens": 0,
+        "audio_tokens": 0
+      }
+    }
+  },
+  "openrouter:google/gemini-2.5-flash:carrier-layout-v2:94441c68edead1e91e82320a10f82aa90ed0da1234df02591df480e2733bccfc": {
+    "image_hash": "94441c68edead1e91e82320a10f82aa90ed0da1234df02591df480e2733bccfc",
+    "provider": "openrouter",
+    "model": "google/gemini-2.5-flash",
+    "prompt_version": "carrier-layout-v2",
+    "analyzed_at": "2026-06-28T13:35:24.760Z",
+    "duration_ms": 4190,
+    "predictions": {
+      "pattern_type": "solid_with_flecks",
+      "colors": [
+        "white",
+        "yellow",
+        "black"
+      ],
+      "material": "polyester",
+      "estimated_material": "polyester",
+      "carrier_count": 16,
+      "estimated_carrier_count": 16,
+      "estimated_color_sequence": [
+        "white",
+        "white",
+        "white",
+        "yellow",
+        "white",
+        "white",
+        "white",
+        "yellow",
+        "white",
+        "white",
+        "white",
+        "yellow",
+        "white",
+        "white",
+        "white",
+        "yellow"
+      ],
+      "estimated_carrier_layout": [
+        {
+          "carrier_no": 1,
+          "color": "white",
+          "role": "base"
+        },
+        {
+          "carrier_no": 2,
+          "color": "white",
+          "role": "base"
+        },
+        {
+          "carrier_no": 3,
+          "color": "white",
+          "role": "base"
+        },
+        {
+          "carrier_no": 4,
+          "color": "white",
+          "role": "base"
+        },
+        {
+          "carrier_no": 5,
+          "color": "white",
+          "role": "base"
+        },
+        {
+          "carrier_no": 6,
+          "color": "white",
+          "role": "base"
+        },
+        {
+          "carrier_no": 7,
+          "color": "white",
+          "role": "base"
+        },
+        {
+          "carrier_no": 8,
+          "color": "white",
+          "role": "base"
+        },
+        {
+          "carrier_no": 9,
+          "color": "white",
+          "role": "base"
+        },
+        {
+          "carrier_no": 10,
+          "color": "white",
+          "role": "base"
+        },
+        {
+          "carrier_no": 11,
+          "color": "white",
+          "role": "base"
+        },
+        {
+          "carrier_no": 12,
+          "color": "white",
+          "role": "base"
+        },
+        {
+          "carrier_no": 13,
+          "color": "yellow",
+          "role": "marker"
+        },
+        {
+          "carrier_no": 14,
+          "color": "black",
+          "role": "marker"
+        },
+        {
+          "carrier_no": 15,
+          "color": "yellow",
+          "role": "marker"
+        },
+        {
+          "carrier_no": 16,
+          "color": "black",
+          "role": "marker"
+        }
+      ],
+      "estimated_layout_basis": "visible_strands_and_repeating_pattern",
+      "machine_fit": "standard",
+      "braid_walk_type": "regular",
+      "sheath": "true",
+      "core": "true",
+      "confidence": "medium",
+      "warning": "AI sonucu üretim gerçeği değildir; final reçete kullanıcı seçimiyle üretilir."
+    },
+    "raw_text": "{\n  \"pattern_type\": \"solid_with_flecks\",\n  \"colors\": [\n    \"white\",\n    \"yellow\",\n    \"black\"\n  ],\n  \"material\": null,\n  \"estimated_material\": \"polyester\",\n  \"carrier_count\": null,\n  \"estimated_carrier_count\": 16,\n  \"estimated_color_sequence\": \"white,white,white,white,white,white,white,white,white,white,white,white,yellow,black,yellow,black\",\n  \"estimated_carrier_layout\": [\n    {\n      \"carrier_no\": 1,\n      \"color\": \"white\",\n      \"role\": \"base\"\n    },\n    {\n      \"carrier_no\": 2,\n      \"color\": \"white\",\n      \"role\": \"base\"\n    },\n    {\n      \"carrier_no\": 3,\n      \"color\": \"white\",\n      \"role\": \"base\"\n    },\n    {\n      \"carrier_no\": 4,\n      \"color\": \"white\",\n      \"role\": \"base\"\n    },\n    {\n      \"carrier_no\": 5,\n      \"color\": \"white\",\n      \"role\": \"base\"\n    },\n    {\n      \"carrier_no\": 6,\n      \"color\": \"white\",\n      \"role\": \"base\"\n    },\n    {\n      \"carrier_no\": 7,\n      \"color\": \"white\",\n      \"role\": \"base\"\n    },\n    {\n      \"carrier_no\": 8,\n      \"color\": \"white\",\n      \"role\": \"base\"\n    },\n    {\n      \"carrier_no\": 9,\n      \"color\": \"white\",\n      \"role\": \"base\"\n    },\n    {\n      \"carrier_no\": 10,\n      \"color\": \"white\",\n      \"role\": \"base\"\n    },\n    {\n      \"carrier_no\": 11,\n      \"color\": \"white\",\n      \"role\": \"base\"\n    },\n    {\n      \"carrier_no\": 12,\n      \"color\": \"white\",\n      \"role\": \"base\"\n    },\n    {\n      \"carrier_no\": 13,\n      \"color\": \"yellow\",\n      \"role\": \"marker\"\n    },\n    {\n      \"carrier_no\": 14,\n      \"color\": \"black\",\n      \"role\": \"marker\"\n    },\n    {\n      \"carrier_no\": 15,\n      \"color\": \"yellow\",\n      \"role\": \"marker\"\n    },\n    {\n      \"carrier_no\": 16,\n      \"color\": \"black\",\n      \"role\": \"marker\"\n    }\n  ],\n  \"estimated_layout_basis\": \"visible_strands_and_repeating_pattern\",\n  \"machine_fit\": \"standard\",\n  \"braid_walk_type\": \"regular\",\n  \"sheath\": true,\n  \"core\": true,\n  \"confidence\": \"medium\"\n}",
+    "usage": {
+      "prompt_tokens": 1519,
+      "completion_tokens": 724,
+      "total_tokens": 2243,
+      "cost": 0.0022657,
+      "is_byok": false,
+      "prompt_tokens_details": {
+        "cached_tokens": 0,
+        "cache_write_tokens": 0,
+        "audio_tokens": 0,
+        "video_tokens": 0
+      },
+      "cost_details": {
+        "upstream_inference_cost": 0.0022657,
+        "upstream_inference_prompt_cost": 0.0004557,
+        "upstream_inference_completions_cost": 0.00181
+      },
+      "completion_tokens_details": {
+        "reasoning_tokens": 0,
+        "image_tokens": 0,
+        "audio_tokens": 0
+      }
+    }
+  }
+}

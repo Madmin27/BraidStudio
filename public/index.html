@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="tr">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>BraidStudio</title>
+    <link rel="stylesheet" href="/styles.css">
+  </head>
+  <body>
+    <main class="shell">
+      <section class="workspace">
+        <header class="topbar">
+          <div>
+            <p class="eyebrow">BraidStudio</p>
+            <h1>Örgü görselinden kontrollü reçete üretimi</h1>
+          </div>
+          <button id="generateButton" type="button">Reçete üret</button>
+        </header>
+
+        <div class="workgrid">
+          <section class="panel upload-panel">
+            <div class="panel-heading">
+              <h2>Görsel yükle</h2>
+              <span id="imageStatus">Bekliyor</span>
+            </div>
+            <label class="dropzone" for="imageInput">
+              <input id="imageInput" type="file" accept="image/*">
+              <img id="imagePreview" alt="" hidden>
+              <span id="uploadPrompt">Ürün veya halat görselini seç</span>
+            </label>
+            <button id="analyzeButton" type="button" class="secondary">AI ile analiz et</button>
+          </section>
+
+          <section class="panel">
+            <div class="panel-heading">
+              <h2>AI tahmini</h2>
+              <span id="cacheStatus">Cache yok</span>
+            </div>
+            <dl id="aiResult"></dl>
+            <div id="analysisLog" class="analysis-log"></div>
+            <details class="ai-raw-panel">
+              <summary>AI ham cevap</summary>
+              <pre id="aiRawOutput">Henüz cevap yok.</pre>
+            </details>
+          </section>
+
+          <section class="panel">
+            <div class="panel-heading">
+              <h2>Kullanıcı seçimi</h2>
+              <span>Reçeteyi bu belirler</span>
+            </div>
+            <form id="selectionForm">
+              <label>
+                Desen
+                <select name="pattern_type" id="patternSelect">
+                  <option value="diamond">Diamond</option>
+                  <option value="spiral">Spiral</option>
+                  <option value="plain">Düz örgü</option>
+                  <option value="herringbone">Balıksırtı</option>
+                  <option value="ladder">Merdiven</option>
+                  <option value="chevron">Chevron</option>
+                  <option value="solid_with_flecks">İzli düz örgü</option>
+                  <option value="solid_with_markers">Marker izli örgü</option>
+                </select>
+              </label>
+              <label>
+                Renkler
+                <input name="colors" id="colorsInput" value="siyah, kırmızı">
+              </label>
+              <label>
+                Hammadde
+                <select name="material" id="materialSelect">
+                  <option value="polyester">Polyester</option>
+                  <option value="polypropylene">Polypropylene</option>
+                  <option value="cotton">Cotton</option>
+                  <option value="nylon">Nylon</option>
+                </select>
+              </label>
+              <label>
+                Kukla sayısı
+                <select name="carrier_count" id="carrierSelect">
+                  <option value="8">8</option>
+                  <option value="12">12</option>
+                  <option value="16">16</option>
+                  <option value="24" selected>24</option>
+                  <option value="32">32</option>
+                </select>
+              </label>
+              <label>
+                Makine profili
+                <select name="machine_profile_id" id="machineProfileSelect"></select>
+              </label>
+              <label>
+                Yürüyüş tipi
+                <select name="braid_walk_type" id="walkTypeSelect">
+                  <option value="1_over_1">1 over 1</option>
+                  <option value="standard">Standard</option>
+                  <option value="counter-rotating">Karşı yürüyüş</option>
+                  <option value="two-over-two">2 üst 2 alt</option>
+                </select>
+              </label>
+              <label>
+                Kılıf malzemesi
+                <input name="sheath_material" id="sheathInput" value="polyester">
+              </label>
+              <label>
+                İç dolgu
+                <select name="core_enabled" id="coreEnabledSelect">
+                  <option value="false">Yok</option>
+                  <option value="true">Var</option>
+                </select>
+              </label>
+              <label>
+                İç dolgu malzemesi
+                <input name="core_material" id="coreMaterialInput" value="">
+              </label>
+            </form>
+          </section>
+        </div>
+
+        <section class="album-section">
+          <div class="section-heading">
+            <h2>Desen albümü</h2>
+          </div>
+          <div id="patternAlbum" class="pattern-album"></div>
+        </section>
+
+        <section class="panel recipe-panel">
+          <div class="panel-heading">
+            <h2>Teknik reçete</h2>
+            <span>Deterministik sheet</span>
+          </div>
+          <div class="sheet-actions">
+            <button id="downloadPngButton" type="button" class="secondary">PNG indir</button>
+            <button id="printPdfButton" type="button" class="secondary">PDF yazdır</button>
+          </div>
+          <figure class="recipe-image-output">
+            <figcaption>Teknik reçete resmi</figcaption>
+            <img id="recipeImagePreview" alt="Teknik reçete PNG çıktısı" hidden>
+          </figure>
+          <div id="recipeSheet" class="recipe-sheet technical-sheet-page"></div>
+          <details class="json-panel" open>
+            <summary>JSON preview</summary>
+            <pre id="recipeOutput"></pre>
+          </details>
+        </section>
+      </section>
+    </main>
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>

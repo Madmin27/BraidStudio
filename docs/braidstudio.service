@@ -1,0 +1,17 @@
+[Unit]
+Description=BraidStudio
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/root/sunucu/BraidStudio
+Environment=NODE_ENV=production
+Environment=HOST=127.0.0.1
+Environment=PORT=3017
+EnvironmentFile=-/root/sunucu/BraidStudio/.env
+ExecStart=/usr/bin/node server.js
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

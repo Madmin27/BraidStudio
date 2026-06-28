@@ -1,0 +1,14 @@
+{
+  "name": "braidstudio",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "check": "node --check server.js && node --check src/state.js && node --check public/app.js",
+    "build": "npm run check"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

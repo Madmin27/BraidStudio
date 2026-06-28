@@ -1,0 +1,28 @@
+{
+  "recipe_id": "REC-PES-20-DB-0002A",
+  "source": "finalSelection",
+  "production_ready": false,
+  "finalSelection": {
+    "pattern_type": "solid_with_flecks",
+    "colors": ["white", "blue"],
+    "material": "polyester",
+    "carrier_count": 16,
+    "machine_id": "maypole",
+    "machine_profile_id": "mp_16_std",
+    "direction": "clockwise",
+    "braid_walk_type": "standard",
+    "sheath": {
+      "enabled": true,
+      "material": "polyester"
+    },
+    "core": {
+      "enabled": true,
+      "material": "polyester parallel fiber",
+      "diameter_mm": null
+    }
+  },
+  "shop_validation": {
+    "status": "not_validated",
+    "production_ready": false
+  }
+}
