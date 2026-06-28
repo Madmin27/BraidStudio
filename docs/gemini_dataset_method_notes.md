@@ -2,96 +2,20 @@
 
 Status: `candidate_methodology`
 
-This document records Gemini's explanation for how the first BraidStudio sample machine/recipe library was derived.
+Bu dosya, BraidStudio veri kütüphanesindeki ilk makine/reçete örneklerinin hangi mantıkla kurulduğunu açıklar.
 
-Important rule: these notes are not production validation. They are used to guide candidate generation only. Production accuracy still requires:
+Önemli kural: Bu notlar üretim doğrulaması değildir. Candidate üretimi ve AI yönlendirmesi içindir. Üretim doğruluğu için hâlâ şu statüler gerekir:
 
 ```text
 machine profile = shop_measured
 recipe = shop_validated
 ```
 
-## 1. Kinematic and Combination Model
+## Temel Yaklaşım
 
-Maypole circular braiding machines are deterministic mechanical systems.
+Bu verilerin arkasında hem maypole tipi örgü makinelerinin kinematik matematiği hem de tekstil/halat sanayisindeki endüstriyel kullanım kalıpları vardır.
 
-Candidate assumptions used by Gemini:
-
-- Carrier movement can be modeled as two counter-moving groups.
-- One group moves clockwise (`CW`).
-- The other group moves counter-clockwise (`CCW`).
-- The path can be treated as a bipartite/interlaced graph for candidate generation.
-- `1_over_1` and `2_over_2` rules describe over/under crossing rhythm.
-
-Example candidate logic:
-
-```text
-16 carrier herringbone / 2_over_2
-color sequence candidate = [W, W, B, B, W, W, B, B, ...]
-```
-
-Reasoning:
-
-- Adjacent color pairs create visible diagonal blocks.
-- Breaking mathematical symmetry changes the visible spiral/diagonal behavior.
-- Herringbone-like visual signatures can be approximated by grouped color offsets.
-
-## 2. Industrial Pattern Knowledge
-
-Gemini grouped sample recipes using common textile/rope manufacturing heuristics.
-
-### 8 carrier
-
-Candidate use cases:
-
-- hollow braid
-- shoelace-like braid
-- sealing/gasket braid
-- simple tracer patterns
-
-Candidate color ratios:
-
-```text
-1:1 alternating
-1:7 tracer
-```
-
-### 24 carrier
-
-Candidate use cases:
-
-- marine rope sheath
-- technical polyester sheath
-- paracord-like outer sheath
-- tracer rope
-
-Candidate rules:
-
-```text
-1_over_1 tracer
-2_over_2 twill candidate
-block/offset color sequences
-```
-
-### 32 carrier
-
-Candidate use cases:
-
-- dense protective sheath
-- climbing/dynamic rope sheath candidate
-- dual counter spiral visual pattern
-
-Candidate rules:
-
-```text
-high carrier count
-opposite spiral/color groups
-close sheath coverage
-```
-
-## 3. Mapping Rule
-
-The dataset maps mechanical constraints to visual signatures:
+Amaç, AI'nin görselden doğrudan kesin reçete uydurması değil; mekanik kısıtlar ile görsel desen imzalarını eşleştirerek olası reçeteler üretmesidir.
 
 ```text
 machine profile
@@ -101,26 +25,127 @@ machine profile
 = candidate pattern signature
 ```
 
-AI should use this mapping only to propose candidates.
+## 1. Kinematik ve Kombinasyon Matematiği
 
-## 4. AI Usage Rule
+Maypole tipi yuvarlak örgü makineleri deterministik sistemlerdir. Aynı makine profili, aynı yön ve aynı örgü mantığı ile aynı carrier hareketini tekrar eder.
 
-AI may:
+Candidate model:
 
-- classify a visual signature
-- match `signature_catalog.json`
-- return possible recipe candidates
-- suggest a carrierColorMap
-- provide confidence and warnings
+- Taşıyıcıların izlediği yol bipartite / iki parçalı çizge gibi modellenebilir.
+- Bir grup saat yönünde (`CW`) hareket eder.
+- Diğer grup saat yönünün tersine (`CCW`) hareket eder.
+- `1_over_1` ve `2_over_2` örgü kuralları, taşıyıcıların üst/alt geçiş ritmini temsil eder.
+- Bu model, gerçek makine ölçümü yapılana kadar `generic_candidate` kabul edilir.
 
-AI must not:
+## 2. 16 Taşıyıcılı Herringbone Örneği
 
-- mark a carrierColorMap as exact from a single photo
-- invent a walkMap
-- draw technical diagrams
-- mark a recipe as production-ready
+16 taşıyıcılı herringbone / `2_over_2` candidate deseninde renk dizilimi ardışık çiftler halinde verilir:
 
-Correct output style:
+```text
+[W, W, B, B, W, W, B, B, W, W, B, B, W, W, B, B]
+```
+
+Açıklama:
+
+- Yan yana gelen renk çiftleri yüzeyde çapraz bloklar oluşturur.
+- Renk fazı ve üst/alt geçiş ritmi birlikte görünür desen imzasını belirler.
+- Matematiksel simetri bozulduğunda spiral/diagonal davranış değişir.
+- Bu yapı `diagonal_rib` / `herringbone` aday desen ailesi için başlangıç şablonudur.
+
+Repo karşılığı:
+
+```text
+data/recipes/rec_16_lvl3_herringbone.json
+```
+
+## 3. Endüstriyel Kullanım Kalıpları
+
+Reçetelerde kullanılan taşıyıcı sayıları ve renk dizilimleri, halat/tekstil üretimindeki yaygın kalıplar baz alınarak candidate olarak kurulmuştur.
+
+Bunlar üretim garantisi değil; solver'ın hızlı aday üretmesi için başlangıç veri setidir.
+
+### 8 Taşıyıcı
+
+Candidate kullanım alanları:
+
+- hollow braid
+- ayakkabı bağcığı benzeri örgüler
+- teknik sızdırmazlık fitilleri / salmastra
+- basit zebra veya tracer desenleri
+
+Candidate renk oranları:
+
+```text
+1:1 alternating
+1:7 tracer
+```
+
+Not:
+
+Düşük taşıyıcılı makinelerde merkez dolgu/kılıf kapama sınırlı olabilir. Bu yüzden 8 taşıyıcı profilleri daha çok içi boş veya basit teknik örgü adayları için düşünülür.
+
+### 24 Taşıyıcı
+
+Candidate kullanım alanları:
+
+- marine rope sheath
+- iskota halatı dış kılıfı
+- teknik polyester dış kılıf
+- paracord benzeri dış kılıf
+- tracer rope
+
+Candidate kurallar:
+
+```text
+1_over_1 tracer
+2_over_2 twill candidate
+block / offset color sequences
+```
+
+Not:
+
+24 taşıyıcı, orta-sık örgülü teknik halat kılıfları için pratik bir başlangıç profilidir. Yine de gerçek üretim için makine profili ölçülmelidir.
+
+### 32 Taşıyıcı
+
+Candidate kullanım alanları:
+
+- sıkı dış kılıf
+- dinamik/tırmanış ipi dış kılıfı candidate
+- dual counter spiral desenleri
+- yüksek aşınma dayanımı isteyen sheath yapıları
+
+Candidate kurallar:
+
+```text
+high carrier count
+opposite spiral color groups
+dense sheath coverage
+```
+
+Not:
+
+32 veya daha yüksek taşıyıcı sayıları, daha kapalı ve sık kılıf yapıları için düşünülür. BraidStudio'da bu profil eklenirse yine `generic_candidate` başlamalıdır.
+
+## 4. AI Kullanım Kuralı
+
+AI şunları yapabilir:
+
+- görsel desen imzası sınıflandırmak
+- `data/patterns/signature_catalog.json` ile eşleştirmek
+- `data/recipes/*.json` içinden olası reçeteleri sıralamak
+- candidate `carrierColorMap` önermek
+- confidence / warning üretmek
+
+AI şunları yapamaz:
+
+- tek fotoğraftan kesin carrierColorMap ilan etmek
+- walkMap uydurmak
+- teknik diyagram çizmek
+- production-ready demek
+- shop validation yerine geçmek
+
+Doğru çıktı formatı:
 
 ```json
 {
@@ -138,52 +163,75 @@ Correct output style:
 }
 ```
 
-## 5. Validation Rule
+## 5. Pattern Mapping
 
-A profile can become reliable only after physical measurement:
+BraidStudio'nun ilk solver mantığı şu şekilde olmalıdır:
+
+```text
+AI image analysis
+-> visualSignature
+-> signature_catalog match
+-> recipe candidates
+-> candidate carrierColorMap
+-> user confirmation
+-> Recipe Engine
+-> deterministic SVG / technical sheet
+```
+
+Örnek eşleşmeler:
+
+```text
+plain_weave     -> rec_16_lvl1_diamond
+diagonal_rib    -> rec_16_lvl3_herringbone
+spiral_tracer   -> rec_24_tracer_rope
+```
+
+## 6. Validation Rule
+
+Bir makine profili güvenilir hale ancak fiziksel ölçümden sonra geçer:
 
 ```text
 generic_candidate -> shop_measured
 ```
 
-Required observations:
+Gerekli gözlemler:
 
-- actual carrier numbering
-- observed carrier path
-- direction
-- track/horn gear behavior
-- over/under crossing rhythm
-- slow top-view video or direct step observation
+- gerçek carrier numaralandırması
+- observedCarrierPaths
+- yön
+- track / horn gear davranışı
+- üst/alt geçiş ritmi
+- yavaş üstten video veya doğrudan adım gözlemi
 
-A recipe can become production-ready only after test production:
+Bir reçete üretime hazır hale ancak test üretiminden sonra geçer:
 
 ```text
 candidate -> shop_validated
 ```
 
-Required observations:
+Gerekli gözlemler:
 
-- sample length
-- measured diameter/width
-- measured gramaj
-- visible pattern match
-- tension/speed notes
-- material notes
-- approval status
+- numune uzunluğu
+- ölçülen çap/en/kalınlık
+- ölçülen gramaj
+- görünür desen eşleşmesi
+- tansiyon/hız notları
+- malzeme notları
+- onay durumu
 
-## 6. Engineering Position
+## 7. Engineering Position
 
-BraidStudio does not claim exact recipe inference from image alone.
+BraidStudio tek fotoğraftan kesin reçete çıkardığını iddia etmez.
 
-It uses:
+BraidStudio şu işi yapar:
 
 ```text
 image analysis
 -> pattern signature match
--> candidate recipes
+-> possibleRecipes[]
 -> user confirmation
 -> deterministic recipe engine
 -> shop validation
 ```
 
-This keeps the system useful for production while avoiding AI hallucinated technical documents.
+Bu yaklaşım AI'nin hızlı aday üretmesini sağlar ama teknik dokümanın doğruluk kaynağını algoritma ve shop validation olarak tutar.
