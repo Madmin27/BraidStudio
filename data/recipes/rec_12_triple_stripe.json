@@ -1,0 +1,24 @@
+{
+  "recipeId": "rec_12_triple_stripe",
+  "machineProfileId": "mp_12_mid",
+  "metadata": {
+    "difficulty": 2,
+    "patternFamily": "stripe",
+    "visualSignature": "block_striped_segment",
+    "braidLogic": "1_over_1"
+  },
+  "carrierColorMap": {
+    "1": "red",
+    "2": "red",
+    "3": "red",
+    "4": "black",
+    "5": "black",
+    "6": "black",
+    "7": "red",
+    "8": "red",
+    "9": "red",
+    "10": "black",
+    "11": "black",
+    "12": "black"
+  }
+}
