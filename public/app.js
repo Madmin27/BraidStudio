@@ -27,7 +27,8 @@ const colorMap = {
   gray: "#77817b",
   gri: "#77817b",
   nylon: "#d8dde0",
-  sarı: "#d7a800"
+  sarı: "#d7a800",
+  yellow: "#d7d900"
 };
 
 let state = structuredClone(initialRecipeState);
@@ -536,8 +537,6 @@ function renderRecipeSheet(recipe) {
     <section class="ts-block ts-main"><h3>Ana halat görünümü</h3>${renderMainRopeSvg(sheet)}</section>
     <section class="ts-block"><h3>Yakın görünüm</h3>${renderCloseRopeSvg(sheet)}</section>
     <section class="ts-block"><h3>Kesit görünümü</h3>${renderSectionSvg(sheet)}</section>
-    <section class="ts-block"><h3>Makara görünümü</h3>${renderSpoolSvg(sheet)}</section>
-    <section class="ts-block"><h3>Desen şeması</h3>${renderPatternSvg(sheet)}</section>
     <section class="ts-block"><h3>Renk dizilimi</h3>${renderColorSequence(sheet)}</section>
     <section class="ts-block"><h3>Kukla dizilimi</h3>${renderCarrierRingSvg(sheet)}</section>
     <section class="ts-block"><h3>Kukla yürüyüş diyagramı</h3>${renderWalkSvg(sheet)}</section>
@@ -671,16 +670,18 @@ function ropeLines(sheet, width = 760, height = 120, close = false) {
     carrierLayout: sheet.carrier_layout,
     machineProfile: sheet.machineProfile,
     braidLogic: sheet.braid_walk_type,
-    steps: close ? 42 : 34
+    steps: close ? 26 : 34
   });
   const cellW = width / Math.max(matrix.steps, 1);
   const cellH = height / Math.max(matrix.carrierCount, 1);
-  const strandStroke = close ? Math.max(5, cellH * 0.92) : Math.max(2.4, cellH * 0.82);
+  const strandStroke = close ? Math.max(9, cellH * 1.25) : Math.max(3.6, cellH * 0.92);
+  const baseColor = mostCommonColor(sheet.color_sequence || []);
+  const gradientIds = new Map();
   const lines = [];
 
-  lines.push(`<defs><clipPath id="${id}"><rect x="0" y="0" width="${width}" height="${height}" rx="${close ? 0 : 3}"/></clipPath></defs>`);
+  lines.push(`<defs><clipPath id="${id}"><rect x="0" y="0" width="${width}" height="${height}" rx="${close ? 0 : 3}"/></clipPath>${volumeFilter(id)}${colorGradients(sheet.color_sequence || [], id, gradientIds)}</defs>`);
   lines.push(`<g clip-path="url(#${id})">`);
-  lines.push(`<rect width="${width}" height="${height}" fill="#f7f8f5"/>`);
+  lines.push(`<rect width="${width}" height="${height}" fill="#f3f5f1"/>`);
 
   matrix.cells.forEach((row) => {
     row.forEach((cell) => {
@@ -688,20 +689,50 @@ function ropeLines(sheet, width = 760, height = 120, close = false) {
       const x = cell.time * cellW;
       const y = cell.column * cellH;
       const direction = cell.topDirection;
-      const isMarker = cell.topCarrier.color !== mostCommonColor(sheet.color_sequence || []);
+      const isMarker = cell.topCarrier.color !== baseColor;
       const x1 = x - cellW * 0.18;
       const x2 = x + cellW * 1.18;
       const y1 = direction === "clockwise" ? y + cellH * 0.92 : y + cellH * 0.08;
       const y2 = direction === "clockwise" ? y + cellH * 0.08 : y + cellH * 0.92;
       const stroke = isMarker ? strandStroke * 1.08 : strandStroke;
-      lines.push(`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#8f9a93" stroke-width="${stroke + 1.1}" stroke-linecap="round" opacity="${isMarker ? ".4" : ".32"}"/>`);
-      lines.push(`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${colorToHex(cell.visibleColor)}" stroke-width="${stroke}" stroke-linecap="round" opacity="${isMarker ? "1" : ".98"}"/>`);
-      lines.push(`<line x1="${x1 + cellW * 0.18}" y1="${y1}" x2="${x2 - cellW * 0.18}" y2="${y2}" stroke="#fff" stroke-width="${Math.max(0.7, stroke * 0.16)}" stroke-linecap="round" opacity="${isMarker ? ".28" : ".62"}"/>`);
+      const gradientId = gradientIds.get(normalizeColorKey(cell.visibleColor));
+      lines.push(`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#667069" stroke-width="${stroke + 2.2}" stroke-linecap="round" opacity="${isMarker ? ".34" : ".22"}"/>`);
+      lines.push(`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="url(#${gradientId})" stroke-width="${stroke}" stroke-linecap="round" opacity="${isMarker ? "1" : ".99"}" filter="url(#${id}Volume)"/>`);
+      lines.push(`<line x1="${x1 + cellW * 0.22}" y1="${y1}" x2="${x2 - cellW * 0.22}" y2="${y2}" stroke="#fff" stroke-width="${Math.max(1, stroke * 0.18)}" stroke-linecap="round" opacity="${isMarker ? ".25" : ".7"}"/>`);
     });
   });
 
   lines.push("</g>");
   return lines.join("");
+}
+
+function volumeFilter(id) {
+  return `<filter id="${id}Volume" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="1.1" stdDeviation="0.7" flood-color="#6f7972" flood-opacity=".38"/></filter>`;
+}
+
+function colorGradients(colors = [], id, gradientIds) {
+  const unique = [...new Set(colors.map((color) => normalizeColorKey(color)))];
+  if (!unique.includes("white")) unique.push("white");
+  return unique.map((colorKey, index) => {
+    const base = colorToHex(colorKey);
+    const gradId = `${id}Grad${index}`;
+    gradientIds.set(colorKey, gradId);
+    return `<linearGradient id="${gradId}" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="${shadeHex(base, -22)}"/><stop offset="42%" stop-color="${shadeHex(base, 32)}"/><stop offset="58%" stop-color="${shadeHex(base, 46)}"/><stop offset="100%" stop-color="${shadeHex(base, -18)}"/></linearGradient>`;
+  }).join("");
+}
+
+function normalizeColorKey(color) {
+  return String(color || "white").trim().toLowerCase();
+}
+
+function shadeHex(hex, percent) {
+  const value = hex.replace("#", "");
+  const num = parseInt(value.length === 3 ? value.split("").map((char) => char + char).join("") : value, 16);
+  const amount = Math.round(2.55 * percent);
+  const r = Math.max(0, Math.min(255, (num >> 16) + amount));
+  const g = Math.max(0, Math.min(255, ((num >> 8) & 0xff) + amount));
+  const b = Math.max(0, Math.min(255, (num & 0xff) + amount));
+  return `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`;
 }
 
 function markerClusters(sheet) {
@@ -741,11 +772,6 @@ function carrierDirection(carrierNo, machineProfile = null) {
   return getCarrierDirection(carrierNo, machineProfile);
 }
 
-function isTwillWalk(walkType) {
-  const value = String(walkType || "").toLowerCase();
-  return value.includes("2_over_2") || value.includes("two-over-two") || value.includes("2 üst") || value.includes("twill");
-}
-
 function mostCommonColor(colors = []) {
   const counts = new Map();
   for (const color of colors) counts.set(color, (counts.get(color) || 0) + 1);
@@ -758,14 +784,6 @@ function renderMainRopeSvg(sheet) {
 
 function renderCloseRopeSvg(sheet) {
   return `<svg viewBox="0 0 360 220" role="img"><rect width="360" height="220" fill="#fbfbf8" stroke="#111"/>${ropeLines(sheet, 360, 220, true)}</svg>`;
-}
-
-function renderPatternSvg(sheet) {
-  return `<svg viewBox="0 0 360 220" role="img"><rect width="360" height="220" fill="#fff" stroke="#111"/>${ropeLines(sheet, 360, 220, false)}<text x="18" y="198">45°</text></svg>`;
-}
-
-function renderSpoolSvg(sheet) {
-  return `<svg viewBox="0 0 360 220" role="img"><ellipse cx="180" cy="35" rx="130" ry="18" fill="#26323a"/><rect x="70" y="35" width="220" height="150" fill="#eef1ee" stroke="#333"/><g transform="translate(70 35)">${ropeLines(sheet, 220, 150, false)}</g><ellipse cx="180" cy="185" rx="130" ry="18" fill="#26323a"/></svg>`;
 }
 
 function renderSectionSvg(sheet) {

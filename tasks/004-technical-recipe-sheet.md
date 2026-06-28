@@ -23,3 +23,4 @@ Analiz, predictor, candidate seçimi, finalSelection, renderer girdisi, PNG üre
 SVG preview 2-over-2 için daha dolu beyaz zemin örgüsü, zıt yön marker çizimi ve tüm kuklaları gösteren walkMap diyagramı üretir.
 PNG üretimi artık `Reçete Görseli` sonrası otomatik başlamaz; yalnızca `PNG indir` butonuyla başlar. PNG render için foreignObject iç SVG namespace ve data URL yükleme akışı sağlamlaştırıldı.
 Kukladan desene çizim için ortak `braidMatrix` çekirdeği eklendi: CW `+t`, CCW `-t`, 2-over-2 üstte kalma kuralı ve renderer matrix hücre çizimi aynı matematikten beslenir.
+Teknik sheet'ten `Makara görünümü` ve `Desen şeması` blokları kaldırıldı. Ana/yakın halat görünümü matrix tabanlı SVG stroke'lara gradient + drop shadow hacim katmanı ekler.
