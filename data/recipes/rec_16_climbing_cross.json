@@ -1,0 +1,28 @@
+{
+  "recipeId": "rec_16_climbing_cross",
+  "machineProfileId": "mp_16_standard",
+  "metadata": {
+    "difficulty": 3,
+    "patternFamily": "tracer",
+    "visualSignature": "dual_counter_spiral",
+    "braidLogic": "1_over_1"
+  },
+  "carrierColorMap": {
+    "1": "yellow",
+    "2": "blue",
+    "3": "yellow",
+    "4": "yellow",
+    "5": "yellow",
+    "6": "yellow",
+    "7": "yellow",
+    "8": "blue",
+    "9": "yellow",
+    "10": "blue",
+    "11": "yellow",
+    "12": "yellow",
+    "13": "yellow",
+    "14": "yellow",
+    "15": "yellow",
+    "16": "blue"
+  }
+}
