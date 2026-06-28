@@ -605,5 +605,355 @@
         "audio_tokens": 0
       }
     }
+  },
+  "openrouter:google/gemini-2.5-flash:fingerprint-v1:94441c68edead1e91e82320a10f82aa90ed0da1234df02591df480e2733bccfc": {
+    "image_hash": "94441c68edead1e91e82320a10f82aa90ed0da1234df02591df480e2733bccfc",
+    "provider": "openrouter",
+    "model": "google/gemini-2.5-flash",
+    "prompt_version": "fingerprint-v1",
+    "analyzed_at": "2026-06-28T17:36:08.264Z",
+    "duration_ms": 3036,
+    "predictions": {
+      "fingerprint": {
+        "predictedSignature": "spiral_tracer",
+        "confidenceScore": 0.9,
+        "structuralAnalysis": {
+          "carrierCount": 16,
+          "symmetry": "bilateral_periodic",
+          "primaryApplication": "general_purpose_rope"
+        }
+      },
+      "predictedSignature": "spiral_tracer",
+      "confidenceScore": 0.9,
+      "structuralAnalysis": {
+        "carrierCount": 16,
+        "symmetry": "bilateral_periodic",
+        "primaryApplication": "general_purpose_rope"
+      },
+      "visualSignature": "spiral_tracer",
+      "dominantColor": "white",
+      "accentColors": [
+        "yellow",
+        "black"
+      ],
+      "estimatedCarrierCount": 16,
+      "warnings": [],
+      "pattern_type": "solid_with_markers",
+      "colors": [
+        "white",
+        "yellow",
+        "black"
+      ],
+      "material": "polyester",
+      "estimated_material": "polyester",
+      "carrier_count": 16,
+      "estimated_carrier_count": 16,
+      "estimated_color_sequence": [
+        "white",
+        "white",
+        "white",
+        "yellow",
+        "white",
+        "white",
+        "white",
+        "yellow",
+        "white",
+        "white",
+        "white",
+        "yellow",
+        "white",
+        "white",
+        "white",
+        "yellow"
+      ],
+      "estimated_carrier_layout": [
+        {
+          "carrier_no": 1,
+          "color": "white",
+          "role": "base"
+        },
+        {
+          "carrier_no": 2,
+          "color": "white",
+          "role": "base"
+        },
+        {
+          "carrier_no": 3,
+          "color": "white",
+          "role": "base"
+        },
+        {
+          "carrier_no": 4,
+          "color": "yellow",
+          "role": "marker/tracer"
+        },
+        {
+          "carrier_no": 5,
+          "color": "white",
+          "role": "base"
+        },
+        {
+          "carrier_no": 6,
+          "color": "white",
+          "role": "base"
+        },
+        {
+          "carrier_no": 7,
+          "color": "white",
+          "role": "base"
+        },
+        {
+          "carrier_no": 8,
+          "color": "yellow",
+          "role": "marker/tracer"
+        },
+        {
+          "carrier_no": 9,
+          "color": "white",
+          "role": "base"
+        },
+        {
+          "carrier_no": 10,
+          "color": "white",
+          "role": "base"
+        },
+        {
+          "carrier_no": 11,
+          "color": "white",
+          "role": "base"
+        },
+        {
+          "carrier_no": 12,
+          "color": "yellow",
+          "role": "marker/tracer"
+        },
+        {
+          "carrier_no": 13,
+          "color": "white",
+          "role": "base"
+        },
+        {
+          "carrier_no": 14,
+          "color": "white",
+          "role": "base"
+        },
+        {
+          "carrier_no": 15,
+          "color": "white",
+          "role": "base"
+        },
+        {
+          "carrier_no": 16,
+          "color": "yellow",
+          "role": "marker/tracer"
+        }
+      ],
+      "estimated_layout_basis": "AI estimate plus deterministic fallback; user must confirm machine/shop setup.",
+      "machine_fit": "requires_user_confirmation",
+      "braid_walk_type": "unknown",
+      "sheath": "braided sheath",
+      "core": "unknown",
+      "confidence": "high",
+      "warning": "AI sonucu üretim gerçeği değildir; final reçete kullanıcı seçimiyle üretilir."
+    },
+    "raw_text": "{\n  \"predictedSignature\": \"spiral_tracer\",\n  \"confidenceScore\": 0.9,\n  \"structuralAnalysis\": {\n    \"carrierCount\": 16,\n    \"symmetry\": \"bilateral_periodic\",\n    \"primaryApplication\": \"general_purpose_rope\"\n  },\n  \"colors\": [\n    \"white\",\n    \"yellow\",\n    \"black\"\n  ],\n  \"dominantColor\": \"white\",\n  \"accentColors\": [\n    \"yellow\",\n    \"black\"\n  ],\n  \"material\": \"polyester\",\n  \"warnings\": []\n}",
+    "usage": {
+      "prompt_tokens": 1508,
+      "completion_tokens": 137,
+      "total_tokens": 1645,
+      "cost": 0.0007949,
+      "is_byok": false,
+      "prompt_tokens_details": {
+        "cached_tokens": 0,
+        "cache_write_tokens": 0,
+        "audio_tokens": 0,
+        "video_tokens": 0
+      },
+      "cost_details": {
+        "upstream_inference_cost": 0.0007949,
+        "upstream_inference_prompt_cost": 0.0004524,
+        "upstream_inference_completions_cost": 0.0003425
+      },
+      "completion_tokens_details": {
+        "reasoning_tokens": 0,
+        "image_tokens": 0,
+        "audio_tokens": 0
+      }
+    },
+    "recipe_candidates": [
+      {
+        "recipeId": "rec_12_medical_blue",
+        "machineProfileId": "mp_12_mid",
+        "patternFamily": "tracer",
+        "visualSignature": "single_spiral_tracer",
+        "braidLogic": "1_over_1",
+        "carrierColorMap": {
+          "1": "yellow",
+          "2": "yellow",
+          "3": "white",
+          "4": "white",
+          "5": "white",
+          "6": "white",
+          "7": "white",
+          "8": "white",
+          "9": "white",
+          "10": "white",
+          "11": "white",
+          "12": "white"
+        },
+        "confidence": 0.65,
+        "status": "candidate",
+        "reason": "visualSignature eşleşti; carrierCount aday olarak kaldı; renk sayısı uyumlu; patternFamily eşleşti",
+        "requiresUserConfirmation": true,
+        "requiresShopValidation": true
+      },
+      {
+        "recipeId": "rec_12_medical_dual_trace",
+        "machineProfileId": "mp_12_mid",
+        "patternFamily": "tracer",
+        "visualSignature": "single_spiral_tracer",
+        "braidLogic": "1_over_1",
+        "carrierColorMap": {
+          "1": "yellow",
+          "2": "white",
+          "3": "white",
+          "4": "white",
+          "5": "white",
+          "6": "white",
+          "7": "yellow",
+          "8": "white",
+          "9": "white",
+          "10": "white",
+          "11": "white",
+          "12": "white"
+        },
+        "confidence": 0.65,
+        "status": "industry_candidate",
+        "reason": "visualSignature eşleşti; carrierCount aday olarak kaldı; renk sayısı uyumlu; patternFamily eşleşti",
+        "requiresUserConfirmation": true,
+        "requiresShopValidation": true
+      },
+      {
+        "recipeId": "rec_24_marine_double_tracer",
+        "machineProfileId": "mp_24_standard",
+        "patternFamily": "tracer",
+        "visualSignature": "spiral_tracer",
+        "braidLogic": "1_over_1",
+        "carrierColorMap": {
+          "1": "yellow",
+          "2": "white",
+          "3": "white",
+          "4": "white",
+          "5": "white",
+          "6": "white",
+          "7": "yellow",
+          "8": "white",
+          "9": "white",
+          "10": "white",
+          "11": "white",
+          "12": "white",
+          "13": "yellow",
+          "14": "white",
+          "15": "white",
+          "16": "white",
+          "17": "white",
+          "18": "white",
+          "19": "yellow",
+          "20": "white",
+          "21": "white",
+          "22": "white",
+          "23": "white",
+          "24": "white"
+        },
+        "confidence": 0.65,
+        "status": "industry_candidate",
+        "reason": "visualSignature eşleşti; carrierCount aday olarak kaldı; renk sayısı uyumlu; patternFamily eşleşti",
+        "requiresUserConfirmation": true,
+        "requiresShopValidation": true
+      },
+      {
+        "recipeId": "rec_24_tracer_rope",
+        "machineProfileId": "mp_24_standard",
+        "patternFamily": "tracer",
+        "visualSignature": "spiral_tracer",
+        "braidLogic": "1_over_1_with_offsets",
+        "carrierColorMap": {
+          "1": "yellow",
+          "2": "white",
+          "3": "white",
+          "4": "white",
+          "5": "white",
+          "6": "white",
+          "7": "yellow",
+          "8": "white",
+          "9": "white",
+          "10": "white",
+          "11": "white",
+          "12": "white",
+          "13": "yellow",
+          "14": "white",
+          "15": "white",
+          "16": "white",
+          "17": "white",
+          "18": "white",
+          "19": "yellow",
+          "20": "white",
+          "21": "white",
+          "22": "white",
+          "23": "white",
+          "24": "white"
+        },
+        "confidence": 0.65,
+        "status": "candidate",
+        "reason": "visualSignature eşleşti; carrierCount aday olarak kaldı; renk sayısı uyumlu; patternFamily eşleşti",
+        "requiresUserConfirmation": true,
+        "requiresShopValidation": true
+      },
+      {
+        "recipeId": "rec_8_automotive_sleeve",
+        "machineProfileId": "mp_8_heavy",
+        "patternFamily": "tracer",
+        "visualSignature": "single_spiral_tracer",
+        "braidLogic": "1_over_1",
+        "carrierColorMap": {
+          "1": "yellow",
+          "2": "white",
+          "3": "white",
+          "4": "white",
+          "5": "white",
+          "6": "white",
+          "7": "white",
+          "8": "white"
+        },
+        "confidence": 0.65,
+        "status": "industry_candidate",
+        "reason": "visualSignature eşleşti; carrierCount aday olarak kaldı; renk sayısı uyumlu; patternFamily eşleşti",
+        "requiresUserConfirmation": true,
+        "requiresShopValidation": true
+      },
+      {
+        "recipeId": "rec_8_solid_safety",
+        "machineProfileId": "mp_8_heavy",
+        "patternFamily": "tracer",
+        "visualSignature": "single_spiral_tracer",
+        "braidLogic": "1_over_1",
+        "carrierColorMap": {
+          "1": "yellow",
+          "2": "white",
+          "3": "white",
+          "4": "white",
+          "5": "white",
+          "6": "white",
+          "7": "white",
+          "8": "white"
+        },
+        "confidence": 0.65,
+        "status": "candidate",
+        "reason": "visualSignature eşleşti; carrierCount aday olarak kaldı; renk sayısı uyumlu; patternFamily eşleşti",
+        "requiresUserConfirmation": true,
+        "requiresShopValidation": true
+      }
+    ],
+    "recipe_candidate_certainty": "not_unique"
   }
 }

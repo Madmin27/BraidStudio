@@ -78,6 +78,19 @@ test("real dual_counter_spiral is separated from one-direction tracer", () => {
   assert.equal(result.confidence, 0.68);
 });
 
+test("adjacent yellow black tracer cluster predicts spiral_tracer not block stripe", () => {
+  const result = predictVisualSignature({
+    "1": "black", "2": "yellow", "3": "black", "4": "white",
+    "5": "white", "6": "white", "7": "white", "8": "white",
+    "9": "black", "10": "yellow", "11": "black", "12": "white",
+    "13": "white", "14": "white", "15": "white", "16": "white"
+  }, { braidLogic: "2_over_2" });
+
+  assert.equal(result.visualSignature, "spiral_tracer");
+  assert.notEqual(result.visualSignature, "block_striped_segment");
+  assert.equal(result.patternFamily, "tracer");
+});
+
 test("missing carrier produces warning, null color and unreliable result", () => {
   const normalized = normalizeCarrierColors({
     "1": "white",

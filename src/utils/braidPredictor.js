@@ -141,6 +141,7 @@ export function predictVisualSignature(carrierColorMap = {}, braidLogicOrOptions
   }));
   const accentGroupUsage = analyzeAccentGroups(accentCarriers, groups);
   const accentRatio = accentCarriers.length / colors.length;
+  const hasAdjacentTracerCluster = hasAdjacentPositions(tracer.tracerPositions);
   const analysis = {
     carrierCount: colors.length,
     braidLogic: parsed.braidLogic,
@@ -155,6 +156,7 @@ export function predictVisualSignature(carrierColorMap = {}, braidLogicOrOptions
     counterClockwiseColors: groups.counterClockwise.map((carrierNo) => colors[carrierNo - 1]),
     accentCarriers,
     accentGroupUsage,
+    hasAdjacentTracerCluster,
     missingCarriers: normalized.missingCarriers
   };
 
@@ -179,6 +181,17 @@ export function predictVisualSignature(carrierColorMap = {}, braidLogicOrOptions
       patternFamily: "twill",
       confidence: 0.72,
       basis: ["braidLogic == 2_over_2", "blockSize == 2", "repeating blocks"],
+      warnings,
+      analysis
+    });
+  }
+
+  if (tracer.dominantColor && accentRatio >= 0.10 && accentRatio <= 0.45 && hasAdjacentTracerCluster) {
+    return finalizeResult({
+      visualSignature: "spiral_tracer",
+      patternFamily: "tracer",
+      confidence: 0.7,
+      basis: ["dominant color present", "adjacent multi-color tracer cluster", "spiral tracer group"],
       warnings,
       analysis
     });
@@ -293,6 +306,11 @@ function analyzeAccentGroups(accentCarriers, groups) {
     if (counterClockwise.has(carrier.carrierNo)) usage.counterClockwise += 1;
     return usage;
   }, { clockwise: 0, counterClockwise: 0 });
+}
+
+function hasAdjacentPositions(positions = []) {
+  const ordered = [...positions].sort((a, b) => a - b);
+  return ordered.some((position, index) => index > 0 && position === ordered[index - 1] + 1);
 }
 
 function clamp01(value) {

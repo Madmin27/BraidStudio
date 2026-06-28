@@ -100,19 +100,70 @@ async function enrichAnalysisWithPatternCandidates(analysis) {
   const fingerprint = predictions.fingerprint || {};
   const structuralAnalysis = fingerprint.structuralAnalysis || predictions.structuralAnalysis || {};
   const library = await loadLibrary(__dirname);
+  const estimatedCarrierCount = structuralAnalysis.carrierCount || predictions.estimatedCarrierCount || predictions.estimated_carrier_count || predictions.carrier_count;
+  const predictorMachineProfile = library.machines.find((machine) => machine.carrierCount === Number(estimatedCarrierCount)) || null;
+  const predictorCarrierColorMap = buildPredictorCarrierColorMap(predictions, Number(estimatedCarrierCount || 0));
+  const predictorResult = predictVisualSignature(
+    predictorCarrierColorMap,
+    structuralAnalysis.braidLogic || predictions.braid_walk_type || "1_over_1",
+    {
+      carrierCount: Number(estimatedCarrierCount || 0),
+      machineProfile: predictorMachineProfile
+    }
+  );
   const solverResult = solvePattern({
-    predictedSignature: fingerprint.predictedSignature || predictions.predictedSignature,
-    visualSignature: predictions.visualSignature || predictions.visual_signature || inferVisualSignature(predictions),
+    predictedSignature: predictorResult.visualSignature || fingerprint.predictedSignature || predictions.predictedSignature,
+    visualSignature: predictorResult.visualSignature || predictions.visualSignature || predictions.visual_signature || inferVisualSignature(predictions),
     colors: predictions.colors || [],
-    estimatedCarrierCount: structuralAnalysis.carrierCount || predictions.estimatedCarrierCount || predictions.estimated_carrier_count || predictions.carrier_count,
+    estimatedCarrierCount,
     preferredMachineProfileId: predictions.preferredMachineProfileId || null
   }, library);
 
   return {
     ...analysis,
+    predictions: {
+      ...predictions,
+      braid_walk_type: structuralAnalysis.braidLogic || predictions.braid_walk_type,
+      predictor_result: predictorResult,
+      visualSignature: predictorResult.visualSignature || predictions.visualSignature,
+      predictedSignature: predictorResult.visualSignature || predictions.predictedSignature
+    },
+    predictor_result: predictorResult,
     recipe_candidates: solverResult.possibleRecipes,
     recipe_candidate_certainty: solverResult.certainty
   };
+}
+
+function buildPredictorCarrierColorMap(predictions, carrierCount) {
+  const layout = Array.isArray(predictions.estimated_carrier_layout) ? predictions.estimated_carrier_layout : [];
+  if (layout.length === carrierCount) {
+    return Object.fromEntries(layout.map((carrier, index) => [
+      String(carrier.carrier_no || index + 1),
+      carrier.color || "white"
+    ]));
+  }
+
+  const colors = Array.isArray(predictions.colors) && predictions.colors.length ? predictions.colors : ["white"];
+  const base = colors[0] || "white";
+  const accents = colors.slice(1);
+  const yellow = accents.find((color) => String(color).toLowerCase().includes("yellow") || String(color).toLowerCase().includes("sarı"));
+  const black = accents.find((color) => String(color).toLowerCase().includes("black") || String(color).toLowerCase().includes("siyah"));
+  const cluster = yellow && black
+    ? [black, yellow, black]
+    : accents.length >= 2
+      ? [accents[1], accents[0], accents[1]]
+      : accents;
+  const starts = carrierCount === 16 ? [1, 9] : carrierCount === 24 ? [1, 9, 17] : [1];
+  const map = Object.fromEntries(Array.from({ length: carrierCount }, (_, index) => [String(index + 1), base]));
+
+  for (const start of starts) {
+    cluster.forEach((color, index) => {
+      const carrierNo = ((start + index - 1) % carrierCount) + 1;
+      map[String(carrierNo)] = color;
+    });
+  }
+
+  return map;
 }
 
 function jsonResponse(res, statusCode, payload) {
@@ -178,7 +229,7 @@ function normalizeAnalysis(parsed) {
     estimated_carrier_layout: estimatedCarrierLayout,
     estimated_layout_basis: result.estimated_layout_basis || "AI estimate plus deterministic fallback; user must confirm machine/shop setup.",
     machine_fit: result.machine_fit || "requires_user_confirmation",
-    braid_walk_type: result.braid_walk_type || "unknown",
+    braid_walk_type: result.braid_walk_type || structuralAnalysis.braidLogic || "unknown",
     sheath: normalizeUnknown(result.sheath) || "braided sheath",
     core: normalizeUnknown(result.core) || "unknown",
     confidence: result.confidence || confidenceLabel(confidenceScore),
@@ -198,7 +249,8 @@ function normalizeStructuralAnalysis(structuralAnalysis, result, colors) {
   return {
     carrierCount,
     symmetry: structuralAnalysis.symmetry || inferSymmetry(result),
-    primaryApplication: structuralAnalysis.primaryApplication || result.primaryApplication || "unknown"
+    primaryApplication: structuralAnalysis.primaryApplication || result.primaryApplication || "unknown",
+    braidLogic: structuralAnalysis.braidLogic || result.braidLogic || inferBraidLogic(result, colors)
   };
 }
 
@@ -240,6 +292,14 @@ function inferSymmetry(result) {
   if (signature === "single_spiral_tracer" || signature === "spiral_tracer") return "rotational_periodic";
   if (signature === "plain_weave") return "alternating_periodic";
   return "unknown";
+}
+
+function inferBraidLogic(result, colors) {
+  const signature = inferVisualSignature(result);
+  const colorSet = new Set(colors.map((color) => String(color).toLowerCase()));
+  if (signature.includes("tracer") && colorSet.has("yellow") && colorSet.has("black")) return "2_over_2";
+  if (signature.includes("rib") || signature.includes("twill")) return "2_over_2";
+  return "1_over_1";
 }
 
 function patternTypeFromSignature(signature) {
@@ -292,8 +352,10 @@ async function analyzeWithOpenRouter({ imageHash, mimeType, dataBase64 }) {
     "predictedSignature, confidenceScore, structuralAnalysis, colors, dominantColor, accentColors, material, warnings.",
     "predictedSignature must be one of: plain_weave, diagonal_rib, single_spiral_tracer, dual_counter_spiral, spiral_tracer, block_stripe, block_striped_segment, unknown.",
     "confidenceScore must be a number between 0 and 1.",
-    "structuralAnalysis must contain carrierCount, symmetry, primaryApplication.",
-    "Example structuralAnalysis values: carrierCount 12, symmetry bilateral_periodic, primaryApplication medical_suture_or_micro_braid.",
+    "structuralAnalysis must contain carrierCount, symmetry, primaryApplication, braidLogic.",
+    "For tight rope where strands pass in paired over-under bands, set structuralAnalysis.braidLogic to 2_over_2.",
+    "For white rope with adjacent yellow/black tracer blocks, prefer spiral_tracer with braidLogic 2_over_2 unless the visual clearly shows one-over-one.",
+    "Example structuralAnalysis values: carrierCount 16, symmetry rotational_periodic, primaryApplication general_purpose_rope, braidLogic 2_over_2.",
     "AI must not output recipeId, walkMap, carrier path or production-ready claims.",
     "If carrier count is uncertain, still provide structuralAnalysis.carrierCount as a candidate with lower confidence.",
     "For white/blue braided rope with flecks/tracers, polyester is a reasonable material suggestion unless visual evidence says otherwise.",

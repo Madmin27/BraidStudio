@@ -176,12 +176,20 @@ function normalizePattern(patternType) {
   return "plain";
 }
 
+function normalizeWalkType(value, colors = []) {
+  const text = String(value || "").toLowerCase();
+  const colorSet = new Set(colors.map((color) => String(color).toLowerCase()));
+  if (text.includes("2_over_2") || text.includes("two-over-two") || text.includes("twill")) return "two-over-two";
+  if (colorSet.has("yellow") && colorSet.has("black")) return "two-over-two";
+  return "1_over_1";
+}
+
 function pickRecipeCandidate(analysis, carrierCount) {
   const candidates = Array.isArray(analysis?.recipe_candidates) ? analysis.recipe_candidates : [];
   return candidates.find((candidate) => {
     const count = Object.keys(candidate.carrierColorMap || {}).length;
     return count === carrierCount;
-  }) || candidates[0] || null;
+  }) || null;
 }
 
 function carrierLayoutFromColorMap(carrierColorMap) {
@@ -206,9 +214,48 @@ function carrierLayoutFromPrediction(predictions) {
   return [];
 }
 
+function markerLayoutFromColors(carrierCount, colors) {
+  const base = colors[0] || "white";
+  const accentColors = colors.slice(1);
+  const layout = Array.from({ length: carrierCount }, (_, index) => ({
+    carrier_no: index + 1,
+    color: base,
+    strand_role: "sheath"
+  }));
+
+  if (!accentColors.length) return layout;
+
+  const yellow = accentColors.find((color) => String(color).toLowerCase().includes("yellow") || String(color).toLowerCase().includes("sarı"));
+  const black = accentColors.find((color) => String(color).toLowerCase().includes("black") || String(color).toLowerCase().includes("siyah"));
+  const cluster = yellow && black
+    ? [black, yellow, black]
+    : accentColors.length >= 2
+      ? [accentColors[1], accentColors[0], accentColors[1]]
+      : [accentColors[0]];
+  const starts = carrierCount === 16
+    ? [1, 9]
+    : carrierCount === 24
+      ? [1, 9, 17]
+      : Array.from({ length: Math.max(1, Math.round(carrierCount / 8)) }, (_, index) => 1 + index * Math.max(4, Math.floor(carrierCount / Math.max(1, Math.round(carrierCount / 8)))));
+
+  for (const start of starts) {
+    cluster.forEach((color, index) => {
+      const carrierNo = ((start + index - 1) % carrierCount) + 1;
+      layout[carrierNo - 1] = {
+        carrier_no: carrierNo,
+        color,
+        strand_role: "sheath_marker"
+      };
+    });
+  }
+
+  return layout;
+}
+
 function applyAiSuggestionToSelection(analysis) {
   const predictions = analysis?.predictions || {};
   const fingerprint = predictions.fingerprint || {};
+  const predictorResult = predictions.predictor_result || analysis?.predictor_result || {};
   const structuralAnalysis = fingerprint.structuralAnalysis || predictions.structuralAnalysis || {};
   const carrierCount = Number(structuralAnalysis.carrierCount || predictions.carrier_count || predictions.estimated_carrier_count || 16);
   const normalizedCarrierCount = [8, 12, 16, 24, 32].includes(carrierCount) ? carrierCount : 16;
@@ -216,20 +263,25 @@ function applyAiSuggestionToSelection(analysis) {
   const candidateLayout = carrierLayoutFromColorMap(bestCandidate?.carrierColorMap);
   const predictedLayout = carrierLayoutFromPrediction(predictions);
   const colors = Array.isArray(predictions.colors) && predictions.colors.length ? predictions.colors : ["white", "blue"];
-  patternSelect.value = normalizePattern(fingerprint.predictedSignature || predictions.predictedSignature || predictions.visualSignature || predictions.pattern_type);
+  const markerLayout = markerLayoutFromColors(normalizedCarrierCount, colors);
+  patternSelect.value = normalizePattern(predictorResult.visualSignature || fingerprint.predictedSignature || predictions.predictedSignature || predictions.visualSignature || predictions.pattern_type);
   colorsInput.value = colors.join(", ");
   materialSelect.value = normalizeMaterial(predictions.material || predictions.estimated_material);
   carrierSelect.value = String(normalizedCarrierCount);
   const matchedProfile = machineProfiles.find((profile) => profile.carrierCount === Number(carrierSelect.value) && profile.machineFamily === "maypole_circular");
   machineProfileSelect.value = matchedProfile?.machineProfileId || "mp_16_std";
-  walkTypeSelect.value = bestCandidate?.braidLogic === "2_over_2" ? "two-over-two" : "1_over_1";
+  walkTypeSelect.value = normalizeWalkType(predictorResult.analysis?.braidLogic || bestCandidate?.braidLogic || structuralAnalysis.braidLogic || predictions.braid_walk_type, colors);
   sheathInput.value = materialSelect.value;
   coreEnabledSelect.value = String(Boolean(predictions.core && String(predictions.core).toLowerCase() !== "unknown" && String(predictions.core).toLowerCase() !== "no"));
   coreMaterialInput.value = coreEnabledSelect.value === "true" ? materialSelect.value : "";
 
   syncSelectionState();
   state = applyUserSelection(state, {
-    carrier_layout: candidateLayout.length ? candidateLayout : predictedLayout,
+    carrier_layout: candidateLayout.length === normalizedCarrierCount
+      ? candidateLayout
+      : markerLayout.length
+        ? markerLayout
+        : predictedLayout,
     ai_selected_candidate: bestCandidate ? {
       recipeId: bestCandidate.recipeId,
       confidence: bestCandidate.confidence,
@@ -361,6 +413,17 @@ function renderRecipeSheetToPng() {
   });
 }
 
+function downloadRecipeSvgFallback() {
+  const svg = buildRecipeSheetSvgMarkup();
+  const blob = new Blob([svg], { type: "image/svg+xml;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.download = "braidstudio-recipe-sheet.svg";
+  link.href = url;
+  link.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
 function scheduleRecipeImagePreview() {
   if (!recipeImageRequested || !state.generated_recipe) return;
   clearTimeout(recipeImageRenderTimer);
@@ -407,11 +470,12 @@ function renderSteps(steps = []) {
 
 function ropeLines(sheet, width = 760, height = 120, close = false) {
   const id = `ropeClip${width}x${height}${close ? "c" : "m"}`;
-  const strandGap = close ? 18 : 22;
-  const strandStroke = close ? 2.2 : 1.45;
-  const tracerStroke = close ? 8 : 6;
-  const tracerStep = close ? 76 : 104;
-  const tracerLength = close ? 34 : 42;
+  const isTwill = isTwillWalk(sheet.braid_walk_type);
+  const strandGap = close ? (isTwill ? 12 : 18) : (isTwill ? 15 : 22);
+  const strandStroke = close ? (isTwill ? 5.8 : 2.2) : (isTwill ? 3.6 : 1.45);
+  const tracerStroke = close ? (isTwill ? 10 : 8) : (isTwill ? 8 : 6);
+  const tracerStep = close ? 86 : 118;
+  const tracerLength = close ? 28 : 36;
   const lines = [];
 
   lines.push(`<defs><clipPath id="${id}"><rect x="0" y="0" width="${width}" height="${height}" rx="${close ? 0 : 3}"/></clipPath></defs>`);
@@ -419,8 +483,11 @@ function ropeLines(sheet, width = 760, height = 120, close = false) {
   lines.push(`<rect width="${width}" height="${height}" fill="#fbfbf8"/>`);
 
   for (let offset = -height * 2; offset < width + height * 2; offset += strandGap) {
-    lines.push(`<line x1="${offset}" y1="${height}" x2="${offset + height * 1.45}" y2="0" stroke="#aeb8b1" stroke-width="${strandStroke}" opacity=".95"/>`);
-    lines.push(`<line x1="${offset}" y1="0" x2="${offset + height * 1.45}" y2="${height}" stroke="#ccd3ce" stroke-width="${strandStroke}" opacity=".95"/>`);
+    lines.push(`<line x1="${offset}" y1="${height}" x2="${offset + height * 1.45}" y2="0" stroke="${isTwill ? "#dfe4df" : "#aeb8b1"}" stroke-width="${strandStroke}" opacity=".98"/>`);
+    lines.push(`<line x1="${offset}" y1="0" x2="${offset + height * 1.45}" y2="${height}" stroke="${isTwill ? "#cfd7d1" : "#ccd3ce"}" stroke-width="${strandStroke}" opacity=".98"/>`);
+    if (isTwill) {
+      lines.push(`<line x1="${offset + strandGap * 0.45}" y1="${height}" x2="${offset + height * 1.45 + strandGap * 0.45}" y2="0" stroke="#f9fbf9" stroke-width="${Math.max(1.2, strandStroke * 0.28)}" opacity=".75"/>`);
+    }
   }
 
   for (let offset = -height * 2 + strandGap / 2; offset < width + height * 2; offset += strandGap) {
@@ -428,23 +495,21 @@ function ropeLines(sheet, width = 760, height = 120, close = false) {
     lines.push(`<line x1="${offset}" y1="0" x2="${offset + height * 1.45}" y2="${height}" stroke="#ffffff" stroke-width="${Math.max(0.7, strandStroke / 2)}" opacity=".45"/>`);
   }
 
-  const tracerCarriers = markerCarriers(sheet);
+  const tracerStarts = markerClusterStarts(sheet);
+  const clusterColors = tracerClusterColors(sheet);
   const carrierCount = Math.max(1, sheet.carrier_count || sheet.color_sequence.length || 1);
-  for (const carrier of tracerCarriers) {
-    const phase = ((carrier.carrier_no - 1) / carrierCount) * tracerStep;
-    const reverse = carrier.carrier_no % 2 === 0;
-    const color = colorToHex(carrier.color);
+  for (const carrierNo of tracerStarts) {
+    const phase = ((carrierNo - 1) / carrierCount) * tracerStep;
+    const reverse = carrierNo % 2 === 0;
     for (let offset = -tracerStep + phase; offset < width + tracerStep; offset += tracerStep) {
-      const y1 = reverse ? 0 : height;
-      const y2 = reverse ? height : 0;
-      const x2 = offset + tracerLength;
-      if (reverse) {
-        lines.push(`<line x1="${offset}" y1="${y1}" x2="${x2}" y2="${height * 0.46}" stroke="${color}" stroke-width="${tracerStroke}" stroke-linecap="round"/>`);
-        lines.push(`<line x1="${x2 + strandGap * 0.25}" y1="${height * 0.54}" x2="${x2 + tracerLength + strandGap * 0.25}" y2="${y2}" stroke="${color}" stroke-width="${tracerStroke}" stroke-linecap="round"/>`);
-      } else {
-        lines.push(`<line x1="${offset}" y1="${y1}" x2="${x2}" y2="${height * 0.54}" stroke="${color}" stroke-width="${tracerStroke}" stroke-linecap="round"/>`);
-        lines.push(`<line x1="${x2 + strandGap * 0.25}" y1="${height * 0.46}" x2="${x2 + tracerLength + strandGap * 0.25}" y2="${y2}" stroke="${color}" stroke-width="${tracerStroke}" stroke-linecap="round"/>`);
-      }
+      clusterColors.forEach((color, index) => {
+        const segmentOffset = offset + index * (tracerLength * 0.72);
+        const y1 = reverse ? 0 : height;
+        const y2 = reverse ? height * 0.46 : height * 0.54;
+        const yy1 = reverse ? y2 : y1;
+        const yy2 = reverse ? y1 + height * 0.54 : y2;
+        lines.push(`<line x1="${segmentOffset}" y1="${yy1}" x2="${segmentOffset + tracerLength * 0.62}" y2="${yy2}" stroke="${colorToHex(color)}" stroke-width="${tracerStroke}" stroke-linecap="round"/>`);
+      });
     }
   }
 
@@ -452,11 +517,34 @@ function ropeLines(sheet, width = 760, height = 120, close = false) {
   return lines.join("");
 }
 
-function markerCarriers(sheet) {
+function markerClusterStarts(sheet) {
   const carriers = Array.isArray(sheet.carrier_layout) ? sheet.carrier_layout : [];
   const sequence = sheet.color_sequence || [];
   const base = mostCommonColor(sequence);
-  return carriers.filter((carrier) => carrier.color !== base).slice(0, 8);
+  const markers = carriers.filter((carrier) => carrier.color !== base);
+  if (!markers.length) return [];
+  const starts = [];
+  for (const marker of markers) {
+    const previous = markers.find((item) => item.carrier_no === marker.carrier_no - 1);
+    if (!previous) starts.push(marker.carrier_no);
+  }
+  return starts;
+}
+
+function tracerClusterColors(sheet) {
+  const sequence = sheet.color_sequence || [];
+  const base = mostCommonColor(sequence);
+  const accents = [...new Set(sequence.filter((color) => color !== base))];
+  const yellow = accents.find((color) => String(color).toLowerCase().includes("yellow") || String(color).toLowerCase().includes("sarı"));
+  const black = accents.find((color) => String(color).toLowerCase().includes("black") || String(color).toLowerCase().includes("siyah"));
+  if (yellow && black) return [black, yellow, black];
+  if (accents.length >= 2) return [accents[1], accents[0], accents[1]];
+  return accents.length ? [accents[0]] : [];
+}
+
+function isTwillWalk(walkType) {
+  const value = String(walkType || "").toLowerCase();
+  return value.includes("2_over_2") || value.includes("two-over-two") || value.includes("2 üst") || value.includes("twill");
 }
 
 function mostCommonColor(colors = []) {
@@ -632,14 +720,19 @@ patternAlbum.addEventListener("click", (event) => {
 });
 
 downloadPngButton.addEventListener("click", async () => {
-  if (!latestRecipePngUrl && state.generated_recipe) {
-    latestRecipePngUrl = await renderRecipeSheetToPng();
+  if (!state.generated_recipe) return;
+  try {
+    if (!latestRecipePngUrl) {
+      latestRecipePngUrl = await renderRecipeSheetToPng();
+    }
+    const link = document.createElement("a");
+    link.download = "braidstudio-recipe-sheet.png";
+    link.href = latestRecipePngUrl;
+    link.click();
+  } catch (error) {
+    logAnalysis(`PNG üretilemedi, SVG indiriliyor: ${error.message}`);
+    downloadRecipeSvgFallback();
   }
-  if (!latestRecipePngUrl) return;
-  const link = document.createElement("a");
-  link.download = "braidstudio-recipe-sheet.png";
-  link.href = latestRecipePngUrl;
-  link.click();
 });
 
 printPdfButton.addEventListener("click", () => {
