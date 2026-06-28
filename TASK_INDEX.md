@@ -8,3 +8,4 @@
 | [004-technical-recipe-sheet](tasks/004-technical-recipe-sheet.md) | done | codex | 2026-06-28 |
 | [005-openrouter-api-integration](tasks/005-openrouter-api-integration.md) | done | codex | 2026-06-28 |
 | [006-generic-machine-profiles](tasks/006-generic-machine-profiles.md) | done | codex | 2026-06-28 |
+| [007-library-solver](tasks/007-library-solver.md) | done | codex | 2026-06-28 |

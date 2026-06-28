@@ -3,6 +3,10 @@ import { existsSync, readFileSync } from "node:fs";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { extname, join, normalize } from "node:path";
 import { fileURLToPath } from "node:url";
+import { generateCandidateColorMap } from "./server/lib/candidateColorGenerator.js";
+import { loadLibrary } from "./server/lib/libraryLoader.js";
+import { validateLibrary } from "./server/lib/libraryValidator.js";
+import { solvePattern } from "./server/lib/patternSolver.js";
 
 const __dirname = fileURLToPath(new URL(".", import.meta.url));
 const publicDir = join(__dirname, "public");
@@ -90,6 +94,23 @@ async function writeAnalysisCache(cache) {
   await writeFile(analysisCacheFile, JSON.stringify(cache, null, 2));
 }
 
+async function enrichAnalysisWithPatternCandidates(analysis) {
+  const predictions = analysis?.predictions || {};
+  const library = await loadLibrary(__dirname);
+  const solverResult = solvePattern({
+    visualSignature: predictions.visualSignature || predictions.visual_signature || inferVisualSignature(predictions),
+    colors: predictions.colors || [],
+    estimatedCarrierCount: predictions.estimatedCarrierCount || predictions.estimated_carrier_count || predictions.carrier_count,
+    preferredMachineProfileId: predictions.preferredMachineProfileId || null
+  }, library);
+
+  return {
+    ...analysis,
+    recipe_candidates: solverResult.possibleRecipes,
+    recipe_candidate_certainty: solverResult.certainty
+  };
+}
+
 function jsonResponse(res, statusCode, payload) {
   res.writeHead(statusCode, { "content-type": "application/json; charset=utf-8" });
   res.end(JSON.stringify(payload));
@@ -113,6 +134,7 @@ function normalizeAnalysis(parsed) {
   const colors = Array.isArray(result.colors) ? result.colors : [];
   const carrierCount = Number(result.carrier_count || result.kukla_sayisi || result.estimated_carrier_count || 0) || null;
   const estimatedCarrierCount = carrierCount || Number(result.estimated_carrier_count || 0) || inferCarrierCount(result, colors);
+  const visualSignature = result.visualSignature || result.visual_signature || inferVisualSignature(result);
   const estimatedColorSequence = Array.isArray(result.estimated_color_sequence)
     ? result.estimated_color_sequence
     : buildEstimatedColorSequence(colors, estimatedCarrierCount);
@@ -125,6 +147,11 @@ function normalizeAnalysis(parsed) {
     }));
 
   return {
+    visualSignature,
+    dominantColor: result.dominantColor || result.dominant_color || colors[0] || null,
+    accentColors: Array.isArray(result.accentColors) ? result.accentColors : colors.slice(1),
+    estimatedCarrierCount,
+    warnings: Array.isArray(result.warnings) ? result.warnings : [],
     pattern_type: result.pattern_type || result.braid_pattern || "unknown",
     colors,
     material: normalizeUnknown(result.material) || normalizeUnknown(result.estimated_material) || inferMaterial(result, colors),
@@ -153,6 +180,15 @@ function inferCarrierCount(result, colors) {
   const pattern = String(result.pattern_type || result.braid_pattern || "").toLowerCase();
   if (pattern.includes("marker") || pattern.includes("tracer") || colors.length >= 2) return 16;
   return null;
+}
+
+function inferVisualSignature(result) {
+  const text = `${result.visualSignature || ""} ${result.pattern_type || ""} ${result.braid_pattern || ""}`.toLowerCase();
+  if (text.includes("rib") || text.includes("herringbone") || text.includes("twill")) return "diagonal_rib";
+  if (text.includes("spiral") || text.includes("tracer") || text.includes("marker") || text.includes("fleck") || text.includes("izli")) return "spiral_tracer";
+  if (text.includes("block") || text.includes("stripe")) return "block_stripe";
+  if (text.includes("plain") || text.includes("diamond")) return "plain_weave";
+  return "unknown";
 }
 
 function inferMaterial(result, colors) {
@@ -185,16 +221,14 @@ async function analyzeWithOpenRouter({ imageHash, mimeType, dataBase64 }) {
   }
 
   const prompt = [
-    "Analyze this braid/rope product image for technical recipe drafting.",
-    "You must estimate a plausible carrier placement when visible marker/tracer colors repeat.",
-    "For simple braided rope with base color plus marker flecks, infer estimated_carrier_count and estimated_color_sequence; do not leave those empty unless impossible.",
+    "Analyze this braid/rope product image only as a pattern classifier.",
     "Return only compact JSON with keys:",
-    "pattern_type, colors, material, estimated_material, carrier_count, estimated_carrier_count, estimated_color_sequence, estimated_carrier_layout, estimated_layout_basis, machine_fit, braid_walk_type, sheath, core, confidence.",
-    "estimated_carrier_layout must be an array of objects: carrier_no, color, role.",
-    "If exact carrier_count is uncertain, set carrier_count null but still provide estimated_carrier_count and estimated layout with low confidence.",
-    "Estimate material from visual/context when likely; for white/blue braided rope with flecks, polyester is a reasonable low/medium confidence material suggestion unless visual evidence says otherwise.",
-    "Do not claim production truth.",
-    "The final recipe will be generated only from user finalSelection, not from your estimate."
+    "visualSignature, colors, dominantColor, accentColors, estimatedCarrierCount, material, confidence, warnings.",
+    "visualSignature must be one of: plain_weave, diagonal_rib, spiral_tracer, block_stripe, unknown.",
+    "AI must not output recipeId, walkMap, carrier path or production-ready claims.",
+    "If carrier count is uncertain, still provide estimatedCarrierCount as a candidate with low confidence.",
+    "For white/blue braided rope with flecks/tracers, polyester is a reasonable material suggestion unless visual evidence says otherwise.",
+    "Final recipe is selected later by backend library solver and user confirmation."
   ].join(" ");
   const endpoint = "https://openrouter.ai/api/v1/chat/completions";
   const startedAt = Date.now();
@@ -270,11 +304,14 @@ async function handleAnalyzeImage(req, res) {
     const cache = await readAnalysisCache();
     const cacheKey = analysisCacheKey(imageHash);
     if (!force && cache[cacheKey]) {
-      jsonResponse(res, 200, { analysis: cache[cacheKey], cache: "hit" });
+      const analysis = await enrichAnalysisWithPatternCandidates(cache[cacheKey]);
+      cache[cacheKey] = analysis;
+      await writeAnalysisCache(cache);
+      jsonResponse(res, 200, { analysis, cache: "hit" });
       return;
     }
 
-    const analysis = await analyzeWithOpenRouter({ imageHash, mimeType, dataBase64 });
+    const analysis = await enrichAnalysisWithPatternCandidates(await analyzeWithOpenRouter({ imageHash, mimeType, dataBase64 }));
     cache[cacheKey] = analysis;
     await writeAnalysisCache(cache);
     jsonResponse(res, 200, { analysis, cache: force ? "refresh" : "miss" });
@@ -286,9 +323,65 @@ async function handleAnalyzeImage(req, res) {
   }
 }
 
+async function handleLibrary(req, res) {
+  try {
+    jsonResponse(res, 200, await loadLibrary(__dirname));
+  } catch (error) {
+    jsonResponse(res, 500, { error: error.message || "library_load_failed" });
+  }
+}
+
+async function handleLibraryValidate(req, res) {
+  try {
+    const library = await loadLibrary(__dirname);
+    jsonResponse(res, 200, validateLibrary(library));
+  } catch (error) {
+    jsonResponse(res, 500, { error: error.message || "library_validate_failed" });
+  }
+}
+
+async function handlePatternSolve(req, res) {
+  try {
+    const body = await readRequestJson(req, 256 * 1024);
+    const library = await loadLibrary(__dirname);
+    jsonResponse(res, 200, solvePattern(body, library));
+  } catch (error) {
+    jsonResponse(res, error.statusCode || 500, { error: error.message || "pattern_solve_failed" });
+  }
+}
+
+async function handleGenerateColorMap(req, res) {
+  try {
+    const body = await readRequestJson(req, 256 * 1024);
+    jsonResponse(res, 200, generateCandidateColorMap(body));
+  } catch (error) {
+    jsonResponse(res, error.statusCode || 500, { error: error.message || "color_map_generation_failed" });
+  }
+}
+
 const server = createServer(async (req, res) => {
+  if (req.url === "/api/library" && req.method === "GET") {
+    await handleLibrary(req, res);
+    return;
+  }
+
+  if (req.url === "/api/library/validate" && req.method === "GET") {
+    await handleLibraryValidate(req, res);
+    return;
+  }
+
   if (req.url === "/api/analyze-image" && req.method === "POST") {
     await handleAnalyzeImage(req, res);
+    return;
+  }
+
+  if (req.url === "/api/pattern/solve" && req.method === "POST") {
+    await handlePatternSolve(req, res);
+    return;
+  }
+
+  if (req.url === "/api/pattern/generate-color-map" && req.method === "POST") {
+    await handleGenerateColorMap(req, res);
     return;
   }
 
