@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://braidstudio.local/schema/machine-profile.schema.json",
+  "title": "BraidStudio Machine Profile",
+  "type": "object",
+  "required": [
+    "machineProfileId",
+    "status",
+    "machineFamily",
+    "carrierCount",
+    "trackModel",
+    "directionOptions",
+    "defaultWalk",
+    "carrierGroups",
+    "validationRequired",
+    "shopMeasured"
+  ],
+  "properties": {
+    "machineProfileId": { "type": "string" },
+    "status": { "enum": ["generic_candidate", "shop_measured", "rejected"] },
+    "machineFamily": { "type": "string" },
+    "carrierCount": { "type": "integer", "minimum": 1 },
+    "trackModel": { "type": "string" },
+    "directionOptions": {
+      "type": "array",
+      "items": { "enum": ["clockwise", "counterClockwise"] },
+      "minItems": 1
+    },
+    "defaultWalk": { "type": "string" },
+    "physicalSpecs": { "type": "object" },
+    "carrierGroups": {
+      "type": "object",
+      "properties": {
+        "clockwise": {
+          "type": "array",
+          "items": { "type": "integer", "minimum": 1 }
+        },
+        "counterClockwise": {
+          "type": "array",
+          "items": { "type": "integer", "minimum": 1 }
+        }
+      }
+    },
+    "observedCarrierPaths": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["carrier", "path"],
+        "properties": {
+          "carrier": { "type": "integer", "minimum": 1 },
+          "path": {
+            "type": "array",
+            "items": { "type": "integer", "minimum": 1 }
+          },
+          "confidence": { "enum": ["generic", "measured", "verified"] }
+        }
+      }
+    },
+    "assumptions": { "type": "array", "items": { "type": "string" } },
+    "limitations": { "type": "array", "items": { "type": "string" } },
+    "validationRequired": { "type": "boolean" },
+    "shopMeasured": { "type": "boolean" }
+  },
+  "additionalProperties": true
+}
