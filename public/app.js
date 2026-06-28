@@ -1,8 +1,7 @@
 import {
   applyUserSelection,
   generateRecipe,
-  initialRecipeState,
-  shouldAnalyzeImage
+  initialRecipeState
 } from "../src/state.js";
 import { machineProfiles } from "../src/machineProfiles.js";
 
@@ -34,17 +33,12 @@ let state = structuredClone(initialRecipeState);
 let currentImage = null;
 let selectedPatternId = "diamond";
 
-const aiResult = document.querySelector("#aiResult");
-const recipeOutput = document.querySelector("#recipeOutput");
 const analyzeButton = document.querySelector("#analyzeButton");
 const generateButton = document.querySelector("#generateButton");
 const selectionForm = document.querySelector("#selectionForm");
 const imageInput = document.querySelector("#imageInput");
 const imagePreview = document.querySelector("#imagePreview");
 const imageStatus = document.querySelector("#imageStatus");
-const cacheStatus = document.querySelector("#cacheStatus");
-const analysisLog = document.querySelector("#analysisLog");
-const aiRawOutput = document.querySelector("#aiRawOutput");
 const uploadPrompt = document.querySelector("#uploadPrompt");
 const patternAlbum = document.querySelector("#patternAlbum");
 const patternSelect = document.querySelector("#patternSelect");
@@ -60,12 +54,19 @@ const recipeSheet = document.querySelector("#recipeSheet");
 const downloadPngButton = document.querySelector("#downloadPngButton");
 const printPdfButton = document.querySelector("#printPdfButton");
 const recipeImagePreview = document.querySelector("#recipeImagePreview");
+const recipeImageOutput = document.querySelector(".recipe-image-output");
+recipeImagePreview.addEventListener("error", () => {
+  recipeImagePreview.hidden = true;
+  recipeImagePreview.removeAttribute("src");
+  recipeImageOutput.hidden = true;
+});
 const analysisSteps = [];
 let latestRecipePngUrl = "";
 let recipeImageRenderTimer = null;
+let recipeImageRequested = false;
 
 function cacheKey(imageHash) {
-  return `braidstudio:analysis:carrier-layout-v2:${imageHash}`;
+  return `braidstudio:analysis:fingerprint-v1:${imageHash}`;
 }
 
 async function hashFile(file) {
@@ -73,11 +74,6 @@ async function hashFile(file) {
   const hashBuffer = await crypto.subtle.digest("SHA-256", buffer);
   const hashArray = Array.from(new Uint8Array(hashBuffer));
   return hashArray.map((byte) => byte.toString(16).padStart(2, "0")).join("");
-}
-
-function readCachedAnalysis(imageHash) {
-  const raw = localStorage.getItem(cacheKey(imageHash));
-  return raw ? JSON.parse(raw) : null;
 }
 
 function saveCachedAnalysis(analysis) {
@@ -89,6 +85,9 @@ function colorToHex(color) {
 }
 
 function logAnalysis(message) {
+  console.info(`[BraidStudio] ${message}`);
+  const analysisLog = document.querySelector("#analysisLog");
+  if (!analysisLog) return;
   const time = new Date().toLocaleTimeString("tr-TR");
   analysisSteps.unshift(`${time} - ${message}`);
   analysisLog.innerHTML = analysisSteps.slice(0, 8).map((step) => `<div>${step}</div>`).join("");
@@ -103,25 +102,6 @@ function fileToBase64(file) {
     reader.addEventListener("error", () => reject(reader.error));
     reader.readAsDataURL(file);
   });
-}
-
-function renderPairs(target, data) {
-  function formatValue(value) {
-    if (Array.isArray(value)) {
-      if (value.length && typeof value[0] === "object") {
-        return `<pre class="mini-json">${JSON.stringify(value, null, 2)}</pre>`;
-      }
-      return value.join(", ");
-    }
-    if (value && typeof value === "object") {
-      return `<pre class="mini-json">${JSON.stringify(value, null, 2)}</pre>`;
-    }
-    return value ?? "null";
-  }
-
-  target.innerHTML = Object.entries(data)
-    .map(([key, value]) => `<dt>${key}</dt><dd>${formatValue(value)}</dd>`)
-    .join("");
 }
 
 function patternPreview(pattern) {
@@ -190,54 +170,95 @@ function normalizePattern(patternType) {
   const options = Array.from(patternSelect.options).map((option) => option.value);
   if (options.includes(value)) return value;
   if (value.includes("fleck")) return "solid_with_flecks";
-  if (value.includes("marker")) return "solid_with_markers";
+  if (value.includes("marker") || value.includes("tracer") || value.includes("dual_counter_spiral")) return "solid_with_markers";
+  if (value.includes("diagonal_rib")) return "herringbone";
   if (value.includes("spiral")) return "spiral";
   return "plain";
 }
 
+function pickRecipeCandidate(analysis, carrierCount) {
+  const candidates = Array.isArray(analysis?.recipe_candidates) ? analysis.recipe_candidates : [];
+  return candidates.find((candidate) => {
+    const count = Object.keys(candidate.carrierColorMap || {}).length;
+    return count === carrierCount;
+  }) || candidates[0] || null;
+}
+
+function carrierLayoutFromColorMap(carrierColorMap) {
+  return Object.entries(carrierColorMap || {})
+    .map(([carrierNo, color]) => ({
+      carrier_no: Number(carrierNo),
+      color,
+      strand_role: "sheath"
+    }))
+    .filter((carrier) => Number.isFinite(carrier.carrier_no))
+    .sort((a, b) => a.carrier_no - b.carrier_no);
+}
+
+function carrierLayoutFromPrediction(predictions) {
+  if (Array.isArray(predictions.estimated_carrier_layout) && predictions.estimated_carrier_layout.length) {
+    return predictions.estimated_carrier_layout.map((carrier, index) => ({
+      carrier_no: Number(carrier.carrier_no || index + 1),
+      color: carrier.color || "white",
+      strand_role: carrier.role || carrier.strand_role || "sheath"
+    }));
+  }
+  return [];
+}
+
 function applyAiSuggestionToSelection(analysis) {
   const predictions = analysis?.predictions || {};
-  const carrierCount = Number(predictions.carrier_count || predictions.estimated_carrier_count || 16);
+  const fingerprint = predictions.fingerprint || {};
+  const structuralAnalysis = fingerprint.structuralAnalysis || predictions.structuralAnalysis || {};
+  const carrierCount = Number(structuralAnalysis.carrierCount || predictions.carrier_count || predictions.estimated_carrier_count || 16);
+  const normalizedCarrierCount = [8, 12, 16, 24, 32].includes(carrierCount) ? carrierCount : 16;
+  const bestCandidate = pickRecipeCandidate(analysis, normalizedCarrierCount);
+  const candidateLayout = carrierLayoutFromColorMap(bestCandidate?.carrierColorMap);
+  const predictedLayout = carrierLayoutFromPrediction(predictions);
   const colors = Array.isArray(predictions.colors) && predictions.colors.length ? predictions.colors : ["white", "blue"];
-  patternSelect.value = normalizePattern(predictions.pattern_type);
+  patternSelect.value = normalizePattern(fingerprint.predictedSignature || predictions.predictedSignature || predictions.visualSignature || predictions.pattern_type);
   colorsInput.value = colors.join(", ");
   materialSelect.value = normalizeMaterial(predictions.material || predictions.estimated_material);
-  carrierSelect.value = String([8, 12, 16, 24, 32].includes(carrierCount) ? carrierCount : 16);
+  carrierSelect.value = String(normalizedCarrierCount);
   const matchedProfile = machineProfiles.find((profile) => profile.carrierCount === Number(carrierSelect.value) && profile.machineFamily === "maypole_circular");
   machineProfileSelect.value = matchedProfile?.machineProfileId || "mp_16_std";
-  walkTypeSelect.value = predictions.braid_walk_type && !["unknown", "null"].includes(String(predictions.braid_walk_type).toLowerCase()) ? predictions.braid_walk_type : "1_over_1";
+  walkTypeSelect.value = bestCandidate?.braidLogic === "2_over_2" ? "two-over-two" : "1_over_1";
   sheathInput.value = materialSelect.value;
   coreEnabledSelect.value = String(Boolean(predictions.core && String(predictions.core).toLowerCase() !== "unknown" && String(predictions.core).toLowerCase() !== "no"));
   coreMaterialInput.value = coreEnabledSelect.value === "true" ? materialSelect.value : "";
 
   syncSelectionState();
-  state = generateRecipe(state);
-  logAnalysis("AI önerisi kullanıcı seçimine otomatik aktarıldı ve teknik sheet üretildi.");
+  state = applyUserSelection(state, {
+    carrier_layout: candidateLayout.length ? candidateLayout : predictedLayout,
+    ai_selected_candidate: bestCandidate ? {
+      recipeId: bestCandidate.recipeId,
+      confidence: bestCandidate.confidence,
+      visualSignature: bestCandidate.visualSignature,
+      status: bestCandidate.status
+    } : null,
+    ai_suggestion_applied_at: new Date().toISOString()
+  });
+  clearGeneratedRecipe();
+  generateButton.disabled = false;
+  logAnalysis(`${bestCandidate ? `${bestCandidate.recipeId} adayı` : "AI önerisi"} kullanıcı seçimi alanlarına aktarıldı. Reçete Görseli butonuna basınca teknik resim üretilecek.`);
 }
 
 function render() {
-  renderPairs(aiResult, state.ai_analysis_result?.predictions || {
-    durum: "Görsel yükleyip analiz et",
-    not: "AI tahmini öneridir; reçeteyi kullanıcı seçimi belirler"
-  });
-  recipeOutput.textContent = JSON.stringify(state.generated_recipe || {
-    ai_analysis_result: state.ai_analysis_result,
-    user_selected_options: state.user_selected_options,
-    machine_constraints: state.machine_constraints
-  }, null, 2);
   renderRecipeSheet(state.generated_recipe);
-  if (state.ai_analysis_result) {
-    aiRawOutput.textContent = JSON.stringify({
-      provider: state.ai_analysis_result.provider,
-      model: state.ai_analysis_result.model,
-      analyzed_at: state.ai_analysis_result.analyzed_at,
-      duration_ms: state.ai_analysis_result.duration_ms,
-      usage: state.ai_analysis_result.usage,
-      raw_text: state.ai_analysis_result.raw_text,
-      predictions: state.ai_analysis_result.predictions
-    }, null, 2);
-  }
   renderAlbum();
+}
+
+function clearGeneratedRecipe() {
+  recipeImageRequested = false;
+  latestRecipePngUrl = "";
+  clearTimeout(recipeImageRenderTimer);
+  state = {
+    ...state,
+    generated_recipe: null
+  };
+  recipeImageOutput.hidden = true;
+  recipeImagePreview.hidden = true;
+  recipeImagePreview.removeAttribute("src");
 }
 
 function renderRecipeSheet(recipe) {
@@ -279,7 +300,9 @@ function renderRecipeSheet(recipe) {
     <section class="ts-block"><h3>Onay / kontrol</h3>${renderKeyValues([["Hazırlayan", "BraidStudio"], ["Kontrol", "________"], ["Onay", recipe.shop_validation.production_ready ? "ONAYLI" : "Bekliyor"]])}</section>
     <section class="ts-block"><h3>Kullanım alanları</h3><div class="usage-icons"><span>Yelken</span><span>Marina</span><span>Endüstriyel</span><span>Mooring</span></div></section>
   `;
-  scheduleRecipeImagePreview();
+  if (recipeImageRequested) {
+    scheduleRecipeImagePreview();
+  }
 }
 
 function getRecipeSheetCss() {
@@ -339,14 +362,19 @@ function renderRecipeSheetToPng() {
 }
 
 function scheduleRecipeImagePreview() {
+  if (!recipeImageRequested || !state.generated_recipe) return;
   clearTimeout(recipeImageRenderTimer);
   recipeImageRenderTimer = setTimeout(async () => {
     try {
       latestRecipePngUrl = await renderRecipeSheetToPng();
       recipeImagePreview.src = latestRecipePngUrl;
+      recipeImageOutput.hidden = false;
       recipeImagePreview.hidden = false;
-      logAnalysis("Teknik reçete resmi otomatik üretildi.");
+      logAnalysis("Reçete görseli üretildi.");
     } catch (error) {
+      recipeImageOutput.hidden = true;
+      recipeImagePreview.hidden = true;
+      recipeImagePreview.removeAttribute("src");
       logAnalysis(`Teknik reçete resmi üretilemedi: ${error.message}`);
     }
   }, 120);
@@ -378,30 +406,67 @@ function renderSteps(steps = []) {
 }
 
 function ropeLines(sheet, width = 760, height = 120, close = false) {
-  const markerColor = colorToHex(markerColors(sheet)[0] || "blue");
-  const baseStroke = close ? 9 : 5;
-  const markerStroke = close ? 10 : 6;
-  const gap = close ? 19 : 24;
+  const id = `ropeClip${width}x${height}${close ? "c" : "m"}`;
+  const strandGap = close ? 18 : 22;
+  const strandStroke = close ? 2.2 : 1.45;
+  const tracerStroke = close ? 8 : 6;
+  const tracerStep = close ? 76 : 104;
+  const tracerLength = close ? 34 : 42;
   const lines = [];
-  for (let offset = -width; offset < width * 1.4; offset += gap) {
-    lines.push(`<path d="M ${offset} ${height} C ${offset + width * 0.28} ${height * 0.08}, ${offset + width * 0.55} ${height * 0.92}, ${offset + width} 0" stroke="#d7ddd8" stroke-width="${baseStroke}" fill="none"/>`);
-    lines.push(`<path d="M ${offset} 0 C ${offset + width * 0.28} ${height * 0.92}, ${offset + width * 0.55} ${height * 0.08}, ${offset + width} ${height}" stroke="#aab4ae" stroke-width="${Math.max(1.5, baseStroke / 3)}" fill="none" opacity=".9"/>`);
+
+  lines.push(`<defs><clipPath id="${id}"><rect x="0" y="0" width="${width}" height="${height}" rx="${close ? 0 : 3}"/></clipPath></defs>`);
+  lines.push(`<g clip-path="url(#${id})">`);
+  lines.push(`<rect width="${width}" height="${height}" fill="#fbfbf8"/>`);
+
+  for (let offset = -height * 2; offset < width + height * 2; offset += strandGap) {
+    lines.push(`<line x1="${offset}" y1="${height}" x2="${offset + height * 1.45}" y2="0" stroke="#aeb8b1" stroke-width="${strandStroke}" opacity=".95"/>`);
+    lines.push(`<line x1="${offset}" y1="0" x2="${offset + height * 1.45}" y2="${height}" stroke="#ccd3ce" stroke-width="${strandStroke}" opacity=".95"/>`);
   }
-  const markerGap = close ? 92 : 190;
-  for (let offset = -markerGap; offset < width * 1.25; offset += markerGap) {
-    lines.push(`<path d="M ${offset} ${height} C ${offset + width * 0.22} ${height * 0.04}, ${offset + width * 0.42} ${height * 0.9}, ${offset + width * 0.72} 0" stroke="${markerColor}" stroke-width="${markerStroke}" fill="none"/>`);
-    lines.push(`<path d="M ${offset + 20} ${height} C ${offset + width * 0.24} ${height * 0.08}, ${offset + width * 0.45} ${height * 0.88}, ${offset + width * 0.74} 0" stroke="#f8faf9" stroke-width="${Math.max(2, markerStroke / 2.6)}" fill="none" opacity=".55"/>`);
+
+  for (let offset = -height * 2 + strandGap / 2; offset < width + height * 2; offset += strandGap) {
+    lines.push(`<line x1="${offset}" y1="${height}" x2="${offset + height * 1.45}" y2="0" stroke="#ffffff" stroke-width="${Math.max(0.7, strandStroke / 2)}" opacity=".65"/>`);
+    lines.push(`<line x1="${offset}" y1="0" x2="${offset + height * 1.45}" y2="${height}" stroke="#ffffff" stroke-width="${Math.max(0.7, strandStroke / 2)}" opacity=".45"/>`);
   }
+
+  const tracerCarriers = markerCarriers(sheet);
+  const carrierCount = Math.max(1, sheet.carrier_count || sheet.color_sequence.length || 1);
+  for (const carrier of tracerCarriers) {
+    const phase = ((carrier.carrier_no - 1) / carrierCount) * tracerStep;
+    const reverse = carrier.carrier_no % 2 === 0;
+    const color = colorToHex(carrier.color);
+    for (let offset = -tracerStep + phase; offset < width + tracerStep; offset += tracerStep) {
+      const y1 = reverse ? 0 : height;
+      const y2 = reverse ? height : 0;
+      const x2 = offset + tracerLength;
+      if (reverse) {
+        lines.push(`<line x1="${offset}" y1="${y1}" x2="${x2}" y2="${height * 0.46}" stroke="${color}" stroke-width="${tracerStroke}" stroke-linecap="round"/>`);
+        lines.push(`<line x1="${x2 + strandGap * 0.25}" y1="${height * 0.54}" x2="${x2 + tracerLength + strandGap * 0.25}" y2="${y2}" stroke="${color}" stroke-width="${tracerStroke}" stroke-linecap="round"/>`);
+      } else {
+        lines.push(`<line x1="${offset}" y1="${y1}" x2="${x2}" y2="${height * 0.54}" stroke="${color}" stroke-width="${tracerStroke}" stroke-linecap="round"/>`);
+        lines.push(`<line x1="${x2 + strandGap * 0.25}" y1="${height * 0.46}" x2="${x2 + tracerLength + strandGap * 0.25}" y2="${y2}" stroke="${color}" stroke-width="${tracerStroke}" stroke-linecap="round"/>`);
+      }
+    }
+  }
+
+  lines.push("</g>");
   return lines.join("");
 }
 
-function markerColors(sheet) {
-  const base = sheet.color_sequence[0];
-  return [...new Set(sheet.color_sequence.filter((color) => color !== base))];
+function markerCarriers(sheet) {
+  const carriers = Array.isArray(sheet.carrier_layout) ? sheet.carrier_layout : [];
+  const sequence = sheet.color_sequence || [];
+  const base = mostCommonColor(sequence);
+  return carriers.filter((carrier) => carrier.color !== base).slice(0, 8);
+}
+
+function mostCommonColor(colors = []) {
+  const counts = new Map();
+  for (const color of colors) counts.set(color, (counts.get(color) || 0) + 1);
+  return [...counts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] || colors[0];
 }
 
 function renderMainRopeSvg(sheet) {
-  return `<svg viewBox="0 0 820 160" role="img"><rect x="20" y="36" width="760" height="74" fill="#fbfbf8" stroke="#111"/>${ropeLines(sheet)}<line x1="20" y1="135" x2="780" y2="135" stroke="#111"/><text x="20" y="154">0</text><text x="740" y="154">30 cm</text></svg>`;
+  return `<svg viewBox="0 0 820 160" role="img"><g transform="translate(20 36)">${ropeLines(sheet, 760, 74, false)}<rect width="760" height="74" fill="none" stroke="#111"/></g><line x1="20" y1="135" x2="780" y2="135" stroke="#111"/><text x="20" y="154">0</text><text x="740" y="154">30 cm</text></svg>`;
 }
 
 function renderCloseRopeSvg(sheet) {
@@ -413,7 +478,7 @@ function renderPatternSvg(sheet) {
 }
 
 function renderSpoolSvg(sheet) {
-  return `<svg viewBox="0 0 360 220" role="img"><ellipse cx="180" cy="35" rx="130" ry="18" fill="#26323a"/><rect x="70" y="35" width="220" height="150" fill="#eef1ee" stroke="#333"/>${ropeLines(sheet, 230, 150, false).replaceAll("<path d=\"M ", "<path transform=\"translate(70 35)\" d=\"M ")}<ellipse cx="180" cy="185" rx="130" ry="18" fill="#26323a"/></svg>`;
+  return `<svg viewBox="0 0 360 220" role="img"><ellipse cx="180" cy="35" rx="130" ry="18" fill="#26323a"/><rect x="70" y="35" width="220" height="150" fill="#eef1ee" stroke="#333"/><g transform="translate(70 35)">${ropeLines(sheet, 220, 150, false)}</g><ellipse cx="180" cy="185" rx="130" ry="18" fill="#26323a"/></svg>`;
 }
 
 function renderSectionSvg(sheet) {
@@ -483,6 +548,7 @@ function applyPattern(patternId) {
   walkTypeSelect.value = matchedProfile?.walkType || pattern.walk;
   sheathInput.value = pattern.material;
   syncSelectionState();
+  clearGeneratedRecipe();
   render();
 }
 
@@ -497,17 +563,9 @@ imageInput.addEventListener("change", async () => {
   imagePreview.hidden = false;
   uploadPrompt.hidden = true;
   imageStatus.textContent = "Yüklendi";
-
-  const cachedAnalysis = readCachedAnalysis(imageHash);
-  if (cachedAnalysis) {
-    state = { ...state, ai_analysis_result: cachedAnalysis };
-    cacheStatus.textContent = "Cache kullanıldı";
-    logAnalysis(`Bu görsel için tarayıcı cache bulundu: ${imageHash.slice(0, 12)}`);
-    applyAiSuggestionToSelection(cachedAnalysis);
-  } else {
-    cacheStatus.textContent = "Butona bas";
-    logAnalysis(`Görsel hazır. Analiz için butona bas: ${imageHash.slice(0, 12)}`);
-  }
+  clearGeneratedRecipe();
+  generateButton.disabled = true;
+  logAnalysis(`Görsel hazır. AI analiz için butona bas: ${imageHash.slice(0, 12)}`);
   render();
 });
 
@@ -518,7 +576,8 @@ analyzeButton.addEventListener("click", async () => {
   }
 
   analyzeButton.disabled = true;
-  cacheStatus.textContent = "OpenRouter yeniden analiz ediyor";
+  analyzeButton.textContent = "Analiz ediliyor...";
+  imageStatus.textContent = "Analiz ediliyor";
   logAnalysis("Görsel base64 hazırlanıyor.");
   try {
     const dataBase64 = await fileToBase64(currentImage.file);
@@ -535,19 +594,19 @@ analyzeButton.addEventListener("click", async () => {
     });
     const payload = await response.json();
     if (!response.ok) {
-      aiRawOutput.textContent = JSON.stringify(payload, null, 2);
       throw new Error(`${payload.error || "analysis_failed"}${payload.details?.http_status ? ` (${payload.details.http_status})` : ""}`);
     }
     saveCachedAnalysis(payload.analysis);
     state = { ...state, ai_analysis_result: payload.analysis };
-    cacheStatus.textContent = payload.cache === "hit" ? "Server cache" : "OpenRouter sonucu";
+    imageStatus.textContent = "Analiz tamamlandı";
     logAnalysis(`${payload.cache === "refresh" ? "Cache bypass edildi, yeni OpenRouter cevabı alındı" : "OpenRouter cevabı alındı"}: ${payload.analysis.model}`);
     applyAiSuggestionToSelection(payload.analysis);
   } catch (error) {
-    cacheStatus.textContent = `Hata: ${error.message}`;
+    imageStatus.textContent = `Hata: ${error.message}`;
     logAnalysis(`Hata: ${error.message}`);
   } finally {
     analyzeButton.disabled = false;
+    analyzeButton.textContent = "AI ile analiz et";
     render();
   }
 });
@@ -555,12 +614,15 @@ analyzeButton.addEventListener("click", async () => {
 generateButton.addEventListener("click", () => {
   syncSelectionState();
   state = generateRecipe(state);
+  recipeImageRequested = true;
+  latestRecipePngUrl = "";
   render();
 });
 
 selectionForm.addEventListener("change", () => {
   selectedPatternId = patternSelect.value;
   syncSelectionState();
+  clearGeneratedRecipe();
   render();
 });
 

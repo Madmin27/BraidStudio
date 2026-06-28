@@ -14,7 +14,7 @@
             <p class="eyebrow">BraidStudio</p>
             <h1>Örgü görselinden kontrollü reçete üretimi</h1>
           </div>
-          <button id="generateButton" type="button">Reçete üret</button>
+          <button id="generateButton" type="button" disabled>Reçete Görseli</button>
         </header>
 
         <div class="workgrid">
@@ -29,19 +29,6 @@
               <span id="uploadPrompt">Ürün veya halat görselini seç</span>
             </label>
             <button id="analyzeButton" type="button" class="secondary">AI ile analiz et</button>
-          </section>
-
-          <section class="panel">
-            <div class="panel-heading">
-              <h2>AI tahmini</h2>
-              <span id="cacheStatus">Cache yok</span>
-            </div>
-            <dl id="aiResult"></dl>
-            <div id="analysisLog" class="analysis-log"></div>
-            <details class="ai-raw-panel">
-              <summary>AI ham cevap</summary>
-              <pre id="aiRawOutput">Henüz cevap yok.</pre>
-            </details>
           </section>
 
           <section class="panel">
@@ -139,10 +126,6 @@
             <img id="recipeImagePreview" alt="Teknik reçete PNG çıktısı" hidden>
           </figure>
           <div id="recipeSheet" class="recipe-sheet technical-sheet-page"></div>
-          <details class="json-panel" open>
-            <summary>JSON preview</summary>
-            <pre id="recipeOutput"></pre>
-          </details>
         </section>
       </section>
     </main>

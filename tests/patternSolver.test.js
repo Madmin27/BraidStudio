@@ -23,3 +23,15 @@ test("spiral_tracer matches rec_24_tracer_rope", async () => {
 
   assert.ok(result.possibleRecipes.some((recipe) => recipe.recipeId === "rec_24_tracer_rope"));
 });
+
+test("predictedSignature dual_counter_spiral matches dual spiral recipes", async () => {
+  const library = await loadLibrary(process.cwd());
+  const result = solvePattern({
+    predictedSignature: "dual_counter_spiral",
+    colors: ["white", "blue"],
+    estimatedCarrierCount: 16
+  }, library);
+
+  assert.ok(result.possibleRecipes.length > 0);
+  assert.ok(result.possibleRecipes.every((recipe) => recipe.visualSignature === "dual_counter_spiral"));
+});

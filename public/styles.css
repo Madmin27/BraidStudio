@@ -62,7 +62,7 @@ h2 {
 
 .workgrid {
   display: grid;
-  grid-template-columns: 1.1fr 1fr 1fr;
+  grid-template-columns: 1.1fr 1fr;
   gap: 14px;
 }
 
@@ -307,6 +307,11 @@ dd {
 
 .recipe-panel {
   margin-top: 14px;
+}
+
+.recipe-panel:has(.empty-sheet) .sheet-actions,
+.recipe-panel:has(.empty-sheet) .recipe-image-output {
+  display: none;
 }
 
 .recipe-sheet {

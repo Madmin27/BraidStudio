@@ -7,13 +7,14 @@ import { generateCandidateColorMap } from "./server/lib/candidateColorGenerator.
 import { loadLibrary } from "./server/lib/libraryLoader.js";
 import { validateLibrary } from "./server/lib/libraryValidator.js";
 import { solvePattern } from "./server/lib/patternSolver.js";
+import { predictVisualSignature } from "./src/utils/braidPredictor.js";
 
 const __dirname = fileURLToPath(new URL(".", import.meta.url));
 const publicDir = join(__dirname, "public");
 const srcDir = join(__dirname, "src");
 const dataDir = join(__dirname, "data");
 const analysisCacheFile = join(dataDir, "analysis-cache.json");
-const analysisPromptVersion = "carrier-layout-v2";
+const analysisPromptVersion = "fingerprint-v1";
 
 loadEnvFile(join(__dirname, ".env"));
 
@@ -96,11 +97,14 @@ async function writeAnalysisCache(cache) {
 
 async function enrichAnalysisWithPatternCandidates(analysis) {
   const predictions = analysis?.predictions || {};
+  const fingerprint = predictions.fingerprint || {};
+  const structuralAnalysis = fingerprint.structuralAnalysis || predictions.structuralAnalysis || {};
   const library = await loadLibrary(__dirname);
   const solverResult = solvePattern({
+    predictedSignature: fingerprint.predictedSignature || predictions.predictedSignature,
     visualSignature: predictions.visualSignature || predictions.visual_signature || inferVisualSignature(predictions),
     colors: predictions.colors || [],
-    estimatedCarrierCount: predictions.estimatedCarrierCount || predictions.estimated_carrier_count || predictions.carrier_count,
+    estimatedCarrierCount: structuralAnalysis.carrierCount || predictions.estimatedCarrierCount || predictions.estimated_carrier_count || predictions.carrier_count,
     preferredMachineProfileId: predictions.preferredMachineProfileId || null
   }, library);
 
@@ -132,9 +136,13 @@ function extractJson(text) {
 function normalizeAnalysis(parsed) {
   const result = parsed && typeof parsed === "object" ? parsed : {};
   const colors = Array.isArray(result.colors) ? result.colors : [];
-  const carrierCount = Number(result.carrier_count || result.kukla_sayisi || result.estimated_carrier_count || 0) || null;
-  const estimatedCarrierCount = carrierCount || Number(result.estimated_carrier_count || 0) || inferCarrierCount(result, colors);
-  const visualSignature = result.visualSignature || result.visual_signature || inferVisualSignature(result);
+  const sourceFingerprint = result.fingerprint && typeof result.fingerprint === "object" ? result.fingerprint : result;
+  const structuralAnalysis = normalizeStructuralAnalysis(sourceFingerprint.structuralAnalysis || result.structuralAnalysis || {}, result, colors);
+  const predictedSignature = sourceFingerprint.predictedSignature || result.predictedSignature || result.visualSignature || result.visual_signature || inferVisualSignature(result);
+  const visualSignature = predictedSignature;
+  const carrierCount = Number(result.carrier_count || result.kukla_sayisi || result.estimated_carrier_count || sourceFingerprint.estimatedCarrierCount || structuralAnalysis.carrierCount || 0) || null;
+  const estimatedCarrierCount = carrierCount || Number(result.estimated_carrier_count || result.estimatedCarrierCount || 0) || inferCarrierCount(result, colors);
+  const confidenceScore = normalizeConfidenceScore(sourceFingerprint.confidenceScore ?? result.confidenceScore ?? result.confidence);
   const estimatedColorSequence = Array.isArray(result.estimated_color_sequence)
     ? result.estimated_color_sequence
     : buildEstimatedColorSequence(colors, estimatedCarrierCount);
@@ -147,12 +155,20 @@ function normalizeAnalysis(parsed) {
     }));
 
   return {
+    fingerprint: {
+      predictedSignature,
+      confidenceScore,
+      structuralAnalysis
+    },
+    predictedSignature,
+    confidenceScore,
+    structuralAnalysis,
     visualSignature,
     dominantColor: result.dominantColor || result.dominant_color || colors[0] || null,
     accentColors: Array.isArray(result.accentColors) ? result.accentColors : colors.slice(1),
     estimatedCarrierCount,
     warnings: Array.isArray(result.warnings) ? result.warnings : [],
-    pattern_type: result.pattern_type || result.braid_pattern || "unknown",
+    pattern_type: result.pattern_type || result.braid_pattern || patternTypeFromSignature(predictedSignature),
     colors,
     material: normalizeUnknown(result.material) || normalizeUnknown(result.estimated_material) || inferMaterial(result, colors),
     estimated_material: normalizeUnknown(result.estimated_material) || inferMaterial(result, colors),
@@ -165,9 +181,35 @@ function normalizeAnalysis(parsed) {
     braid_walk_type: result.braid_walk_type || "unknown",
     sheath: normalizeUnknown(result.sheath) || "braided sheath",
     core: normalizeUnknown(result.core) || "unknown",
-    confidence: result.confidence || "low",
+    confidence: result.confidence || confidenceLabel(confidenceScore),
     warning: "AI sonucu üretim gerçeği değildir; final reçete kullanıcı seçimiyle üretilir."
   };
+}
+
+function normalizeStructuralAnalysis(structuralAnalysis, result, colors) {
+  const carrierCount = Number(
+    structuralAnalysis.carrierCount ||
+    result.estimatedCarrierCount ||
+    result.estimated_carrier_count ||
+    result.carrier_count ||
+    0
+  ) || inferCarrierCount(result, colors);
+
+  return {
+    carrierCount,
+    symmetry: structuralAnalysis.symmetry || inferSymmetry(result),
+    primaryApplication: structuralAnalysis.primaryApplication || result.primaryApplication || "unknown"
+  };
+}
+
+function normalizeConfidenceScore(value) {
+  if (typeof value === "number") return Math.max(0, Math.min(1, value));
+  const text = String(value || "").toLowerCase();
+  if (text === "high") return 0.85;
+  if (text === "medium") return 0.6;
+  if (text === "low") return 0.35;
+  const number = Number(text);
+  return Number.isFinite(number) ? Math.max(0, Math.min(1, number)) : 0.35;
 }
 
 function normalizeUnknown(value) {
@@ -183,12 +225,36 @@ function inferCarrierCount(result, colors) {
 }
 
 function inferVisualSignature(result) {
-  const text = `${result.visualSignature || ""} ${result.pattern_type || ""} ${result.braid_pattern || ""}`.toLowerCase();
+  const text = `${result.predictedSignature || ""} ${result.visualSignature || ""} ${result.pattern_type || ""} ${result.braid_pattern || ""}`.toLowerCase();
+  if (text.includes("dual") && text.includes("spiral")) return "dual_counter_spiral";
   if (text.includes("rib") || text.includes("herringbone") || text.includes("twill")) return "diagonal_rib";
   if (text.includes("spiral") || text.includes("tracer") || text.includes("marker") || text.includes("fleck") || text.includes("izli")) return "spiral_tracer";
   if (text.includes("block") || text.includes("stripe")) return "block_stripe";
   if (text.includes("plain") || text.includes("diamond")) return "plain_weave";
   return "unknown";
+}
+
+function inferSymmetry(result) {
+  const signature = inferVisualSignature(result);
+  if (signature === "dual_counter_spiral") return "bilateral_periodic";
+  if (signature === "single_spiral_tracer" || signature === "spiral_tracer") return "rotational_periodic";
+  if (signature === "plain_weave") return "alternating_periodic";
+  return "unknown";
+}
+
+function patternTypeFromSignature(signature) {
+  const value = String(signature || "").toLowerCase();
+  if (value.includes("dual_counter_spiral") || value.includes("spiral_tracer")) return "solid_with_markers";
+  if (value.includes("diagonal_rib")) return "herringbone";
+  if (value.includes("block")) return "ladder";
+  if (value.includes("plain")) return "plain";
+  return "unknown";
+}
+
+function confidenceLabel(score) {
+  if (score >= 0.75) return "high";
+  if (score >= 0.5) return "medium";
+  return "low";
 }
 
 function inferMaterial(result, colors) {
@@ -221,12 +287,15 @@ async function analyzeWithOpenRouter({ imageHash, mimeType, dataBase64 }) {
   }
 
   const prompt = [
-    "Analyze this braid/rope product image only as a pattern classifier.",
+    "Analyze this braid/rope product image only as a technical pattern fingerprint classifier.",
     "Return only compact JSON with keys:",
-    "visualSignature, colors, dominantColor, accentColors, estimatedCarrierCount, material, confidence, warnings.",
-    "visualSignature must be one of: plain_weave, diagonal_rib, spiral_tracer, block_stripe, unknown.",
+    "predictedSignature, confidenceScore, structuralAnalysis, colors, dominantColor, accentColors, material, warnings.",
+    "predictedSignature must be one of: plain_weave, diagonal_rib, single_spiral_tracer, dual_counter_spiral, spiral_tracer, block_stripe, block_striped_segment, unknown.",
+    "confidenceScore must be a number between 0 and 1.",
+    "structuralAnalysis must contain carrierCount, symmetry, primaryApplication.",
+    "Example structuralAnalysis values: carrierCount 12, symmetry bilateral_periodic, primaryApplication medical_suture_or_micro_braid.",
     "AI must not output recipeId, walkMap, carrier path or production-ready claims.",
-    "If carrier count is uncertain, still provide estimatedCarrierCount as a candidate with low confidence.",
+    "If carrier count is uncertain, still provide structuralAnalysis.carrierCount as a candidate with lower confidence.",
     "For white/blue braided rope with flecks/tracers, polyester is a reasonable material suggestion unless visual evidence says otherwise.",
     "Final recipe is selected later by backend library solver and user confirmation."
   ].join(" ");
@@ -359,6 +428,32 @@ async function handleGenerateColorMap(req, res) {
   }
 }
 
+async function handlePatternPredict(req, res) {
+  try {
+    const body = await readRequestJson(req, 256 * 1024);
+    const library = await loadLibrary(__dirname);
+    const machineProfile = body.machineProfileId
+      ? library.machines.find((machine) => machine.machineProfileId === body.machineProfileId)
+      : null;
+
+    if (body.machineProfileId && !machineProfile) {
+      jsonResponse(res, 404, { error: "machine_profile_not_found" });
+      return;
+    }
+
+    jsonResponse(res, 200, predictVisualSignature(
+      body.carrierColorMap || {},
+      body.braidLogic || machineProfile?.defaultWalk || "1_over_1",
+      {
+        carrierCount: body.carrierCount,
+        machineProfile: machineProfile || body.machineProfile || null
+      }
+    ));
+  } catch (error) {
+    jsonResponse(res, error.statusCode || 500, { error: error.message || "pattern_predict_failed" });
+  }
+}
+
 const server = createServer(async (req, res) => {
   if (req.url === "/api/library" && req.method === "GET") {
     await handleLibrary(req, res);
@@ -382,6 +477,11 @@ const server = createServer(async (req, res) => {
 
   if (req.url === "/api/pattern/generate-color-map" && req.method === "POST") {
     await handleGenerateColorMap(req, res);
+    return;
+  }
+
+  if (req.url === "/api/pattern/predict" && req.method === "POST") {
+    await handlePatternPredict(req, res);
     return;
   }
 

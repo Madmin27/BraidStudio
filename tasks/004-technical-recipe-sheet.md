@@ -12,6 +12,8 @@
 
 ## Not
 
-Capture flow sonunda teknik reçete sheet ve JSON preview üretildi. Çıktı `finalSelection` kaynaklıdır; AI sonucu üretim gerçeği sayılmaz. Shop validation olmadan `production_ready: false`.
+Capture flow sonunda teknik reçete sheet üretildi. Çıktı `finalSelection` kaynaklıdır; AI sonucu üretim gerçeği sayılmaz. Shop validation olmadan `production_ready: false`.
 Teknik çizimler sabit SVG/HTML renderer ile deterministik üretilir.
-Sheet render sonrası otomatik PNG preview üretilir; PNG indir butonu aynı çıktıyı indirir.
+JSON preview ve AI tahmini paneli kaldırıldı.
+Görsel yükleme tek başına reçete üretmez; AI analiz kullanıcı seçimi alanlarını doldurur, teknik reçete sadece `Reçete Görseli` butonuyla üretilir.
+AI solver adayının `carrierColorMap` çıktısı `carrier_layout` olarak finalSelection'a aktarılır. Halat preview çizimi artık bu kukla/renk dizilimine göre fazlandırılır; sabit eski desen kullanılmaz.

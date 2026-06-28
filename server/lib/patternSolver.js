@@ -4,7 +4,7 @@ export function solvePattern(input, library) {
   const machines = Array.isArray(library?.machines) ? library.machines : [];
   const recipes = Array.isArray(library?.recipes) ? library.recipes : [];
   const patternSignatures = library?.patternSignatures || {};
-  const visualSignature = String(input?.visualSignature || "unknown");
+  const visualSignature = String(input?.predictedSignature || input?.visualSignature || "unknown");
   const normalizedSignature = normalizeVisualSignature(visualSignature);
   const colors = normalizeColors(input?.colors);
   const estimatedCarrierCount = Number(input?.estimatedCarrierCount || 0) || null;

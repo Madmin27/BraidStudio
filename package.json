@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node server.js",
     "test": "node --test tests/*.test.js",
-    "check": "node --check server.js && node --check src/state.js && node --check public/app.js && node --check server/lib/libraryLoader.js && node --check server/lib/libraryValidator.js && node --check server/lib/patternSolver.js && node --check server/lib/candidateColorGenerator.js",
+    "check": "node --check server.js && node --check src/state.js && node --check src/utils/braidPredictor.js && node --check public/app.js && node --check server/lib/libraryLoader.js && node --check server/lib/libraryValidator.js && node --check server/lib/patternSolver.js && node --check server/lib/candidateColorGenerator.js",
     "build": "npm run check"
   },
   "engines": {

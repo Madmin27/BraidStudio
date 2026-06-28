@@ -21,7 +21,8 @@ AI tahmini kullanıcı seçimini ezemez. Nihai reçete her zaman `user_selected_
 - Aynı görsel `image_hash` ile tekrar analiz edilmez.
 - Renk, hammadde, kukla sayısı gibi kullanıcı seçenekleri değişince AI tekrar çağrılmaz.
 - AI sonucu cache/persist edilir; kullanıcı onayı kalıcı veri kabul edilir.
-- AI görselden sadece `visualSignature`, renkler, baskın/iz renkleri, tahmini kukla sayısı, materyal ve uyarı üretir.
+- AI görselden teknik parmak izi üretir: `predictedSignature`, `confidenceScore`, `structuralAnalysis`, renkler, baskın/iz renkleri, materyal ve uyarı.
+- `structuralAnalysis` en az `carrierCount`, `symmetry`, `primaryApplication` alanlarını taşır.
 - AI `recipeId`, `walkMap`, carrier yolu veya production-ready sonucu üretmez.
 - Fotoğraf analizi sonrası `server/lib/patternSolver.js`, `data/` kütüphanesinden olası reçete adaylarını döndürür.
 - Carrier color map adayları `server/lib/candidateColorGenerator.js` ile deterministik üretilir; kullanıcı onayı olmadan kesin kabul edilmez.
@@ -40,8 +41,8 @@ AI tahmini kullanıcı seçimini ezemez. Nihai reçete her zaman `user_selected_
 
 - `server/lib/libraryLoader.js`: `data/machines`, `data/recipes`, `data/patterns/signature_catalog.json` okur.
 - `server/lib/libraryValidator.js`: makine/reçete referanslarını, carrierColorMap sayısını ve production-ready şartlarını kontrol eder.
-- `server/lib/patternSolver.js`: visual signature + renk + tahmini kukla sayısına göre `possibleRecipes[]` üretir.
-- API uçları: `GET /api/library`, `GET /api/library/validate`, `POST /api/pattern/solve`, `POST /api/pattern/generate-color-map`.
+- `server/lib/patternSolver.js`: predicted/visual signature + renk + tahmini kukla sayısına göre `possibleRecipes[]` üretir.
+- API uçları: `GET /api/library`, `GET /api/library/validate`, `POST /api/pattern/solve`, `POST /api/pattern/generate-color-map`, `POST /api/pattern/predict`.
 
 ## Task Takibi
 
