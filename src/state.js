@@ -5,7 +5,7 @@ export const initialRecipeState = {
   user_selected_options: {
     pattern_type: null,
     colors: [],
-    material: null,
+    material: "polyester",
     carrier_count: null,
     machine_id: null,
     machine_profile_id: "mp_16_std",
@@ -16,8 +16,8 @@ export const initialRecipeState = {
       material: null
     },
     core: {
-      enabled: false,
-      material: null,
+      enabled: true,
+      material: "polyester",
       diameter_mm: null
     },
     carrier_layout: [],

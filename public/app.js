@@ -53,7 +53,6 @@ const imageContextNotes = document.querySelector("#imageContextNotes");
 const patternAlbum = document.querySelector("#patternAlbum");
 const patternSelect = document.querySelector("#patternSelect");
 const colorsInput = document.querySelector("#colorsInput");
-const materialSelect = document.querySelector("#materialSelect");
 const carrierSelect = document.querySelector("#carrierSelect");
 const machineProfileSelect = document.querySelector("#machineProfileSelect");
 const walkTypeSelect = document.querySelector("#walkTypeSelect");
@@ -324,12 +323,11 @@ function renderMachineProfiles() {
 
 function collectUserSelection() {
   const form = new FormData(selectionForm);
-  const material = form.get("material");
   const coreEnabled = form.get("core_enabled") === "true";
   return {
     pattern_type: form.get("pattern_type"),
     colors: String(form.get("colors")).split(",").map((color) => color.trim()).filter(Boolean),
-    material,
+    material: "polyester",
     carrier_count: Number(form.get("carrier_count")),
     machine_id: "default-machine",
     machine_profile_id: form.get("machine_profile_id"),
@@ -337,11 +335,11 @@ function collectUserSelection() {
     braid_walk_type: form.get("braid_walk_type"),
     sheath: {
       enabled: true,
-      material: form.get("sheath_material") || material
+      material: form.get("sheath_material") || "polyester"
     },
     core: {
       enabled: coreEnabled,
-      material: coreEnabled ? form.get("core_material") || "tanımsız" : null,
+      material: coreEnabled ? form.get("core_material") || "polyester" : null,
       diameter_mm: null
     }
   };
@@ -595,15 +593,16 @@ function applyAiSuggestionToSelection(analysis) {
   });
   patternSelect.value = normalizePattern(predictorResult.visualSignature || fingerprint.predictedSignature || predictions.predictedSignature || predictions.visualSignature || predictions.pattern_type);
   colorsInput.value = colors.join(", ");
-  materialSelect.value = normalizeMaterial(predictions.material || predictions.estimated_material);
   if (hasReliableCarrierCount) {
     carrierSelect.value = String(normalizedCarrierCount);
   }
   machineProfileSelect.value = matchedProfile?.machineProfileId || machineProfileSelect.value || "mp_16_std";
   walkTypeSelect.value = normalizeWalkType(predictorResult.analysis?.braidLogic || bestCandidate?.braidLogic || structuralAnalysis.braidLogic || predictions.braid_walk_type, colors);
-  sheathInput.value = materialSelect.value;
-  coreEnabledSelect.value = String(Boolean(predictions.core && String(predictions.core).toLowerCase() !== "unknown" && String(predictions.core).toLowerCase() !== "no"));
-  coreMaterialInput.value = coreEnabledSelect.value === "true" ? materialSelect.value : "";
+  sheathInput.value = "polyester";
+  // coreEnabled: predictions.core varsa ve bilinmiyor değilse true
+  const aiCoreEnabled = Boolean(predictions.core && String(predictions.core).toLowerCase() !== "unknown" && String(predictions.core).toLowerCase() !== "no");
+  coreEnabledSelect.value = String(aiCoreEnabled);
+  coreMaterialInput.value = aiCoreEnabled ? "polyester" : "";
 
   syncSelectionState();
   state = applyUserSelection(state, {
@@ -1056,7 +1055,6 @@ function applyPattern(patternId) {
   selectedPatternId = pattern.id;
   patternSelect.value = pattern.id;
   colorsInput.value = pattern.colors.join(", ");
-  materialSelect.value = pattern.material;
   carrierSelect.value = String(pattern.carriers.at(-1));
   const matchedProfile = machineProfiles.find((profile) => profile.carrierCount === Number(carrierSelect.value) && profile.machineFamily === "maypole_circular");
   machineProfileSelect.value = matchedProfile?.machineProfileId || "mp_16_std";
@@ -1443,7 +1441,6 @@ const defaultLayout = Array.from({ length: defaultCount }, (_, index) => ({
 // Set the form defaults
 if (carrierSelect) carrierSelect.value = String(defaultCount);
 if (colorsInput) colorsInput.value = defaultColors.join(", ");
-if (materialSelect) materialSelect.value = "polyester";
 if (sheathInput) sheathInput.value = "polyester";
 if (patternSelect) patternSelect.value = selectedPatternId;
 syncMachineProfileToCarrierCount();

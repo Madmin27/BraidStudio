@@ -4646,16 +4646,16 @@
       "math_recipe": "deepseek/deepseek-r1"
     },
     "prompt_version": "hybrid-v1",
-    "analyzed_at": "2026-06-29T16:36:52.075Z",
-    "duration_ms": 38061,
+    "analyzed_at": "2026-06-29T17:21:09.403Z",
+    "duration_ms": 95710,
     "visual_analysis": {
       "model": "google/gemini-2.5-flash",
-      "raw_text": "Detected_Colors: [\"Sarı\", \"Siyah\"]\nPattern_Flow: \"Paralel_Spiral\"\nWhite_Strand_Count_Between_Markers: 11-12",
+      "raw_text": "Detected_Colors: [Sarı, Siyah]\nPattern_Flow: Paralel_Spiral\nWhite_Strand_Count_Between_Markers: 7-8",
       "usage": {
         "prompt_tokens": 1625,
-        "completion_tokens": 42,
-        "total_tokens": 1667,
-        "cost": 0.0005925,
+        "completion_tokens": 36,
+        "total_tokens": 1661,
+        "cost": 0.0005775,
         "is_byok": false,
         "prompt_tokens_details": {
           "cached_tokens": 0,
@@ -4664,9 +4664,9 @@
           "video_tokens": 0
         },
         "cost_details": {
-          "upstream_inference_cost": 0.0005925,
+          "upstream_inference_cost": 0.0005775,
           "upstream_inference_prompt_cost": 0.0004875,
-          "upstream_inference_completions_cost": 0.000105
+          "upstream_inference_completions_cost": 0.00009
         },
         "completion_tokens_details": {
           "reasoning_tokens": 0,
@@ -4677,39 +4677,31 @@
     },
     "math_recipe": {
       "model": "deepseek/deepseek-r1",
-      "raw_text": "{\n  \"recipeId\": \"REC-POL-N-SO-DRAFT\",\n  \"productionReady\": false,\n  \"technicalSheet\": {\n    \"carrierCount\": 32,\n    \"walkType\": \"two-over-two\",\n    \"colorSequence\": [\n      \"Siyah\", \"white\", \"Sarı\", \"white\", \"Siyah\", \"white\", \"white\", \"white\",\n      \"white\", \"white\", \"white\", \"white\", \"white\", \"white\", \"white\", \"white\",\n      \"Siyah\", \"white\", \"Sarı\", \"white\", \"Siyah\", \"white\", \"white\", \"white\",\n      \"white\", \"white\", \"white\", \"white\", \"white\", \"white\", \"white\", \"white\"\n    ],\n    \"carrierLayoutCount\": 32\n  }\n}",
+      "raw_text": "{\n  \"recipeId\": \"REC-POL-N-SO-DRAFT\",\n  \"productionReady\": false,\n  \"technicalSheet\": {\n    \"carrierCount\": 24,\n    \"walkType\": \"two-over-two\",\n    \"colorSequence\": [\n      \"Siyah\",\n      \"white\",\n      \"white\",\n      \"white\",\n      \"white\",\n      \"white\",\n      \"white\",\n      \"white\",\n      \"Sarı\",\n      \"white\",\n      \"white\",\n      \"white\",\n      \"white\",\n      \"white\",\n      \"white\",\n      \"white\",\n      \"Siyah\",\n      \"white\",\n      \"white\",\n      \"white\",\n      \"white\",\n      \"white\",\n      \"white\",\n      \"white\"\n    ],\n    \"carrierLayoutCount\": 24\n  }\n}",
       "json": {
         "recipeId": "REC-POL-N-SO-DRAFT",
         "productionReady": false,
         "technicalSheet": {
-          "carrierCount": 32,
+          "carrierCount": 24,
           "walkType": "two-over-two",
           "colorSequence": [
             "Siyah",
             "white",
-            "Sarı",
-            "white",
-            "Siyah",
             "white",
             "white",
             "white",
             "white",
             "white",
-            "white",
-            "white",
-            "white",
-            "white",
-            "white",
-            "white",
-            "Siyah",
             "white",
             "Sarı",
             "white",
+            "white",
+            "white",
+            "white",
+            "white",
+            "white",
+            "white",
             "Siyah",
-            "white",
-            "white",
-            "white",
-            "white",
             "white",
             "white",
             "white",
@@ -4718,14 +4710,14 @@
             "white",
             "white"
           ],
-          "carrierLayoutCount": 32
+          "carrierLayoutCount": 24
         }
       },
       "usage": {
-        "prompt_tokens": 830,
-        "completion_tokens": 1047,
-        "total_tokens": 1877,
-        "cost": 0.0031985,
+        "prompt_tokens": 827,
+        "completion_tokens": 2739,
+        "total_tokens": 3566,
+        "cost": 0.0074264,
         "is_byok": false,
         "prompt_tokens_details": {
           "cached_tokens": 0,
@@ -4734,12 +4726,12 @@
           "video_tokens": 0
         },
         "cost_details": {
-          "upstream_inference_cost": 0.0031985,
-          "upstream_inference_prompt_cost": 0.000581,
-          "upstream_inference_completions_cost": 0.0026175
+          "upstream_inference_cost": 0.0074264,
+          "upstream_inference_prompt_cost": 0.0005789,
+          "upstream_inference_completions_cost": 0.0068475
         },
         "completion_tokens_details": {
-          "reasoning_tokens": 871,
+          "reasoning_tokens": 2570,
           "image_tokens": 0,
           "audio_tokens": 0
         }
@@ -4750,7 +4742,7 @@
         "predictedSignature": "spiral_tracer",
         "confidenceScore": 0.82,
         "structuralAnalysis": {
-          "carrierCount": 32,
+          "carrierCount": 24,
           "symmetry": "rotational_periodic",
           "primaryApplication": "general_purpose_rope",
           "braidLogic": "two-over-two"
@@ -4759,7 +4751,7 @@
       "predictedSignature": "spiral_tracer",
       "confidenceScore": 0.82,
       "structuralAnalysis": {
-        "carrierCount": 32,
+        "carrierCount": 24,
         "symmetry": "rotational_periodic",
         "primaryApplication": "general_purpose_rope",
         "braidLogic": "two-over-two"
@@ -4770,7 +4762,7 @@
         "black",
         "yellow"
       ],
-      "estimatedCarrierCount": 32,
+      "estimatedCarrierCount": 24,
       "warnings": [
         "AI sonucu üretim gerçeği değildir; final reçete kullanıcı seçimiyle üretilir.",
         "Hybrid pipeline: Flash görsel ölçüm, R1 matematiksel reçete adımı kullanıldı."
@@ -4783,14 +4775,13 @@
       ],
       "material": "polyester",
       "estimated_material": "polyester",
-      "carrier_count": 32,
-      "estimated_carrier_count": 32,
+      "carrier_count": 24,
+      "estimated_carrier_count": 24,
       "estimated_color_sequence": [
         "black",
         "white",
         "yellow",
         "white",
-        "black",
         "white",
         "white",
         "white",
@@ -4798,13 +4789,6 @@
         "white",
         "white",
         "white",
-        "white",
-        "white",
-        "white",
-        "white",
-        "black",
-        "white",
-        "yellow",
         "white",
         "black",
         "white",
@@ -4842,8 +4826,8 @@
         },
         {
           "carrier_no": 5,
-          "color": "black",
-          "role": "sheath_marker"
+          "color": "white",
+          "role": "sheath"
         },
         {
           "carrier_no": 6,
@@ -4882,8 +4866,8 @@
         },
         {
           "carrier_no": 13,
-          "color": "white",
-          "role": "sheath"
+          "color": "black",
+          "role": "sheath_marker"
         },
         {
           "carrier_no": 14,
@@ -4902,8 +4886,8 @@
         },
         {
           "carrier_no": 17,
-          "color": "black",
-          "role": "sheath_marker"
+          "color": "white",
+          "role": "sheath"
         },
         {
           "carrier_no": 18,
@@ -4912,8 +4896,8 @@
         },
         {
           "carrier_no": 19,
-          "color": "yellow",
-          "role": "sheath_marker"
+          "color": "white",
+          "role": "sheath"
         },
         {
           "carrier_no": 20,
@@ -4922,8 +4906,8 @@
         },
         {
           "carrier_no": 21,
-          "color": "black",
-          "role": "sheath_marker"
+          "color": "white",
+          "role": "sheath"
         },
         {
           "carrier_no": 22,
@@ -4937,46 +4921,6 @@
         },
         {
           "carrier_no": 24,
-          "color": "white",
-          "role": "sheath"
-        },
-        {
-          "carrier_no": 25,
-          "color": "white",
-          "role": "sheath"
-        },
-        {
-          "carrier_no": 26,
-          "color": "white",
-          "role": "sheath"
-        },
-        {
-          "carrier_no": 27,
-          "color": "white",
-          "role": "sheath"
-        },
-        {
-          "carrier_no": 28,
-          "color": "white",
-          "role": "sheath"
-        },
-        {
-          "carrier_no": 29,
-          "color": "white",
-          "role": "sheath"
-        },
-        {
-          "carrier_no": 30,
-          "color": "white",
-          "role": "sheath"
-        },
-        {
-          "carrier_no": 31,
-          "color": "white",
-          "role": "sheath"
-        },
-        {
-          "carrier_no": 32,
           "color": "white",
           "role": "sheath"
         }
@@ -5000,9 +4944,9 @@
           "Kinematik Uyuşmazlık Uyarısı: Tüm tracer taşıyıcıları sadece tek hareket grubunda; çift karşıt spiral yerine paralel sarmal oluşacaktır."
         ],
         "analysis": {
-          "carrierCount": 32,
+          "carrierCount": 24,
           "braidLogic": "two-over-two",
-          "period": 16,
+          "period": 24,
           "blockSize": 11,
           "dominantColor": "white",
           "accentColors": [
@@ -5012,17 +4956,13 @@
           "tracerPositions": [
             1,
             3,
-            5,
-            17,
-            19,
-            21
+            13
           ],
           "colors": [
             "black",
             "white",
             "yellow",
             "white",
-            "black",
             "white",
             "white",
             "white",
@@ -5030,13 +4970,6 @@
             "white",
             "white",
             "white",
-            "white",
-            "white",
-            "white",
-            "white",
-            "black",
-            "white",
-            "yellow",
             "white",
             "black",
             "white",
@@ -5064,11 +4997,7 @@
               17,
               19,
               21,
-              23,
-              25,
-              27,
-              29,
-              31
+              23
             ],
             "counterClockwise": [
               2,
@@ -5082,24 +5011,16 @@
               18,
               20,
               22,
-              24,
-              26,
-              28,
-              30,
-              32
+              24
             ]
           },
           "clockwiseColors": [
             "black",
             "yellow",
-            "black",
             "white",
             "white",
             "white",
             "white",
-            "white",
-            "black",
-            "yellow",
             "black",
             "white",
             "white",
@@ -5108,10 +5029,6 @@
             "white"
           ],
           "counterClockwiseColors": [
-            "white",
-            "white",
-            "white",
-            "white",
             "white",
             "white",
             "white",
@@ -5135,24 +5052,12 @@
               "color": "yellow"
             },
             {
-              "carrierNo": 5,
-              "color": "black"
-            },
-            {
-              "carrierNo": 17,
-              "color": "black"
-            },
-            {
-              "carrierNo": 19,
-              "color": "yellow"
-            },
-            {
-              "carrierNo": 21,
+              "carrierNo": 13,
               "color": "black"
             }
           ],
           "accentGroupUsage": {
-            "clockwise": 6,
+            "clockwise": 3,
             "counterClockwise": 0
           },
           "hasAdjacentTracerCluster": false,
@@ -5161,12 +5066,12 @@
         "isReliable": false
       }
     },
-    "raw_text": "{\n  \"recipeId\": \"REC-POL-N-SO-DRAFT\",\n  \"productionReady\": false,\n  \"technicalSheet\": {\n    \"carrierCount\": 32,\n    \"walkType\": \"two-over-two\",\n    \"colorSequence\": [\n      \"Siyah\", \"white\", \"Sarı\", \"white\", \"Siyah\", \"white\", \"white\", \"white\",\n      \"white\", \"white\", \"white\", \"white\", \"white\", \"white\", \"white\", \"white\",\n      \"Siyah\", \"white\", \"Sarı\", \"white\", \"Siyah\", \"white\", \"white\", \"white\",\n      \"white\", \"white\", \"white\", \"white\", \"white\", \"white\", \"white\", \"white\"\n    ],\n    \"carrierLayoutCount\": 32\n  }\n}",
+    "raw_text": "{\n  \"recipeId\": \"REC-POL-N-SO-DRAFT\",\n  \"productionReady\": false,\n  \"technicalSheet\": {\n    \"carrierCount\": 24,\n    \"walkType\": \"two-over-two\",\n    \"colorSequence\": [\n      \"Siyah\",\n      \"white\",\n      \"white\",\n      \"white\",\n      \"white\",\n      \"white\",\n      \"white\",\n      \"white\",\n      \"Sarı\",\n      \"white\",\n      \"white\",\n      \"white\",\n      \"white\",\n      \"white\",\n      \"white\",\n      \"white\",\n      \"Siyah\",\n      \"white\",\n      \"white\",\n      \"white\",\n      \"white\",\n      \"white\",\n      \"white\",\n      \"white\"\n    ],\n    \"carrierLayoutCount\": 24\n  }\n}",
     "usage": {
-      "prompt_tokens": 2455,
-      "completion_tokens": 1089,
-      "total_tokens": 3544,
-      "cost": 0.003791
+      "prompt_tokens": 2452,
+      "completion_tokens": 2775,
+      "total_tokens": 5227,
+      "cost": 0.0080039
     },
     "predictor_result": {
       "visualSignature": "spiral_tracer",
@@ -5180,9 +5085,9 @@
         "Kinematik Uyuşmazlık Uyarısı: Tüm tracer taşıyıcıları sadece tek hareket grubunda; çift karşıt spiral yerine paralel sarmal oluşacaktır."
       ],
       "analysis": {
-        "carrierCount": 32,
+        "carrierCount": 24,
         "braidLogic": "two-over-two",
-        "period": 16,
+        "period": 24,
         "blockSize": 11,
         "dominantColor": "white",
         "accentColors": [
@@ -5192,17 +5097,13 @@
         "tracerPositions": [
           1,
           3,
-          5,
-          17,
-          19,
-          21
+          13
         ],
         "colors": [
           "black",
           "white",
           "yellow",
           "white",
-          "black",
           "white",
           "white",
           "white",
@@ -5210,13 +5111,6 @@
           "white",
           "white",
           "white",
-          "white",
-          "white",
-          "white",
-          "white",
-          "black",
-          "white",
-          "yellow",
           "white",
           "black",
           "white",
@@ -5244,11 +5138,7 @@
             17,
             19,
             21,
-            23,
-            25,
-            27,
-            29,
-            31
+            23
           ],
           "counterClockwise": [
             2,
@@ -5262,24 +5152,16 @@
             18,
             20,
             22,
-            24,
-            26,
-            28,
-            30,
-            32
+            24
           ]
         },
         "clockwiseColors": [
           "black",
           "yellow",
-          "black",
           "white",
           "white",
           "white",
           "white",
-          "white",
-          "black",
-          "yellow",
           "black",
           "white",
           "white",
@@ -5288,10 +5170,6 @@
           "white"
         ],
         "counterClockwiseColors": [
-          "white",
-          "white",
-          "white",
-          "white",
           "white",
           "white",
           "white",
@@ -5315,24 +5193,12 @@
             "color": "yellow"
           },
           {
-            "carrierNo": 5,
-            "color": "black"
-          },
-          {
-            "carrierNo": 17,
-            "color": "black"
-          },
-          {
-            "carrierNo": 19,
-            "color": "yellow"
-          },
-          {
-            "carrierNo": 21,
+            "carrierNo": 13,
             "color": "black"
           }
         ],
         "accentGroupUsage": {
-          "clockwise": 6,
+          "clockwise": 3,
           "counterClockwise": 0
         },
         "hasAdjacentTracerCluster": false,
@@ -5341,6 +5207,82 @@
       "isReliable": false
     },
     "recipe_candidates": [
+      {
+        "recipeId": "rec_24_marine_double_tracer",
+        "machineProfileId": "mp_24_standard",
+        "patternFamily": "tracer",
+        "visualSignature": "spiral_tracer",
+        "braidLogic": "1_over_1",
+        "carrierColorMap": {
+          "1": "black",
+          "2": "white",
+          "3": "white",
+          "4": "white",
+          "5": "white",
+          "6": "white",
+          "7": "black",
+          "8": "white",
+          "9": "white",
+          "10": "white",
+          "11": "white",
+          "12": "white",
+          "13": "black",
+          "14": "white",
+          "15": "white",
+          "16": "white",
+          "17": "white",
+          "18": "white",
+          "19": "black",
+          "20": "white",
+          "21": "white",
+          "22": "white",
+          "23": "white",
+          "24": "white"
+        },
+        "confidence": 0.85,
+        "status": "industry_candidate",
+        "reason": "visualSignature eşleşti; carrierCount eşleşti; renk sayısı uyumlu; patternFamily eşleşti",
+        "requiresUserConfirmation": true,
+        "requiresShopValidation": true
+      },
+      {
+        "recipeId": "rec_24_tracer_rope",
+        "machineProfileId": "mp_24_standard",
+        "patternFamily": "tracer",
+        "visualSignature": "spiral_tracer",
+        "braidLogic": "1_over_1_with_offsets",
+        "carrierColorMap": {
+          "1": "black",
+          "2": "white",
+          "3": "white",
+          "4": "white",
+          "5": "white",
+          "6": "white",
+          "7": "black",
+          "8": "white",
+          "9": "white",
+          "10": "white",
+          "11": "white",
+          "12": "white",
+          "13": "black",
+          "14": "white",
+          "15": "white",
+          "16": "white",
+          "17": "white",
+          "18": "white",
+          "19": "black",
+          "20": "white",
+          "21": "white",
+          "22": "white",
+          "23": "white",
+          "24": "white"
+        },
+        "confidence": 0.85,
+        "status": "candidate",
+        "reason": "visualSignature eşleşti; carrierCount eşleşti; renk sayısı uyumlu; patternFamily eşleşti",
+        "requiresUserConfirmation": true,
+        "requiresShopValidation": true
+      },
       {
         "recipeId": "rec_12_medical_blue",
         "machineProfileId": "mp_12_mid",
@@ -5389,82 +5331,6 @@
         },
         "confidence": 0.65,
         "status": "industry_candidate",
-        "reason": "visualSignature eşleşti; carrierCount aday olarak kaldı; renk sayısı uyumlu; patternFamily eşleşti",
-        "requiresUserConfirmation": true,
-        "requiresShopValidation": true
-      },
-      {
-        "recipeId": "rec_24_marine_double_tracer",
-        "machineProfileId": "mp_24_standard",
-        "patternFamily": "tracer",
-        "visualSignature": "spiral_tracer",
-        "braidLogic": "1_over_1",
-        "carrierColorMap": {
-          "1": "black",
-          "2": "white",
-          "3": "white",
-          "4": "white",
-          "5": "white",
-          "6": "white",
-          "7": "black",
-          "8": "white",
-          "9": "white",
-          "10": "white",
-          "11": "white",
-          "12": "white",
-          "13": "black",
-          "14": "white",
-          "15": "white",
-          "16": "white",
-          "17": "white",
-          "18": "white",
-          "19": "black",
-          "20": "white",
-          "21": "white",
-          "22": "white",
-          "23": "white",
-          "24": "white"
-        },
-        "confidence": 0.65,
-        "status": "industry_candidate",
-        "reason": "visualSignature eşleşti; carrierCount aday olarak kaldı; renk sayısı uyumlu; patternFamily eşleşti",
-        "requiresUserConfirmation": true,
-        "requiresShopValidation": true
-      },
-      {
-        "recipeId": "rec_24_tracer_rope",
-        "machineProfileId": "mp_24_standard",
-        "patternFamily": "tracer",
-        "visualSignature": "spiral_tracer",
-        "braidLogic": "1_over_1_with_offsets",
-        "carrierColorMap": {
-          "1": "black",
-          "2": "white",
-          "3": "white",
-          "4": "white",
-          "5": "white",
-          "6": "white",
-          "7": "black",
-          "8": "white",
-          "9": "white",
-          "10": "white",
-          "11": "white",
-          "12": "white",
-          "13": "black",
-          "14": "white",
-          "15": "white",
-          "16": "white",
-          "17": "white",
-          "18": "white",
-          "19": "black",
-          "20": "white",
-          "21": "white",
-          "22": "white",
-          "23": "white",
-          "24": "white"
-        },
-        "confidence": 0.65,
-        "status": "candidate",
         "reason": "visualSignature eşleşti; carrierCount aday olarak kaldı; renk sayısı uyumlu; patternFamily eşleşti",
         "requiresUserConfirmation": true,
         "requiresShopValidation": true
@@ -5525,8 +5391,8 @@
       "math_recipe": "deepseek/deepseek-r1"
     },
     "prompt_version": "hybrid-v1",
-    "analyzed_at": "2026-06-29T16:45:52.147Z",
-    "duration_ms": 24902,
+    "analyzed_at": "2026-06-29T17:05:05.133Z",
+    "duration_ms": 374261,
     "visual_analysis": {
       "model": "google/gemini-2.5-flash",
       "raw_text": "Detected_Colors: [Siyah, Sarı]\nPattern_Flow: X_Kesişim\nWhite_Strand_Count_Between_Markers: 7-8",
@@ -5556,13 +5422,47 @@
     },
     "math_recipe": {
       "model": "deepseek/deepseek-r1",
-      "raw_text": "Okay, let's tackle this problem. The user wants me to generate a Maypole braiding machine recipe JSON based on some input data. Let me go through the constraints step by step.\n\nFirst, the White_Strand_Count_Between_Markers is given as 7-8. According to the first rule, if it's between 7-9, the carrierCount should be 24. Wait, but in the example JSON provided, the carrierCount is 16. Hmm, maybe I need to check again. Wait, the input says White_Strand_Count_Between_Markers is 7-8, which falls into the 7-9 range. So according to the first rule, carrierCount must be 24. But the example JSON has 16. That's conflicting. Wait, maybe the example is wrong? Or did I misread the input?\n\nWait, the user provided input observations: Detected_Colors: [Siyah, Sarı], Pattern_Flow: X_Kesişim, White_Strand_Count_Between_Markers: 7-8. So according to the first rule, since 7-9 is the range, carrierCount should be 24. But the sample JSON they provided has 16. That's a problem. Maybe the example is a test to see if I follow the rules correctly.\n\nWait, the user made a mistake in the example? Because according to their own rules, if White_Strand_Count is 7-9, carrierCount should be 24, not 16. So the correct carrierCount here should be 24. But the sample JSON shows 16, which would be for 3-5. So perhaps the example is incorrect, and the user expects me to generate the correct one.\n\nSo, moving forward: White_Strand_Count is 7-8, so carrierCount is 24. Then, the Pattern_Flow is X_Kesişim, which requires that colored carriers (Siyah and Sarı) are distributed between both even and odd indices. So the colorSequence array, which has length equal to carrierCount (24), needs to have Siyah and Sarı placed on both even and odd positions, with the rest as white.\n\nBut how many colored carriers are there? The Detected_Colors are two, but the number of colored strands depends on the pattern. Wait, the White_Strand_Count_Between_Markers is 7-8, which I think refers to the number of white strands between the colored markers. So maybe the total number of colored carriers is determined by that. Wait, perhaps the markers are the colored strands. For example, if between each pair of markers there are 7-8 white strands, then the total number of carriers would be the markers (colored) plus the white strands in between. But I'm not sure. Maybe the White_Strand_Count_Between_Markers refers to the number of white strands between each colored marker. So if there are, say, two markers (like Siyah and Sarı), then the total number of carriers would be (number of markers) + (number of white strands between them). But this is getting a bit unclear.\n\nAlternatively, maybe the White_Strand_Count_Between_Markers is the number of white strands between each pair of colored markers. For example, if there are two colored markers (like Siyah and Sarı), then between them there are 7-8 white strands. But how does that translate to the total carrier count? Let's think. If the pattern is X_Kesişim, which requires colored carriers to be on both even and odd indices. So the total number of colored carriers would be the number of markers. Wait, but the user's example input has Detected_Colors: [Siyah, Sarı], which are two colors. But how many carriers are colored? Maybe each color is used in multiple carriers. For example, in the example given in the rules, for 32 carriers, they have Siyah and Sarı repeated in certain positions. So perhaps the number of colored carriers depends on the pattern and the user's input. \n\nBut perhaps the main point here is that the White_Strand_Count_Between_Markers determines the carrierCount. So for 7-8, carrierCount is 24. Then, the colorSequence array must have a length of 24. The colors detected are Siyah and Sarı, so those need to be placed in the colorSequence. But how many of each? And how to distribute them according to X_Kesişim.\n\nSince the Pattern_Flow is X_Kesişim, the colored carriers must be distributed evenly between even and odd indices. So for example, if there are 4 colored carriers, 2 would be on even indices and 2 on odd. But the exact number depends on the total number of colored carriers. \n\nBut how to determine the number of colored carriers? The White_Strand_Count_Between_Markers is 7-8. Let's think: if between each colored marker there are 7-8 white strands, then the number of colored markers would be (carrierCount - total_white) / (white_between + 1). But I'm not sure. Alternatively, maybe the White_Strand_Count_Between_Markers refers to the number of white strands between each pair of colored markers. For example, if there are N colored carriers, then between each there are 7-8 white strands. So the total number of white strands would be (N) * (7 or 8), and the total carrierCount would be N + (N * 7) = N*8. But if carrierCount is 24, then N*8=24 → N=3. But 3*8=24. So that would mean 3 colored carriers and 21 white? No, that doesn't add up. Maybe I'm overcomplicating.\n\nAlternatively, perhaps the White_Strand_Count_Between_Markers is the number of white strands between each colored marker. For example, if there are two colored markers, then between them there are 7-8 white strands. So total carriers would be 2 (colored) + 7 (white) = 9. But that's not matching the carrierCount of 24. Hmm.\n\nWait, maybe the White_Strand_Count_Between_Markers is the number of white strands between each pair of colored markers. For example, if there are multiple colored markers arranged in a circle (since it's a maypole braider), then the number of white strands between each pair of colored markers is 7-8. So the number of colored markers (N) multiplied by (7+1) (since between each pair there are 7 white, so each colored is followed by 7 white, then another colored, etc.) So total carriers would be N*(7+1) = 8N. For example, if N=3, then 24 carriers. Which matches the carrierCount of 24 for 7-9 range. So in this case, N=3. So there are 3 colored markers, each separated by 7 white strands. But the detected colors are Siyah and Sarı. So how are these arranged? Maybe the colored markers alternate between Siyah and Sarı. For example, Siyah, 7 white, Sarı, 7 white, Siyah, 7 white. But that would be 3 colored markers (2 Siyah, 1 Sarı?), but the total would be 3*8=24. But the detected colors are two, so maybe the pattern repeats. For example, Siyah, 7 white, Sarı, 7 white, Siyah, 7 white, Sarı, 7 white... but that would be 4 colored markers, leading to 4*8=32 carriers. But in this case, the carrierCount is 24, so 3 colored markers. So perhaps the colors alternate but in a way that fits 3 markers. For example, Siyah, Sarı, Siyah. Then between each, 7 white. So total carriers: 3*8=24. So the colored positions would be at positions 0, 8, 16 (if starting from 0), but in 1-based indexing, maybe 1,9,17. But the problem is that the colorSequence array is 24 elements long. So how to place the colored carriers.\n\nBut according to the rules, for X_Kesişim, the colored carriers must be on both even and odd indices. So in 1-based indexing, the indices are 1,2,3,...24. So even indices are 2,4,6,...24, and odd are 1,3,5,...23. So the colored carriers should be placed on both even and odd indices. \n\nBut if we have 3 colored markers, how to distribute them between even and odd. For example, two on odd and one on even, or vice versa. But 3 is an odd number, so it can't be split evenly. So perhaps two on one parity and one on the other. But the user's example for 32 carriers (carrierCount 32) in the rules has 6 colored carriers (positions 1,3,5,17,19,21) which are all odd. But that's for Paralel_Spiral. For X_Kesişim, they need to be on both.\n\nSo back to the current problem: carrierCount is 24. Pattern_Flow is X_Kesişim. So colored carriers must be on both even and odd indices. The detected colors are Siyah and Sarı. So how to arrange them.\n\nAssuming that there are 3 colored carriers (since 24/8=3), but that's just a hypothesis. Alternatively, maybe the number of colored carriers is determined by the number of colors and the pattern. For example, two colors, each appearing multiple times. But the user hasn't specified how many colored carriers there are. This is a bit ambiguous.\n\nAlternatively, perhaps the number of colored carriers is determined by the White_Strand_Count_Between_Markers. For example, if between each colored marker there are 7-8 white strands, then the number of colored markers would be carrierCount / (7+1 +1) ? Not sure.\n\nAlternatively, maybe the White_Strand_Count_Between_Markers is the number of white strands between each pair of colored markers, and the",
-      "json": null,
+      "raw_text": "{\n  \"recipeId\": \"REC-POL-N-SO-DRAFT\",\n  \"productionReady\": false,\n  \"technicalSheet\": {\n    \"carrierCount\": 24,\n    \"walkType\": \"two-over-two\",\n    \"colorSequence\": [\n      \"black\",\n      \"white\",\n      \"white\",\n      \"white\",\n      \"white\",\n      \"yellow\",\n      \"white\",\n      \"white\",\n      \"black\",\n      \"white\",\n      \"white\",\n      \"white\",\n      \"white\",\n      \"yellow\",\n      \"white\",\n      \"white\",\n      \"black\",\n      \"white\",\n      \"white\",\n      \"white\",\n      \"white\",\n      \"yellow\",\n      \"white\",\n      \"white\"\n    ],\n    \"carrierLayoutCount\": 24\n  }\n}",
+      "json": {
+        "recipeId": "REC-POL-N-SO-DRAFT",
+        "productionReady": false,
+        "technicalSheet": {
+          "carrierCount": 24,
+          "walkType": "two-over-two",
+          "colorSequence": [
+            "black",
+            "white",
+            "white",
+            "white",
+            "white",
+            "yellow",
+            "white",
+            "white",
+            "black",
+            "white",
+            "white",
+            "white",
+            "white",
+            "yellow",
+            "white",
+            "white",
+            "black",
+            "white",
+            "white",
+            "white",
+            "white",
+            "yellow",
+            "white",
+            "white"
+          ],
+          "carrierLayoutCount": 24
+        }
+      },
       "usage": {
-        "prompt_tokens": 829,
-        "completion_tokens": 2200,
-        "total_tokens": 3029,
-        "cost": 0.014299065,
+        "prompt_tokens": 827,
+        "completion_tokens": 11035,
+        "total_tokens": 11862,
+        "cost": 0.0281664,
         "is_byok": false,
         "prompt_tokens_details": {
           "cached_tokens": 0,
@@ -5571,12 +5471,12 @@
           "video_tokens": 0
         },
         "cost_details": {
-          "upstream_inference_cost": 0.014299065,
-          "upstream_inference_prompt_cost": 0.001231065,
-          "upstream_inference_completions_cost": 0.013068
+          "upstream_inference_cost": 0.0281664,
+          "upstream_inference_prompt_cost": 0.0005789,
+          "upstream_inference_completions_cost": 0.0275875
         },
         "completion_tokens_details": {
-          "reasoning_tokens": 0,
+          "reasoning_tokens": 10869,
           "image_tokens": 0,
           "audio_tokens": 0
         }
@@ -5585,88 +5485,578 @@
     "predictions": {
       "fingerprint": {
         "predictedSignature": "dual_counter_spiral",
-        "confidenceScore": 0.45,
+        "confidenceScore": 0.82,
         "structuralAnalysis": {
-          "carrierCount": null,
+          "carrierCount": 24,
           "symmetry": "bilateral_periodic",
           "primaryApplication": "general_purpose_rope",
           "braidLogic": "two-over-two"
         }
       },
-      "predictedSignature": "unknown",
-      "confidenceScore": 0.45,
+      "predictedSignature": "dual_counter_spiral",
+      "confidenceScore": 0.82,
       "structuralAnalysis": {
-        "carrierCount": null,
+        "carrierCount": 24,
         "symmetry": "bilateral_periodic",
         "primaryApplication": "general_purpose_rope",
         "braidLogic": "two-over-two"
       },
-      "visualSignature": "unknown",
+      "visualSignature": "dual_counter_spiral",
       "dominantColor": "white",
-      "accentColors": [],
-      "estimatedCarrierCount": null,
+      "accentColors": [
+        "black",
+        "yellow"
+      ],
+      "estimatedCarrierCount": 24,
       "warnings": [
         "AI sonucu üretim gerçeği değildir; final reçete kullanıcı seçimiyle üretilir.",
         "Hybrid pipeline: Flash görsel ölçüm, R1 matematiksel reçete adımı kullanıldı."
       ],
       "pattern_type": "solid_with_markers",
       "colors": [
-        "white"
+        "white",
+        "black",
+        "yellow"
       ],
       "material": "polyester",
       "estimated_material": "polyester",
-      "carrier_count": null,
-      "estimated_carrier_count": null,
-      "estimated_color_sequence": [],
-      "estimated_carrier_layout": [],
+      "carrier_count": 24,
+      "estimated_carrier_count": 24,
+      "estimated_color_sequence": [
+        "black",
+        "white",
+        "white",
+        "white",
+        "white",
+        "yellow",
+        "white",
+        "white",
+        "black",
+        "white",
+        "white",
+        "white",
+        "white",
+        "yellow",
+        "white",
+        "white",
+        "black",
+        "white",
+        "white",
+        "white",
+        "white",
+        "yellow",
+        "white",
+        "white"
+      ],
+      "estimated_carrier_layout": [
+        {
+          "carrier_no": 1,
+          "color": "black",
+          "role": "sheath_marker"
+        },
+        {
+          "carrier_no": 2,
+          "color": "white",
+          "role": "sheath"
+        },
+        {
+          "carrier_no": 3,
+          "color": "white",
+          "role": "sheath"
+        },
+        {
+          "carrier_no": 4,
+          "color": "white",
+          "role": "sheath"
+        },
+        {
+          "carrier_no": 5,
+          "color": "white",
+          "role": "sheath"
+        },
+        {
+          "carrier_no": 6,
+          "color": "yellow",
+          "role": "sheath_marker"
+        },
+        {
+          "carrier_no": 7,
+          "color": "white",
+          "role": "sheath"
+        },
+        {
+          "carrier_no": 8,
+          "color": "white",
+          "role": "sheath"
+        },
+        {
+          "carrier_no": 9,
+          "color": "black",
+          "role": "sheath_marker"
+        },
+        {
+          "carrier_no": 10,
+          "color": "white",
+          "role": "sheath"
+        },
+        {
+          "carrier_no": 11,
+          "color": "white",
+          "role": "sheath"
+        },
+        {
+          "carrier_no": 12,
+          "color": "white",
+          "role": "sheath"
+        },
+        {
+          "carrier_no": 13,
+          "color": "white",
+          "role": "sheath"
+        },
+        {
+          "carrier_no": 14,
+          "color": "yellow",
+          "role": "sheath_marker"
+        },
+        {
+          "carrier_no": 15,
+          "color": "white",
+          "role": "sheath"
+        },
+        {
+          "carrier_no": 16,
+          "color": "white",
+          "role": "sheath"
+        },
+        {
+          "carrier_no": 17,
+          "color": "black",
+          "role": "sheath_marker"
+        },
+        {
+          "carrier_no": 18,
+          "color": "white",
+          "role": "sheath"
+        },
+        {
+          "carrier_no": 19,
+          "color": "white",
+          "role": "sheath"
+        },
+        {
+          "carrier_no": 20,
+          "color": "white",
+          "role": "sheath"
+        },
+        {
+          "carrier_no": 21,
+          "color": "white",
+          "role": "sheath"
+        },
+        {
+          "carrier_no": 22,
+          "color": "yellow",
+          "role": "sheath_marker"
+        },
+        {
+          "carrier_no": 23,
+          "color": "white",
+          "role": "sheath"
+        },
+        {
+          "carrier_no": 24,
+          "color": "white",
+          "role": "sheath"
+        }
+      ],
       "estimated_layout_basis": "hybrid_flash_visual_analysis_plus_r1_math_recipe",
       "machine_fit": "requires_user_confirmation",
       "braid_walk_type": "two-over-two",
       "sheath": "braided sheath",
       "core": "unknown",
-      "confidence": "low",
+      "confidence": "high",
       "warning": "AI sonucu üretim gerçeği değildir; final reçete kullanıcı seçimiyle üretilir.",
       "predictor_result": {
-        "visualSignature": "unknown",
-        "patternFamily": "unknown",
-        "confidence": 0,
+        "visualSignature": "dual_counter_spiral",
+        "patternFamily": "tracer",
+        "confidence": 0.68,
         "basis": [
-          "Boş harita."
+          "dominant color present",
+          "balanced accent ratio",
+          "tracers exist in BOTH clockwise and counter-clockwise sets"
         ],
         "warnings": [],
         "analysis": {
-          "carrierCount": 0,
+          "carrierCount": 24,
           "braidLogic": "two-over-two",
-          "colors": [],
+          "period": 8,
+          "blockSize": 4,
+          "dominantColor": "white",
+          "accentColors": [
+            "black",
+            "yellow"
+          ],
+          "tracerPositions": [
+            1,
+            6,
+            9,
+            14,
+            17,
+            22
+          ],
+          "colors": [
+            "black",
+            "white",
+            "white",
+            "white",
+            "white",
+            "yellow",
+            "white",
+            "white",
+            "black",
+            "white",
+            "white",
+            "white",
+            "white",
+            "yellow",
+            "white",
+            "white",
+            "black",
+            "white",
+            "white",
+            "white",
+            "white",
+            "yellow",
+            "white",
+            "white"
+          ],
+          "carrierGroups": {
+            "clockwise": [
+              1,
+              3,
+              5,
+              7,
+              9,
+              11,
+              13,
+              15,
+              17,
+              19,
+              21,
+              23
+            ],
+            "counterClockwise": [
+              2,
+              4,
+              6,
+              8,
+              10,
+              12,
+              14,
+              16,
+              18,
+              20,
+              22,
+              24
+            ]
+          },
+          "clockwiseColors": [
+            "black",
+            "white",
+            "white",
+            "white",
+            "black",
+            "white",
+            "white",
+            "white",
+            "black",
+            "white",
+            "white",
+            "white"
+          ],
+          "counterClockwiseColors": [
+            "white",
+            "white",
+            "yellow",
+            "white",
+            "white",
+            "white",
+            "yellow",
+            "white",
+            "white",
+            "white",
+            "yellow",
+            "white"
+          ],
+          "accentCarriers": [
+            {
+              "carrierNo": 1,
+              "color": "black"
+            },
+            {
+              "carrierNo": 6,
+              "color": "yellow"
+            },
+            {
+              "carrierNo": 9,
+              "color": "black"
+            },
+            {
+              "carrierNo": 14,
+              "color": "yellow"
+            },
+            {
+              "carrierNo": 17,
+              "color": "black"
+            },
+            {
+              "carrierNo": 22,
+              "color": "yellow"
+            }
+          ],
+          "accentGroupUsage": {
+            "clockwise": 3,
+            "counterClockwise": 3
+          },
+          "hasAdjacentTracerCluster": false,
           "missingCarriers": []
         },
-        "isReliable": false
+        "isReliable": true
       }
     },
-    "raw_text": "Okay, let's tackle this problem. The user wants me to generate a Maypole braiding machine recipe JSON based on some input data. Let me go through the constraints step by step.\n\nFirst, the White_Strand_Count_Between_Markers is given as 7-8. According to the first rule, if it's between 7-9, the carrierCount should be 24. Wait, but in the example JSON provided, the carrierCount is 16. Hmm, maybe I need to check again. Wait, the input says White_Strand_Count_Between_Markers is 7-8, which falls into the 7-9 range. So according to the first rule, carrierCount must be 24. But the example JSON has 16. That's conflicting. Wait, maybe the example is wrong? Or did I misread the input?\n\nWait, the user provided input observations: Detected_Colors: [Siyah, Sarı], Pattern_Flow: X_Kesişim, White_Strand_Count_Between_Markers: 7-8. So according to the first rule, since 7-9 is the range, carrierCount should be 24. But the sample JSON they provided has 16. That's a problem. Maybe the example is a test to see if I follow the rules correctly.\n\nWait, the user made a mistake in the example? Because according to their own rules, if White_Strand_Count is 7-9, carrierCount should be 24, not 16. So the correct carrierCount here should be 24. But the sample JSON shows 16, which would be for 3-5. So perhaps the example is incorrect, and the user expects me to generate the correct one.\n\nSo, moving forward: White_Strand_Count is 7-8, so carrierCount is 24. Then, the Pattern_Flow is X_Kesişim, which requires that colored carriers (Siyah and Sarı) are distributed between both even and odd indices. So the colorSequence array, which has length equal to carrierCount (24), needs to have Siyah and Sarı placed on both even and odd positions, with the rest as white.\n\nBut how many colored carriers are there? The Detected_Colors are two, but the number of colored strands depends on the pattern. Wait, the White_Strand_Count_Between_Markers is 7-8, which I think refers to the number of white strands between the colored markers. So maybe the total number of colored carriers is determined by that. Wait, perhaps the markers are the colored strands. For example, if between each pair of markers there are 7-8 white strands, then the total number of carriers would be the markers (colored) plus the white strands in between. But I'm not sure. Maybe the White_Strand_Count_Between_Markers refers to the number of white strands between each colored marker. So if there are, say, two markers (like Siyah and Sarı), then the total number of carriers would be (number of markers) + (number of white strands between them). But this is getting a bit unclear.\n\nAlternatively, maybe the White_Strand_Count_Between_Markers is the number of white strands between each pair of colored markers. For example, if there are two colored markers (like Siyah and Sarı), then between them there are 7-8 white strands. But how does that translate to the total carrier count? Let's think. If the pattern is X_Kesişim, which requires colored carriers to be on both even and odd indices. So the total number of colored carriers would be the number of markers. Wait, but the user's example input has Detected_Colors: [Siyah, Sarı], which are two colors. But how many carriers are colored? Maybe each color is used in multiple carriers. For example, in the example given in the rules, for 32 carriers, they have Siyah and Sarı repeated in certain positions. So perhaps the number of colored carriers depends on the pattern and the user's input. \n\nBut perhaps the main point here is that the White_Strand_Count_Between_Markers determines the carrierCount. So for 7-8, carrierCount is 24. Then, the colorSequence array must have a length of 24. The colors detected are Siyah and Sarı, so those need to be placed in the colorSequence. But how many of each? And how to distribute them according to X_Kesişim.\n\nSince the Pattern_Flow is X_Kesişim, the colored carriers must be distributed evenly between even and odd indices. So for example, if there are 4 colored carriers, 2 would be on even indices and 2 on odd. But the exact number depends on the total number of colored carriers. \n\nBut how to determine the number of colored carriers? The White_Strand_Count_Between_Markers is 7-8. Let's think: if between each colored marker there are 7-8 white strands, then the number of colored markers would be (carrierCount - total_white) / (white_between + 1). But I'm not sure. Alternatively, maybe the White_Strand_Count_Between_Markers refers to the number of white strands between each pair of colored markers. For example, if there are N colored carriers, then between each there are 7-8 white strands. So the total number of white strands would be (N) * (7 or 8), and the total carrierCount would be N + (N * 7) = N*8. But if carrierCount is 24, then N*8=24 → N=3. But 3*8=24. So that would mean 3 colored carriers and 21 white? No, that doesn't add up. Maybe I'm overcomplicating.\n\nAlternatively, perhaps the White_Strand_Count_Between_Markers is the number of white strands between each colored marker. For example, if there are two colored markers, then between them there are 7-8 white strands. So total carriers would be 2 (colored) + 7 (white) = 9. But that's not matching the carrierCount of 24. Hmm.\n\nWait, maybe the White_Strand_Count_Between_Markers is the number of white strands between each pair of colored markers. For example, if there are multiple colored markers arranged in a circle (since it's a maypole braider), then the number of white strands between each pair of colored markers is 7-8. So the number of colored markers (N) multiplied by (7+1) (since between each pair there are 7 white, so each colored is followed by 7 white, then another colored, etc.) So total carriers would be N*(7+1) = 8N. For example, if N=3, then 24 carriers. Which matches the carrierCount of 24 for 7-9 range. So in this case, N=3. So there are 3 colored markers, each separated by 7 white strands. But the detected colors are Siyah and Sarı. So how are these arranged? Maybe the colored markers alternate between Siyah and Sarı. For example, Siyah, 7 white, Sarı, 7 white, Siyah, 7 white. But that would be 3 colored markers (2 Siyah, 1 Sarı?), but the total would be 3*8=24. But the detected colors are two, so maybe the pattern repeats. For example, Siyah, 7 white, Sarı, 7 white, Siyah, 7 white, Sarı, 7 white... but that would be 4 colored markers, leading to 4*8=32 carriers. But in this case, the carrierCount is 24, so 3 colored markers. So perhaps the colors alternate but in a way that fits 3 markers. For example, Siyah, Sarı, Siyah. Then between each, 7 white. So total carriers: 3*8=24. So the colored positions would be at positions 0, 8, 16 (if starting from 0), but in 1-based indexing, maybe 1,9,17. But the problem is that the colorSequence array is 24 elements long. So how to place the colored carriers.\n\nBut according to the rules, for X_Kesişim, the colored carriers must be on both even and odd indices. So in 1-based indexing, the indices are 1,2,3,...24. So even indices are 2,4,6,...24, and odd are 1,3,5,...23. So the colored carriers should be placed on both even and odd indices. \n\nBut if we have 3 colored markers, how to distribute them between even and odd. For example, two on odd and one on even, or vice versa. But 3 is an odd number, so it can't be split evenly. So perhaps two on one parity and one on the other. But the user's example for 32 carriers (carrierCount 32) in the rules has 6 colored carriers (positions 1,3,5,17,19,21) which are all odd. But that's for Paralel_Spiral. For X_Kesişim, they need to be on both.\n\nSo back to the current problem: carrierCount is 24. Pattern_Flow is X_Kesişim. So colored carriers must be on both even and odd indices. The detected colors are Siyah and Sarı. So how to arrange them.\n\nAssuming that there are 3 colored carriers (since 24/8=3), but that's just a hypothesis. Alternatively, maybe the number of colored carriers is determined by the number of colors and the pattern. For example, two colors, each appearing multiple times. But the user hasn't specified how many colored carriers there are. This is a bit ambiguous.\n\nAlternatively, perhaps the number of colored carriers is determined by the White_Strand_Count_Between_Markers. For example, if between each colored marker there are 7-8 white strands, then the number of colored markers would be carrierCount / (7+1 +1) ? Not sure.\n\nAlternatively, maybe the White_Strand_Count_Between_Markers is the number of white strands between each pair of colored markers, and the",
+    "raw_text": "{\n  \"recipeId\": \"REC-POL-N-SO-DRAFT\",\n  \"productionReady\": false,\n  \"technicalSheet\": {\n    \"carrierCount\": 24,\n    \"walkType\": \"two-over-two\",\n    \"colorSequence\": [\n      \"black\",\n      \"white\",\n      \"white\",\n      \"white\",\n      \"white\",\n      \"yellow\",\n      \"white\",\n      \"white\",\n      \"black\",\n      \"white\",\n      \"white\",\n      \"white\",\n      \"white\",\n      \"yellow\",\n      \"white\",\n      \"white\",\n      \"black\",\n      \"white\",\n      \"white\",\n      \"white\",\n      \"white\",\n      \"yellow\",\n      \"white\",\n      \"white\"\n    ],\n    \"carrierLayoutCount\": 24\n  }\n}",
     "usage": {
-      "prompt_tokens": 4002,
-      "completion_tokens": 2236,
-      "total_tokens": 6238,
-      "cost": 0.015340965
+      "prompt_tokens": 4000,
+      "completion_tokens": 11071,
+      "total_tokens": 15071,
+      "cost": 0.0292083
     },
     "predictor_result": {
-      "visualSignature": "unknown",
-      "patternFamily": "unknown",
-      "confidence": 0,
+      "visualSignature": "dual_counter_spiral",
+      "patternFamily": "tracer",
+      "confidence": 0.68,
       "basis": [
-        "Boş harita."
+        "dominant color present",
+        "balanced accent ratio",
+        "tracers exist in BOTH clockwise and counter-clockwise sets"
       ],
       "warnings": [],
       "analysis": {
-        "carrierCount": 0,
+        "carrierCount": 24,
         "braidLogic": "two-over-two",
-        "colors": [],
+        "period": 8,
+        "blockSize": 4,
+        "dominantColor": "white",
+        "accentColors": [
+          "black",
+          "yellow"
+        ],
+        "tracerPositions": [
+          1,
+          6,
+          9,
+          14,
+          17,
+          22
+        ],
+        "colors": [
+          "black",
+          "white",
+          "white",
+          "white",
+          "white",
+          "yellow",
+          "white",
+          "white",
+          "black",
+          "white",
+          "white",
+          "white",
+          "white",
+          "yellow",
+          "white",
+          "white",
+          "black",
+          "white",
+          "white",
+          "white",
+          "white",
+          "yellow",
+          "white",
+          "white"
+        ],
+        "carrierGroups": {
+          "clockwise": [
+            1,
+            3,
+            5,
+            7,
+            9,
+            11,
+            13,
+            15,
+            17,
+            19,
+            21,
+            23
+          ],
+          "counterClockwise": [
+            2,
+            4,
+            6,
+            8,
+            10,
+            12,
+            14,
+            16,
+            18,
+            20,
+            22,
+            24
+          ]
+        },
+        "clockwiseColors": [
+          "black",
+          "white",
+          "white",
+          "white",
+          "black",
+          "white",
+          "white",
+          "white",
+          "black",
+          "white",
+          "white",
+          "white"
+        ],
+        "counterClockwiseColors": [
+          "white",
+          "white",
+          "yellow",
+          "white",
+          "white",
+          "white",
+          "yellow",
+          "white",
+          "white",
+          "white",
+          "yellow",
+          "white"
+        ],
+        "accentCarriers": [
+          {
+            "carrierNo": 1,
+            "color": "black"
+          },
+          {
+            "carrierNo": 6,
+            "color": "yellow"
+          },
+          {
+            "carrierNo": 9,
+            "color": "black"
+          },
+          {
+            "carrierNo": 14,
+            "color": "yellow"
+          },
+          {
+            "carrierNo": 17,
+            "color": "black"
+          },
+          {
+            "carrierNo": 22,
+            "color": "yellow"
+          }
+        ],
+        "accentGroupUsage": {
+          "clockwise": 3,
+          "counterClockwise": 3
+        },
+        "hasAdjacentTracerCluster": false,
         "missingCarriers": []
       },
-      "isReliable": false
+      "isReliable": true
     },
-    "recipe_candidates": [],
+    "recipe_candidates": [
+      {
+        "recipeId": "rec_16_climbing_cross",
+        "machineProfileId": "mp_16_standard",
+        "patternFamily": "tracer",
+        "visualSignature": "dual_counter_spiral",
+        "braidLogic": "1_over_1",
+        "carrierColorMap": {
+          "1": "white",
+          "2": "black",
+          "3": "white",
+          "4": "white",
+          "5": "white",
+          "6": "white",
+          "7": "white",
+          "8": "black",
+          "9": "white",
+          "10": "black",
+          "11": "white",
+          "12": "white",
+          "13": "white",
+          "14": "white",
+          "15": "white",
+          "16": "black"
+        },
+        "confidence": 0.65,
+        "status": "candidate",
+        "reason": "visualSignature eşleşti; carrierCount aday olarak kaldı; renk sayısı uyumlu; patternFamily eşleşti",
+        "requiresUserConfirmation": true,
+        "requiresShopValidation": true
+      },
+      {
+        "recipeId": "rec_32_dynamic_rope",
+        "machineProfileId": "mp_32_high",
+        "patternFamily": "tracer",
+        "visualSignature": "dual_counter_spiral",
+        "braidLogic": "2_over_2",
+        "carrierColorMap": {
+          "1": "white",
+          "2": "black",
+          "3": "white",
+          "4": "white",
+          "5": "white",
+          "6": "white",
+          "7": "white",
+          "8": "black",
+          "9": "white",
+          "10": "black",
+          "11": "white",
+          "12": "white",
+          "13": "white",
+          "14": "white",
+          "15": "white",
+          "16": "black",
+          "17": "white",
+          "18": "black",
+          "19": "white",
+          "20": "white",
+          "21": "white",
+          "22": "white",
+          "23": "white",
+          "24": "black",
+          "25": "white",
+          "26": "black",
+          "27": "white",
+          "28": "white",
+          "29": "white",
+          "30": "white",
+          "31": "white",
+          "32": "black"
+        },
+        "confidence": 0.65,
+        "status": "candidate",
+        "reason": "visualSignature eşleşti; carrierCount aday olarak kaldı; renk sayısı uyumlu; patternFamily eşleşti",
+        "requiresUserConfirmation": true,
+        "requiresShopValidation": true
+      }
+    ],
     "recipe_candidate_certainty": "not_unique"
   },
   "openrouter:google/gemini-2.5-flash:deepseek/deepseek-r1:hybrid-v1:2e109edea7365de5ced9a47a939cff6c4aca7bfe7825c969a549dc3804b8299f:eyJwcm9kdWN0VXNlIjoiIiwia25vd25EaWFtZXRlciI6IiIs": {

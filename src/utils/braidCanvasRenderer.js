@@ -81,7 +81,6 @@ function drawMatrixTextileCells(ctx, sheet, width, height, options) {
     cellWidth,
     cellHeight,
     width,
-    baseColor: mostCommonColor(colors) || "white",
     close: options.close,
     shadowAlpha: options.shadowAlpha,
     span
@@ -115,21 +114,20 @@ function normalizeColorSequence(colorSequence, carrierLayout, carrierCount) {
   });
 }
 
-function drawDeterministicStrands(ctx, { colors, rows, steps, cellWidth, cellHeight, width, baseColor, close, shadowAlpha, span }) {
-  const baseCarriers = colors
-    .map((color, index) => ({ color, index }))
-    .filter((carrier) => carrier.color === baseColor);
-  const markerCarriers = colors
-    .map((color, index) => ({ color, index }))
-    .filter((carrier) => carrier.color !== baseColor);
+function drawDeterministicStrands(ctx, { colors, rows, steps, cellWidth, cellHeight, width, close, shadowAlpha, span }) {
   // İplik kalınlığı %30 artırıldı (üretim halatındaki dolgunluğu yansıtmak için)
   const lineWidth = close
     ? Math.max(5, cellHeight * 1.07)
     : Math.max(2.2, cellHeight * 0.76);
 
+  // Tüm kuklalar eşit stillendirme ile çizilir.
+  // Eski base/marker ayrımı ve marker solid outline kaldırıldı:
+  // marker ipliklerin #111 kontur + aşırı gölgesi beyaz alanları yutuyor,
+  // hücre sınır çizgilerinin iplik rengini boğmasına yol açıyordu.
+  const allCarriers = colors.map((color, index) => ({ color, index }));
   const patternWidth = Math.max(cellWidth, steps * cellWidth);
   for (let offsetX = 0; offsetX < width + patternWidth; offsetX += patternWidth) {
-    for (const carrier of baseCarriers) {
+    for (const carrier of allCarriers) {
       drawCarrierStrand(ctx, {
         carrier,
         rows,
@@ -141,22 +139,6 @@ function drawDeterministicStrands(ctx, { colors, rows, steps, cellWidth, cellHei
         close,
         shadowAlpha: shadowAlpha * 0.65,
         dashed: false,
-        span
-      });
-    }
-
-    for (const carrier of markerCarriers) {
-      drawCarrierStrand(ctx, {
-        carrier,
-        rows,
-        steps,
-        cellWidth,
-        cellHeight,
-        offsetX,
-        lineWidth: lineWidth * 0.96,
-        close,
-        shadowAlpha: Math.min(0.5, shadowAlpha + 0.12),
-        dashed: true,
         span
       });
     }
@@ -201,27 +183,9 @@ function drawStrandSegment(ctx, { points, color, lineWidth, close, shadowAlpha, 
   const first = points[0];
   const last = points[points.length - 1];
   const base = colorToHex(color);
-  const isMarker = dashed;
 
-  // Marker (renkli) ipliklerde kontur + güçlü gölge: beyaz ipliklerin
-  // ters yönden renkli şeridi yutmasını engeller, blok halinde akmasını sağlar
-  if (isMarker) {
-    ctx.save();
-    ctx.lineCap = "round";
-    ctx.lineJoin = "round";
-    ctx.shadowColor = `rgba(25, 28, 26, ${Math.min(0.6, shadowAlpha + 0.35)})`;
-    ctx.shadowBlur = close ? 6 : 3.5;
-    ctx.shadowOffsetY = close ? 1.6 : 0.6;
-    ctx.strokeStyle = "#111";
-    ctx.lineWidth = lineWidth + (close ? 3 : 2);
-    ctx.beginPath();
-    ctx.moveTo(first.x, first.y);
-    for (const point of points.slice(1)) {
-      ctx.lineTo(point.x, point.y);
-    }
-    ctx.stroke();
-    ctx.restore();
-  }
+  // NOT: Marker ipliklerde eski solid outline (#111) + aşırı gölge kaldırıldı.
+  // Tüm iplikler aynı gölge/nurlama ile render edilir; marker'lar sadece dashed çizgiyle ayrışır.
 
   const gradient = ctx.createLinearGradient(first.x, first.y, last.x, last.y);
   gradient.addColorStop(0, shadeHex(base, -22));
