@@ -355,7 +355,7 @@ function logAnalysisServer(stage, message, details = {}) {
   console.info("[BraidStudio:analysis]", stage, message, details);
 }
 
-async function callOpenRouter({ model, messages, appUrl, openRouterApiKey, temperature = 0.1, responseFormat = null, stage = "openrouter", timeoutMs = 110000 }) {
+async function callOpenRouter({ model, messages, appUrl, openRouterApiKey, temperature = 0.1, responseFormat = null, stage = "openrouter", timeoutMs = 110000, maxTokens = null }) {
   const body = {
     model,
     temperature,
@@ -364,15 +364,18 @@ async function callOpenRouter({ model, messages, appUrl, openRouterApiKey, tempe
   if (responseFormat) {
     body.response_format = responseFormat;
   }
+  if (maxTokens) {
+    body.max_tokens = maxTokens;
+  }
 
   const startedAt = Date.now();
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), timeoutMs);
-  logAnalysisServer(stage, "OpenRouter isteği başladı", { model, timeoutMs });
+  let timeout;
+  logAnalysisServer(stage, "OpenRouter isteği başladı", { model, timeoutMs, maxTokens });
 
   let response;
   try {
-    response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+    const request = fetch("https://openrouter.ai/api/v1/chat/completions", {
       method: "POST",
       headers: {
         "authorization": `Bearer ${openRouterApiKey}`,
@@ -383,6 +386,16 @@ async function callOpenRouter({ model, messages, appUrl, openRouterApiKey, tempe
       body: JSON.stringify(body),
       signal: controller.signal
     });
+    const timeoutGuard = new Promise((_, reject) => {
+      timeout = setTimeout(() => {
+        controller.abort();
+        reject(Object.assign(new Error(`${stage}_timeout`), {
+          statusCode: 504,
+          details: { provider: "openrouter", model, timeoutMs }
+        }));
+      }, timeoutMs);
+    });
+    response = await Promise.race([request, timeoutGuard]);
   } catch (error) {
     if (error.name === "AbortError") {
       throw Object.assign(new Error(`${stage}_timeout`), {
@@ -536,6 +549,8 @@ async function analyzeWithOpenRouter({ imageHash, mimeType, dataBase64, imageCon
     openRouterApiKey,
     temperature: 0.65,
     stage: "r1_math_recipe",
+    timeoutMs: 110000,
+    maxTokens: 2200,
     messages: [
       {
         role: "system",

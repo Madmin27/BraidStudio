@@ -21,3 +21,4 @@ Flash sıcaklığı `0.05`, R1 sıcaklığı `0.65` olarak ayrıldı. R1 JSON pa
 Analiz sırasında upload panelinde canlı progress bar, pulse efekti ve hibrit aşama listesi gösterilir.
 Backend `/api/analyze-image` için istek/cache/pipeline/aşama/hata logları journala yazılır. OpenRouter çağrılarına 110sn, frontend analiz isteğine 240sn timeout eklendi.
 Görsel yüklendikten sonra upload panelinde katlanabilir `Görsel bilgileri` alanı açılır; kullanım, çap, beklenen kukla, marker yönü, beyaz şerit sayımı ve notlar Flash analiz promptuna yardımcı bağlam olarak gönderilir.
+R1 çağrısına sert `Promise.race` timeout ve `max_tokens=2200` eklendi; progress metni tek backend isteğini “Flash + R1 hibrit analiz” olarak gösterir.

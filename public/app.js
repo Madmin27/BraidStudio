@@ -82,8 +82,8 @@ const analysisSteps = [];
 const processSteps = [];
 const analysisProgressItems = [
   "Görsel base64 hazırlanıyor",
-  "Flash görsel ölçüm yapıyor",
-  "R1 matematiksel reçete adayını kuruyor",
+  "Backend hibrit analiz yapıyor",
+  "AI reçete adayını doğruluyor",
   "Sonuç kullanıcı seçimlerine aktarılıyor"
 ];
 let latestRecipePngUrl = "";
@@ -1029,7 +1029,7 @@ analyzeButton.addEventListener("click", async () => {
     });
     setAnalysisProgress({
       step: 2,
-      title: "Flash görsel ölçüm yapıyor"
+      title: "Backend hibrit analiz yapıyor (Flash + R1)"
     });
     logAnalysis("Backend /api/analyze-image isteği gönderildi.");
     const controller = new AbortController();
@@ -1052,7 +1052,7 @@ analyzeButton.addEventListener("click", async () => {
     }
     setAnalysisProgress({
       step: 3,
-      title: "R1 matematiksel reçete adayını kurdu"
+      title: "AI reçete adayını doğruladı"
     });
     saveCachedAnalysis(payload.analysis);
     state = { ...state, ai_analysis_result: payload.analysis };
