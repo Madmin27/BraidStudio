@@ -1,4 +1,4 @@
-import { buildBraidMatrix, getCarrierDirection } from "./braidMatrix.js";
+import { buildBraidMatrix } from "./braidMatrix.js";
 
 const FALLBACK_COLORS = {
   white: "#f8faf9",
@@ -18,33 +18,33 @@ export function drawMainRopeCanvas(canvas, sheet, options = {}) {
   const width = canvas.width;
   const height = canvas.height;
   const close = Boolean(options.close);
-  const matrix = buildBraidMatrix({
-    carrierLayout: sheet.carrier_layout,
-    machineProfile: sheet.machineProfile,
-    braidLogic: sheet.braid_walk_type,
-    steps: close ? 34 : 54
-  });
 
   ctx.clearRect(0, 0, width, height);
   ctx.save();
   roundedClip(ctx, 0, 0, width, height, close ? 0 : 4);
+  const grid = close
+    ? drawCloseTextileView(ctx, sheet, width, height)
+    : drawTechnicalRopeView(ctx, sheet, width, height);
   if (close) {
-    drawCloseTextileView(ctx, sheet, width, height);
-  } else {
-    drawTechnicalRopeView(ctx, sheet, width, height);
+    const shadow = ctx.createLinearGradient(0, height * 0.70, 0, height);
+    shadow.addColorStop(0, "rgba(255,255,255,0)");
+    shadow.addColorStop(1, "rgba(67,54,42,0.42)");
+    ctx.fillStyle = shadow;
+    ctx.fillRect(0, height * 0.62, width, height * 0.38);
   }
-
   ctx.restore();
   return {
-    steps: matrix.steps,
-    carrierCount: matrix.carrierCount,
-    cellCount: matrix.steps * matrix.carrierCount
+    steps: grid.steps,
+    carrierCount: Number(sheet.carrier_count || sheet.carrier_layout?.length || 0),
+    rows: grid.rows,
+    cellWidth: grid.cellWidth,
+    cellHeight: grid.cellHeight,
+    cellCount: grid.steps * grid.rows
   };
 }
 
 function drawTechnicalRopeView(ctx, sheet, width, height) {
-  drawMatrixTextileCells(ctx, sheet, width, height, {
-    steps: 72,
+  return drawMatrixTextileCells(ctx, sheet, width, height, {
     close: false,
     background: "#fbfbf8",
     strokeAlpha: 0.18,
@@ -53,46 +53,41 @@ function drawTechnicalRopeView(ctx, sheet, width, height) {
 }
 
 function drawCloseTextileView(ctx, sheet, width, height) {
-  drawMatrixTextileCells(ctx, sheet, width, height, {
-    steps: 34,
+  return drawMatrixTextileCells(ctx, sheet, width, height, {
     close: true,
     background: "#f5f4ef",
     strokeAlpha: 0.10,
     shadowAlpha: 0.34
   });
-  const shadow = ctx.createLinearGradient(0, height * 0.70, 0, height);
-  shadow.addColorStop(0, "rgba(255,255,255,0)");
-  shadow.addColorStop(1, "rgba(67,54,42,0.42)");
-  ctx.fillStyle = shadow;
-  ctx.fillRect(0, height * 0.62, width, height * 0.38);
 }
 
 function drawMatrixTextileCells(ctx, sheet, width, height, options) {
   const carrierCount = Number(sheet.carrier_count || sheet.carrier_layout?.length || 0);
-  const rows = Math.max(1, Math.ceil(carrierCount / 2));
-  const steps = options.steps;
-  const cellWidth = width / steps;
-  const cellHeight = height / rows;
-  const groups = carrierGroups(sheet);
+  const grid = calculateCalibratedBraidGrid({ width, height, carrierCount, close: options.close });
+  const rows = grid.rows;
+  const steps = grid.steps;
+  const cellWidth = grid.cellWidth;
+  const cellHeight = grid.cellHeight;
   const span = isTwoOverTwo(sheet.braid_walk_type) ? 2 : 1;
+  const colors = normalizeColorSequence(sheet.color_sequence, sheet.carrier_layout, carrierCount);
 
   ctx.fillStyle = options.background;
   ctx.fillRect(0, 0, width, height);
 
   for (let time = 0; time < steps; time += 1) {
-    for (let row = 0; row < rows; row += 1) {
-      const clockwiseUpper = Math.floor((time + row) / span) % 2 === 0;
-      const clockwiseCarrier = groups.clockwise[positiveModulo(row + time, groups.clockwise.length)];
-      const counterCarrier = groups.counterClockwise[positiveModulo(row - time, groups.counterClockwise.length)];
-      const topCarrier = clockwiseUpper ? clockwiseCarrier || counterCarrier : counterCarrier || clockwiseCarrier;
-      if (!topCarrier) continue;
+    for (let yGrid = 0; yGrid < rows; yGrid += 1) {
+      const clockwiseCarrierIndex = positiveModulo(yGrid - time, carrierCount);
+      const counterCarrierIndex = positiveModulo(yGrid + time, carrierCount);
+      const clockwiseUpper = Math.floor((time + yGrid) / span) % 2 === 0;
+      const activeCarrierIndex = clockwiseUpper ? clockwiseCarrierIndex : counterCarrierIndex;
+      const cellColor = colors[activeCarrierIndex] || "white";
 
       drawTextileCell(ctx, {
         x: time * cellWidth,
-        y: row * cellHeight,
+        y: yGrid * cellHeight,
         width: cellWidth,
         height: cellHeight,
-        color: topCarrier.color,
+        color: cellColor,
         direction: clockwiseUpper ? "clockwise" : "counterClockwise",
         close: options.close,
         strokeAlpha: options.strokeAlpha,
@@ -100,6 +95,31 @@ function drawMatrixTextileCells(ctx, sheet, width, height, options) {
       });
     }
   }
+  return grid;
+}
+
+export function calculateCalibratedBraidGrid({ width, height, carrierCount, close = false }) {
+  const rows = Math.max(1, Math.ceil(Number(carrierCount || 0)));
+  const cellHeight = height / rows;
+  const closeSteps = Math.max(rows + 8, Math.ceil(rows * 1.5));
+  const cellWidth = close ? width / closeSteps : cellHeight;
+  const steps = close ? closeSteps : Math.max(1, Math.floor(width / cellWidth));
+  return {
+    rows,
+    cellHeight,
+    cellWidth,
+    steps
+  };
+}
+
+function normalizeColorSequence(colorSequence, carrierLayout, carrierCount) {
+  const fromSequence = Array.isArray(colorSequence) ? colorSequence : [];
+  const fromLayout = Array.isArray(carrierLayout) ? carrierLayout : [];
+  return Array.from({ length: carrierCount }, (_, index) => {
+    if (fromSequence[index]) return fromSequence[index];
+    const carrier = fromLayout.find((item) => Number(item.carrier_no) === index + 1);
+    return carrier?.color || "white";
+  });
 }
 
 function drawTextileCell(ctx, { x, y, width, height, color, direction, close, strokeAlpha, shadowAlpha }) {
@@ -145,14 +165,6 @@ function drawTextileCell(ctx, { x, y, width, height, color, direction, close, st
   }
   ctx.stroke();
   ctx.restore();
-}
-
-function carrierGroups(sheet) {
-  const carriers = Array.isArray(sheet.carrier_layout) ? sheet.carrier_layout : [];
-  return {
-    clockwise: carriers.filter((carrier) => getCarrierDirection(carrier.carrier_no, sheet.machineProfile) === "clockwise"),
-    counterClockwise: carriers.filter((carrier) => getCarrierDirection(carrier.carrier_no, sheet.machineProfile) === "counterClockwise")
-  };
 }
 
 function isTwoOverTwo(walkType) {

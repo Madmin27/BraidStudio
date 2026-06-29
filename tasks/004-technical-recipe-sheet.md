@@ -2,7 +2,7 @@
 
 - status: done
 - owner: codex
-- updated_at: 2026-06-28
+- updated_at: 2026-06-29
 - related_files:
   - `src/state.js`
   - `public/index.html`
@@ -28,3 +28,6 @@ Ana halat, yakın görünüm ve kukla yürüyüş diyagramı için Canvas render
 Halat görünümleri referans formata yaklaştırıldı: ana görünüm teknik gri örgü kafesi + segmentli tracer bandı, yakın görünüm hacimli beyaz tekstil örgüsü + segmentli tracer bandı olarak Canvas'ta çizilir.
 Canvas halat renderer çizgi/tracer-band modelinden hücre tabanlı tekstil modeline geçirildi; her matrix hücresinde 2-over-2 üstte kalan carrier'ın rengi gradyanlı oval dilim olarak çizilir.
 Kukla sayısı/renk/desen değişince carrier layout AI çağırmadan deterministic olarak yeniden kurulur; reçete motoru mismatch layout gelirse carrier_count'a göre layout'u yeniden üretir.
+Canvas grid tam silindir açılımına geçirildi: rows=`carrierCount`; CW/CCW aktif carrier indeksi doğrudan `yGrid +/- time` ile hesaplanır. Böylece 16 kuklada 2 marker görsel oranı matematiksel olarak 2/16 düzeyine iner.
+Yakın görünüm en az bir carrier çevrimini göstermek için 16 kuklada 24 adıma kilitlenir.
+Teknik sheet `Notlar` bloğu tek saha doğrulama cümlesine indirildi.

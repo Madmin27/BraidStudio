@@ -593,7 +593,6 @@ function renderRecipeSheet(recipe) {
     braidLogic: sheet.braid_walk_type,
     steps: 34
   });
-  const warnings = recipe.preview.warnings.map((warning) => `<li>${warning}</li>`).join("");
   const title = `${sheet.carrier_count || ""} Kukla ${sheet.material || ""} ${sheet.pattern_type || "Halat"} Reçetesi`.trim();
 
   recipeSheet.innerHTML = `
@@ -612,7 +611,7 @@ function renderRecipeSheet(recipe) {
     <section class="ts-block"><h3>Üretim tarifi</h3>${renderKeyValues([["Makine", "Maypole / Tres örgü"], ["Kukla", sheet.carrier_count], ["Yürüyüş", sheet.braid_walk_type], ["İplik takma", "Renk dizilimine göre"]])}</section>
     <section class="ts-block"><h3>Malzeme önerisi</h3>${renderKeyValues([["Dış kılıf", sheet.sheath.material || sheet.material], ["İç dolgu", sheet.core.enabled ? sheet.core.material : "Yok"], ["Renk", sheet.color_sequence.join(" / ")]])}</section>
     <section class="ts-block"><h3>Nasıl yapılır</h3>${renderSteps(sheet.recipeSteps || recipe.technical_sheet.recipeSteps)}</section>
-    <section class="ts-block"><h3>Notlar</h3><ul>${warnings}<li>Teknik çizimler SVG renderer ile deterministik üretilmiştir.</li></ul></section>
+    <section class="ts-block"><h3>Notlar</h3><p>Bu teknik taslak kullanıcı onaylı seçimlerden deterministik olarak üretilmiştir; üretim onayı için saha doğrulaması gerekir.</p></section>
     <section class="ts-block"><h3>Onay / kontrol</h3>${renderKeyValues([["Hazırlayan", "BraidStudio"], ["Kontrol", "________"], ["Onay", recipe.shop_validation.production_ready ? "ONAYLI" : "Bekliyor"]])}</section>
     <section class="ts-block"><h3>Kullanım alanları</h3><div class="usage-icons"><span>Yelken</span><span>Marina</span><span>Endüstriyel</span><span>Mooring</span></div></section>
   `;
