@@ -14,7 +14,7 @@ const publicDir = join(__dirname, "public");
 const srcDir = join(__dirname, "src");
 const dataDir = join(__dirname, "data");
 const analysisCacheFile = join(dataDir, "analysis-cache.json");
-const analysisPromptVersion = "fingerprint-v2";
+const analysisPromptVersion = "fingerprint-v3";
 
 loadEnvFile(join(__dirname, ".env"));
 
@@ -356,6 +356,7 @@ async function analyzeWithOpenRouter({ imageHash, mimeType, dataBase64 }) {
     "confidenceScore must be a number between 0 and 1.",
     "structuralAnalysis must contain carrierCount, symmetry, primaryApplication, braidLogic.",
     "carrierCount must be one of 8, 12, 16, 24, 32 only when visible repeat/strand evidence supports it; otherwise use null and add a warning.",
+    "Estimate carrierCount from visible braid frequency: if there are about 10 or more base-white strands between adjacent tracer diagonals, prefer 24 or 32 over 16.",
     "For tight rope where strands pass in paired over-under bands, set structuralAnalysis.braidLogic to 2_over_2.",
     "For white rope with adjacent yellow/black tracer blocks, prefer spiral_tracer with braidLogic 2_over_2 unless the visual clearly shows one-over-one.",
     "Do not default carrierCount to 16. Do not guess carrierCount from color count alone.",

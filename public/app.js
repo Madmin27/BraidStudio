@@ -379,7 +379,8 @@ function markerLayoutFromColors(carrierCount, colors, visualSignature = "spiral_
 
   for (const start of starts) {
     cluster.forEach((color, index) => {
-      const carrierNo = ((start + index - 1) % carrierCount) + 1;
+      const carrierOffset = wantsDual ? index : index * 2;
+      const carrierNo = ((start + carrierOffset - 1) % carrierCount) + 1;
       layout[carrierNo - 1] = {
         carrier_no: carrierNo,
         color,

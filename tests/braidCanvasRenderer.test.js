@@ -10,11 +10,12 @@ test("calibrated braid grid uses full carrier count as cylinder rows", () => {
   });
 
   assert.equal(grid.rows, 16);
-  assert.equal(grid.cellWidth, grid.cellHeight);
-  assert.equal(grid.steps, Math.floor(1520 / (148 / 16)));
+  assert.equal(grid.steps, 40);
+  assert.equal(grid.cellWidth, 1520 / 40);
+  assert.equal(grid.cellHeight, 148 / 16);
 });
 
-test("24 carrier grid uses 24 rows and lowers marker over-rendering", () => {
+test("24 carrier grid uses 24 rows and caps horizontal over-rendering", () => {
   const grid = calculateCalibratedBraidGrid({
     width: 720,
     height: 440,
@@ -22,8 +23,9 @@ test("24 carrier grid uses 24 rows and lowers marker over-rendering", () => {
   });
 
   assert.equal(grid.rows, 24);
-  assert.equal(grid.cellWidth, 440 / 24);
-  assert.equal(grid.steps, Math.floor(720 / grid.cellWidth));
+  assert.equal(grid.steps, Math.min(40, Math.floor(720 / (440 / 24))));
+  assert.equal(grid.cellWidth, 720 / grid.steps);
+  assert.equal(grid.cellHeight, 440 / 24);
 });
 
 test("close grid shows at least one full carrier cycle", () => {
