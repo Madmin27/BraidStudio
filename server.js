@@ -173,8 +173,10 @@ function jsonResponse(res, statusCode, payload) {
 }
 
 function extractJson(text) {
-  const fenced = text.match(/```json\s*([\s\S]*?)```/i);
-  const raw = fenced ? fenced[1] : text;
+  const withoutThink = String(text || "").replace(/<think>[\s\S]*?<\/think>/gi, "").trim();
+  const withoutFence = withoutThink.replace(/```json|```/gi, "").trim();
+  const fenced = withoutFence.match(/\{[\s\S]*\}/);
+  const raw = fenced ? fenced[0] : withoutFence;
   const start = raw.indexOf("{");
   const end = raw.lastIndexOf("}");
   if (start === -1 || end === -1) return null;
@@ -470,7 +472,7 @@ async function analyzeWithOpenRouter({ imageHash, mimeType, dataBase64 }) {
     model: openRouterModel2,
     appUrl,
     openRouterApiKey,
-    temperature: 0,
+    temperature: 0.65,
     messages: [
       {
         role: "system",
