@@ -667,18 +667,24 @@ function renderCarrierSimulation() {
   const layout = state.user_selected_options.carrier_layout;
   const colors = state.user_selected_options.colors;
 
-  if (!Array.isArray(layout) || layout.length === 0 || !Array.isArray(colors) || colors.length === 0) {
-    container.hidden = true;
-    return;
-  }
-
   container.hidden = false;
 
   const profile = machineProfiles.find(
     (p) => p.machineProfileId === state.user_selected_options.machine_profile_id
   ) || null;
 
-  const baseColor = String(colors[0]).toLowerCase();
+  if (!Array.isArray(layout) || layout.length === 0) {
+    container.innerHTML = `
+      <div class="sim-svg-wrap">
+        <svg viewBox="0 0 360 220" role="img" aria-label="Kukla simülasyonu">
+          <circle cx="180" cy="105" r="82" fill="none" stroke="#bbb" stroke-width="1.2" stroke-dasharray="4 3"/>
+          <text x="180" y="105" text-anchor="middle" font-size="14" fill="#6f7e78">Kukla dizilimi bekleniyor</text>
+        </svg>
+      </div>
+    `;
+    return;
+  }
+
   const dots = layout.map((carrier) => {
     const angle = (Math.PI * 2 * (carrier.carrier_no - 1)) / layout.length - Math.PI / 2;
     const x = 180 + Math.cos(angle) * 82;
@@ -697,14 +703,17 @@ function renderCarrierSimulation() {
   }).join("");
 
   container.innerHTML = `
-    <h4>🧵 Kukla simülasyonu <span style="font-weight:400;font-size:12px;color:#6f7e78">(tıkla renk değiştir)</span></h4>
     <div class="sim-svg-wrap">
       <svg viewBox="0 0 360 220" role="img" aria-label="Kukla dizilim simülasyonu">
         <circle cx="180" cy="105" r="82" fill="none" stroke="#bbb" stroke-width="1.2" stroke-dasharray="4 3"/>
         ${dots}
+        <g class="carrier-count-group" role="button" tabindex="0" aria-label="Kukla sayısını değiştir">
+          <circle class="carrier-count-badge" cx="180" cy="105" r="24" fill="#0f684f" stroke="#fff" stroke-width="2.5"/>
+          <text x="180" y="111" text-anchor="middle" font-size="18" font-weight="800" fill="#fff" font-family="system-ui,sans-serif">${layout.length}</text>
+        </g>
       </svg>
     </div>
-    <p class="click-hint">${layout.length} kukla · ${colors.length} renk · kuklaya tıkla rengini değiştir</p>
+    <p class="click-hint">${layout.length} kukla · ${colors.length} renk · kuklaya tıkla renk · ortadaki sayıya tıkla kukla adedi</p>
   `;
 }
 
@@ -1217,8 +1226,67 @@ selectionForm.addEventListener("change", (event) => {
   render();
 });
 
+/* ── Cycle carrier count (center badge click) ── */
+function cycleCarrierCount() {
+  const layout = state.user_selected_options.carrier_layout;
+  const colors = state.user_selected_options.colors;
+  if (!Array.isArray(layout) || layout.length === 0 || !Array.isArray(colors) || colors.length === 0) return;
+
+  const currentCount = layout.length;
+  const counts = [8, 16, 24, 32];
+  const currentIdx = counts.indexOf(currentCount);
+  const nextCount = counts[(currentIdx + 1) % counts.length];
+
+  // Find repeating color period in current layout
+  const colorSeq = layout.map(c => String(c.color).toLowerCase());
+  let period = colorSeq.length;
+  for (let p = 1; p <= Math.min(16, colorSeq.length); p++) {
+    if (colorSeq.length % p === 0) {
+      const prefix = colorSeq.slice(0, p);
+      let matches = true;
+      for (let i = 0; i < colorSeq.length; i++) {
+        if (colorSeq[i] !== prefix[i % p]) { matches = false; break; }
+      }
+      if (matches) { period = p; break; }
+    }
+  }
+
+  // Also check if colors array forms a smaller period
+  if (period === colorSeq.length && colors.length > 0 && colors.length < colorSeq.length) {
+    const colorListLower = colors.map(c => String(c).toLowerCase());
+    let matches = true;
+    for (let i = 0; i < colorSeq.length; i++) {
+      if (colorSeq[i] !== colorListLower[i % colorListLower.length]) { matches = false; break; }
+    }
+    if (matches) period = colorListLower.length;
+  }
+
+  const patternColors = colorSeq.slice(0, period);
+  const baseColor = String(colors[0]).toLowerCase();
+  const newLayout = Array.from({ length: nextCount }, (_, index) => {
+    const color = patternColors[index % period];
+    return {
+      carrier_no: index + 1,
+      color: color,
+      strand_role: String(color).toLowerCase() === baseColor ? "sheath" : "sheath_marker"
+    };
+  });
+
+  state = applyUserSelection(state, { carrier_layout: newLayout, carrier_count: nextCount });
+  if (carrierSelect) carrierSelect.value = String(nextCount);
+  syncMachineProfileToCarrierCount();
+  clearGeneratedRecipe();
+  render();
+}
+
 /* ── Interactive carrier simulation ── */
 document.getElementById("carrierSimulation")?.addEventListener("click", (event) => {
+  // Center count badge click
+  if (event.target.closest(".carrier-count-group")) {
+    cycleCarrierCount();
+    return;
+  }
+
   const circleGroup = event.target.closest(".carrier-circle");
   if (!circleGroup) return;
 
@@ -1296,4 +1364,31 @@ printPdfButton.addEventListener("click", () => {
 });
 
 renderMachineProfiles();
-applyPattern(selectedPatternId);
+
+/* ── Initialize with default 16-carrier simulation ── */
+const defaultCount = 16;
+const defaultColors = ["beyaz", "siyah"];
+const baseColor = String(defaultColors[0]).toLowerCase();
+const defaultLayout = Array.from({ length: defaultCount }, (_, index) => ({
+  carrier_no: index + 1,
+  color: defaultColors[index % defaultColors.length],
+  strand_role: index % 2 === 0 ? "sheath" : "sheath_marker"
+}));
+
+// Set the form defaults
+if (carrierSelect) carrierSelect.value = String(defaultCount);
+if (colorsInput) colorsInput.value = defaultColors.join(", ");
+if (materialSelect) materialSelect.value = "polyester";
+if (sheathInput) sheathInput.value = "polyester";
+if (patternSelect) patternSelect.value = selectedPatternId;
+syncMachineProfileToCarrierCount();
+
+state = applyUserSelection(state, {
+  carrier_layout: defaultLayout,
+  carrier_count: defaultCount,
+  colors: [...defaultColors],
+  material: "polyester",
+  pattern_type: "diamond"
+});
+generateButton.disabled = false;
+render();

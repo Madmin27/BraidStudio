@@ -19,139 +19,147 @@
 
         <div class="workgrid">
           <section class="panel upload-panel">
+            <details class="upload-collapsible" open>
+              <summary class="upload-summary">
+                <h2>📷 Görsel yükle</h2>
+                <span id="imageStatus">İsteğe bağlı</span>
+              </summary>
+              <label class="dropzone" for="imageInput">
+                <input id="imageInput" type="file" accept="image/*">
+                <img id="imagePreview" alt="" hidden>
+                <span id="uploadPrompt">Ürün veya halat görselini seç</span>
+              </label>
+              <details id="imageContextPanel" class="image-context-panel" hidden>
+                <summary>Görsel bilgileri</summary>
+                <div class="image-context-grid">
+                  <label>
+                    Kullanım / ürün
+                    <input id="imageContextUse" placeholder="iskota, statik halat, marin...">
+                  </label>
+                  <label>
+                    Bilinen çap
+                    <input id="imageContextDiameter" placeholder="örn. 20 mm">
+                  </label>
+                  <label>
+                    Beklenen kukla
+                    <select id="imageContextCarrierHint">
+                      <option value="">Bilmiyorum</option>
+                      <option value="16">16</option>
+                      <option value="24">24</option>
+                      <option value="32">32</option>
+                    </select>
+                  </label>
+                  <label>
+                    Marker yönü
+                    <select id="imageContextFlowHint">
+                      <option value="">Bilmiyorum</option>
+                      <option value="Paralel_Spiral">Paralel spiral</option>
+                      <option value="X_Kesişim">X / baklava</option>
+                    </select>
+                  </label>
+                  <label>
+                    Beyaz şerit sayımı
+                    <input id="imageContextWhiteCount" inputmode="numeric" placeholder="örn. 10-11">
+                  </label>
+                  <label>
+                    Not
+                    <textarea id="imageContextNotes" rows="2" placeholder="Fotoğrafta bildiğin teknik ipucu varsa yaz"></textarea>
+                  </label>
+                </div>
+              </details>
+              <button id="analyzeButton" type="button" class="secondary">AI ile analiz et</button>
+              <div id="analysisProgress" class="analysis-progress" hidden>
+                <div class="analysis-progress-head">
+                  <span id="analysisProgressPulse" class="analysis-pulse"></span>
+                  <strong id="analysisProgressTitle">Analiz hazırlanıyor</strong>
+                  <span id="analysisProgressPercent">0%</span>
+                </div>
+                <div class="analysis-progress-track">
+                  <div id="analysisProgressBar" class="analysis-progress-bar"></div>
+                </div>
+                <ol id="analysisProgressSteps" class="analysis-progress-steps"></ol>
+              </div>
+            </details>
+          </section>
+
+          <section class="panel simulation-panel">
             <div class="panel-heading">
-              <h2>Görsel yükle</h2>
-              <span id="imageStatus">Bekliyor</span>
+              <h2>🧵 Kukla simülasyonu</h2>
+              <span>Kuklalara tıkla renk ata · ortadaki sayıya tıkla kukla sayısını değiştir</span>
             </div>
-            <label class="dropzone" for="imageInput">
-              <input id="imageInput" type="file" accept="image/*">
-              <img id="imagePreview" alt="" hidden>
-              <span id="uploadPrompt">Ürün veya halat görselini seç</span>
-            </label>
-            <details id="imageContextPanel" class="image-context-panel" hidden>
-              <summary>Görsel bilgileri</summary>
-              <div class="image-context-grid">
+            <div id="carrierSimulation" class="carrier-simulation"></div>
+            <form id="selectionForm" class="sim-form">
+              <div class="sim-form-row">
                 <label>
-                  Kullanım / ürün
-                  <input id="imageContextUse" placeholder="iskota, statik halat, marin...">
+                  Desen
+                  <select name="pattern_type" id="patternSelect">
+                    <option value="diamond">Diamond</option>
+                    <option value="spiral">Spiral</option>
+                    <option value="plain">Düz örgü</option>
+                    <option value="herringbone">Balıksırtı</option>
+                    <option value="ladder">Merdiven</option>
+                    <option value="chevron">Chevron</option>
+                    <option value="solid_with_flecks">İzli düz örgü</option>
+                    <option value="solid_with_markers">Marker izli örgü</option>
+                  </select>
                 </label>
                 <label>
-                  Bilinen çap
-                  <input id="imageContextDiameter" placeholder="örn. 20 mm">
+                  Renkler
+                  <input name="colors" id="colorsInput" value="beyaz, siyah">
                 </label>
                 <label>
-                  Beklenen kukla
-                  <select id="imageContextCarrierHint">
-                    <option value="">Bilmiyorum</option>
-                    <option value="16">16</option>
+                  Hammadde
+                  <select name="material" id="materialSelect">
+                    <option value="polyester">Polyester</option>
+                    <option value="polypropylene">Polypropylene</option>
+                    <option value="cotton">Cotton</option>
+                    <option value="nylon">Nylon</option>
+                  </select>
+                </label>
+              </div>
+              <div class="sim-form-row">
+                <label>
+                  Kukla sayısı
+                  <select name="carrier_count" id="carrierSelect">
+                    <option value="8">8</option>
+                    <option value="12">12</option>
+                    <option value="16" selected>16</option>
                     <option value="24">24</option>
                     <option value="32">32</option>
                   </select>
                 </label>
                 <label>
-                  Marker yönü
-                  <select id="imageContextFlowHint">
-                    <option value="">Bilmiyorum</option>
-                    <option value="Paralel_Spiral">Paralel spiral</option>
-                    <option value="X_Kesişim">X / baklava</option>
+                  Makine profili
+                  <select name="machine_profile_id" id="machineProfileSelect"></select>
+                </label>
+                <label>
+                  Yürüyüş tipi
+                  <select name="braid_walk_type" id="walkTypeSelect">
+                    <option value="1_over_1">1 over 1</option>
+                    <option value="standard">Standard</option>
+                    <option value="counter-rotating">Karşı yürüyüş</option>
+                    <option value="two-over-two">2 üst 2 alt</option>
+                  </select>
+                </label>
+              </div>
+              <div class="sim-form-row">
+                <label>
+                  Kılıf malzemesi
+                  <input name="sheath_material" id="sheathInput" value="polyester">
+                </label>
+                <label>
+                  İç dolgu
+                  <select name="core_enabled" id="coreEnabledSelect">
+                    <option value="false">Yok</option>
+                    <option value="true">Var</option>
                   </select>
                 </label>
                 <label>
-                  Beyaz şerit sayımı
-                  <input id="imageContextWhiteCount" inputmode="numeric" placeholder="örn. 10-11">
-                </label>
-                <label>
-                  Not
-                  <textarea id="imageContextNotes" rows="2" placeholder="Fotoğrafta bildiğin teknik ipucu varsa yaz"></textarea>
+                  İç dolgu malzemesi
+                  <input name="core_material" id="coreMaterialInput" value="">
                 </label>
               </div>
-            </details>
-            <button id="analyzeButton" type="button" class="secondary">AI ile analiz et</button>
-            <div id="analysisProgress" class="analysis-progress" hidden>
-              <div class="analysis-progress-head">
-                <span id="analysisProgressPulse" class="analysis-pulse"></span>
-                <strong id="analysisProgressTitle">Analiz hazırlanıyor</strong>
-                <span id="analysisProgressPercent">0%</span>
-              </div>
-              <div class="analysis-progress-track">
-                <div id="analysisProgressBar" class="analysis-progress-bar"></div>
-              </div>
-              <ol id="analysisProgressSteps" class="analysis-progress-steps"></ol>
-            </div>
-          </section>
-
-          <section class="panel">
-            <div class="panel-heading">
-              <h2>Kullanıcı seçimi</h2>
-              <span>Reçeteyi bu belirler</span>
-            </div>
-            <form id="selectionForm">
-              <label>
-                Desen
-                <select name="pattern_type" id="patternSelect">
-                  <option value="diamond">Diamond</option>
-                  <option value="spiral">Spiral</option>
-                  <option value="plain">Düz örgü</option>
-                  <option value="herringbone">Balıksırtı</option>
-                  <option value="ladder">Merdiven</option>
-                  <option value="chevron">Chevron</option>
-                  <option value="solid_with_flecks">İzli düz örgü</option>
-                  <option value="solid_with_markers">Marker izli örgü</option>
-                </select>
-              </label>
-              <label>
-                Renkler
-                <input name="colors" id="colorsInput" value="siyah, kırmızı">
-              </label>
-              <label>
-                Hammadde
-                <select name="material" id="materialSelect">
-                  <option value="polyester">Polyester</option>
-                  <option value="polypropylene">Polypropylene</option>
-                  <option value="cotton">Cotton</option>
-                  <option value="nylon">Nylon</option>
-                </select>
-              </label>
-              <label>
-                Kukla sayısı
-                <select name="carrier_count" id="carrierSelect">
-                  <option value="8">8</option>
-                  <option value="12">12</option>
-                  <option value="16">16</option>
-                  <option value="24" selected>24</option>
-                  <option value="32">32</option>
-                </select>
-              </label>
-              <label>
-                Makine profili
-                <select name="machine_profile_id" id="machineProfileSelect"></select>
-              </label>
-              <label>
-                Yürüyüş tipi
-                <select name="braid_walk_type" id="walkTypeSelect">
-                  <option value="1_over_1">1 over 1</option>
-                  <option value="standard">Standard</option>
-                  <option value="counter-rotating">Karşı yürüyüş</option>
-                  <option value="two-over-two">2 üst 2 alt</option>
-                </select>
-              </label>
-              <label>
-                Kılıf malzemesi
-                <input name="sheath_material" id="sheathInput" value="polyester">
-              </label>
-              <label>
-                İç dolgu
-                <select name="core_enabled" id="coreEnabledSelect">
-                  <option value="false">Yok</option>
-                  <option value="true">Var</option>
-                </select>
-              </label>
-              <label>
-                İç dolgu malzemesi
-                <input name="core_material" id="coreMaterialInput" value="">
-              </label>
             </form>
-            <div id="carrierSimulation" class="carrier-simulation"></div>
           </section>
         </div>
 
