@@ -420,6 +420,8 @@ function markerLayoutFromColors(carrierCount, colors, visualSignature = "spiral_
 
   if (!accentColors.length) return layout;
 
+  // Eğer 3+ renk varsa, fazla renkleri marker olmayan kuklalara round-robin dağıt
+  // Önce marker kümelerini yerleştir
   const yellow = accentColors.find((color) => String(color).toLowerCase().includes("yellow") || String(color).toLowerCase().includes("sarı"));
   const black = accentColors.find((color) => String(color).toLowerCase().includes("black") || String(color).toLowerCase().includes("siyah"));
   const cluster = yellow && black
@@ -436,16 +438,39 @@ function markerLayoutFromColors(carrierCount, colors, visualSignature = "spiral_
         ? (wantsDual ? [1, 8, 17, 24] : [1, 17])
         : Array.from({ length: Math.max(1, Math.round(carrierCount / 8)) }, (_, index) => 1 + index * Math.max(4, Math.floor(carrierCount / Math.max(1, Math.round(carrierCount / 8)))));
 
+  // Marker pozisyonlarını işaretle
+  const markerSet = new Set();
   for (const start of starts) {
     cluster.forEach((color, index) => {
       const carrierOffset = wantsDual ? index : index * 2;
       const carrierNo = ((start + carrierOffset - 1) % carrierCount) + 1;
+      markerSet.add(carrierNo);
       layout[carrierNo - 1] = {
         carrier_no: carrierNo,
         color,
         strand_role: "sheath_marker"
       };
     });
+  }
+
+  // 3+ renk varsa: marker dışında kalan kuklalara base dışındaki diğer renkleri dağıt
+  if (accentColors.length >= 2) {
+    const extraColors = accentColors.filter((c) => !cluster.includes(c));
+    if (extraColors.length) {
+      const nonMarkerIndices = [];
+      for (let i = 0; i < carrierCount; i++) {
+        if (!markerSet.has(i + 1)) nonMarkerIndices.push(i);
+      }
+      let colorIndex = 0;
+      for (const idx of nonMarkerIndices) {
+        layout[idx] = {
+          carrier_no: idx + 1,
+          color: extraColors[colorIndex % extraColors.length],
+          strand_role: "sheath"
+        };
+        colorIndex++;
+      }
+    }
   }
 
   return layout;
@@ -547,7 +572,12 @@ function applyAiSuggestionToSelection(analysis) {
   const visualSignature = predictorResult.visualSignature || fingerprint.predictedSignature || bestCandidate?.visualSignature || predictions.predictedSignature;
   const markerLayout = markerLayoutFromColors(normalizedCarrierCount, colors, visualSignature);
   const matchedProfile = machineProfiles.find((profile) => profile.carrierCount === normalizedCarrierCount && profile.machineFamily === "maypole_circular");
-  const candidateUsable = candidateLayout.length === normalizedCarrierCount && !hasMarkerDirectionMismatch(candidateLayout, matchedProfile, visualSignature);
+  const candidateLayoutCoversAllColors = colors.every((color) =>
+    candidateLayout.some((c) => String(c.color).toLowerCase() === String(color).toLowerCase())
+  );
+  const candidateUsable = candidateLayout.length === normalizedCarrierCount
+    && candidateLayoutCoversAllColors
+    && !hasMarkerDirectionMismatch(candidateLayout, matchedProfile, visualSignature);
   const predictedUsable = predictedLayout.length === normalizedCarrierCount && !hasMarkerDirectionMismatch(predictedLayout, matchedProfile, visualSignature);
   logProcess("AI sonucu", "AI/predictor sonucu alındı", {
     model: analysis?.model,
@@ -604,7 +634,11 @@ function applyAiSuggestionToSelection(analysis) {
       braidLogic: bestCandidate.braidLogic,
       confidence: bestCandidate.confidence,
       used: candidateUsable,
-      rejectedReason: candidateLayout.length && !candidateUsable ? "marker yönleri visualSignature ile uyuşmuyor" : null
+      rejectedReason: candidateLayout.length && !candidateUsable
+        ? (!candidateLayoutCoversAllColors
+          ? "candidate tüm renkleri kapsamıyor, markerLayout kullanıldı"
+          : "marker yönleri visualSignature ile uyuşmuyor")
+        : null
     } : null,
     carrierLayoutCount: state.user_selected_options.carrier_layout.length,
     carrierLayoutPreview: state.user_selected_options.carrier_layout.slice(0, 16)

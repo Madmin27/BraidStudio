@@ -143,16 +143,42 @@ export function generateRecipe(state) {
 }
 
 function buildCarrierLayout(finalSelection, carrierCount, colors) {
+  const isMarker = markerPattern(finalSelection.pattern_type);
+  const markerPositions = markerCarrierPositions(carrierCount, finalSelection.pattern_type);
+  const markerSet = new Set(markerPositions);
+
+  // Marker deseni ve 3+ renk varsa: marker kümelerine colors[1], diğer kuklalara fazla renkleri dağıt
+  if (isMarker && colors.length > 2) {
+    const base = colors[0];
+    const markerColor = colors[1];
+    const extraColors = colors.slice(2);
+    const nonMarkerIndices = [];
+    const layout = Array.from({ length: carrierCount }, (_, index) => {
+      const position = index + 1;
+      if (markerSet.has(position)) {
+        return { carrier_no: position, color: markerColor, strand_role: "sheath_marker" };
+      }
+      nonMarkerIndices.push(index);
+      return null;
+    });
+    let colorIdx = 0;
+    for (const idx of nonMarkerIndices) {
+      const color = colorIdx < extraColors.length ? extraColors[colorIdx] : base;
+      layout[idx] = { carrier_no: idx + 1, color, strand_role: "sheath" };
+      colorIdx++;
+    }
+    return layout;
+  }
+
   return Array.from({ length: carrierCount }, (_, index) => {
     const position = index + 1;
-    const markerPositions = markerCarrierPositions(carrierCount, finalSelection.pattern_type);
-    const colorIndex = markerPattern(finalSelection.pattern_type) && colors.length > 1
-      ? (markerPositions.includes(position) ? 1 : 0)
+    const colorIndex = isMarker && colors.length > 1
+      ? (markerSet.has(position) ? 1 : 0)
       : index % colors.length;
     return {
       carrier_no: position,
       color: colors[colorIndex],
-      strand_role: markerPattern(finalSelection.pattern_type) && colorIndex === 1 ? "sheath_marker" : "sheath"
+      strand_role: isMarker && colorIndex === 1 ? "sheath_marker" : "sheath"
     };
   });
 }
