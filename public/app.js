@@ -29,7 +29,15 @@ const colorMap = {
   gri: "#77817b",
   nylon: "#d8dde0",
   sarı: "#d7a800",
-  yellow: "#d7d900"
+  yellow: "#d7d900",
+  yeşil: "#2d7d46",
+  green: "#2d7d46",
+  turuncu: "#d96c1a",
+  orange: "#d96c1a",
+  mor: "#6b3fa0",
+  purple: "#6b3fa0",
+  pembe: "#d45087",
+  pink: "#d45087"
 };
 
 let state = structuredClone(initialRecipeState);
@@ -691,12 +699,14 @@ function renderCarrierSimulation() {
     const hex = colorToHex(carrier.color);
     const dir = getCarrierDirection(carrier.carrier_no, profile);
     const arrow = dir === "clockwise" ? "↻" : "↺";
-    const isMarker = carrier.strand_role === "sheath_marker";
-    const strokeColor = isMarker ? "#111" : "#666";
-    const strokeW = isMarker ? 2.5 : 1.2;
+    // label rengi: koyu arka planda beyaz, açıkta siyah
+    const labelBrightness = (parseInt(hex.slice(1,3),16)*299 + parseInt(hex.slice(3,5),16)*587 + parseInt(hex.slice(5,7),16)*114) / 1000;
+    const labelColor = labelBrightness > 160 ? "#1a2e2a" : "#fff";
+    const strokeColor = "#666";
+    const strokeW = 1.2;
     return `<g class="carrier-circle" data-carrier="${carrier.carrier_no}" role="button" tabindex="0" aria-label="Kukla ${carrier.carrier_no} — ${carrier.color}">
       <circle cx="${x}" cy="${y}" r="15" fill="${hex}" stroke="${strokeColor}" stroke-width="${strokeW}" stroke-opacity="0.85"/>
-      <text class="carrier-label" x="${x}" y="${y - 1}" font-size="11" fill="#fff" font-weight="700">${carrier.carrier_no}</text>
+      <text class="carrier-label" x="${x}" y="${y - 1}" font-size="11" fill="${labelColor}" font-weight="700">${carrier.carrier_no}</text>
       <text class="carrier-arrow" x="${x}" y="${y + 14}" font-size="9" fill="rgba(255,255,255,0.8)">${arrow}</text>
     </g>`;
   }).join("");
@@ -1307,10 +1317,15 @@ function applyColorToCarrier(carrierNo, newColor) {
 }
 
 /* ── Color palette popup ── */
+const PALETTE_COLORS = [
+  "beyaz", "siyah", "kırmızı", "lacivert",
+  "gri", "sarı", "yeşil", "turuncu",
+  "mor", "pembe", "nylon"
+];
+
 function showColorPalette(carrierNo) {
   const layout = state.user_selected_options.carrier_layout;
-  const colors = state.user_selected_options.colors;
-  if (!Array.isArray(layout) || !Array.isArray(colors) || !colors.length) return;
+  if (!Array.isArray(layout)) return;
 
   const carrier = layout.find((c) => c.carrier_no === carrierNo);
   if (!carrier) return;
@@ -1328,16 +1343,21 @@ function showColorPalette(carrierNo) {
   const popup = document.createElement("div");
   popup.className = "color-palette-popup";
 
+  const swatchesHtml = PALETTE_COLORS.map((color) => {
+    const hex = colorToHex(color);
+    const isCurrent = String(color).toLowerCase() === currentColor;
+    // Dinamik yazı rengi (parlaklık hesapla)
+    const r = parseInt(hex.slice(1,3),16);
+    const g = parseInt(hex.slice(3,5),16);
+    const b = parseInt(hex.slice(5,7),16);
+    const brightness = (r*299 + g*587 + b*114) / 1000;
+    const textColor = brightness > 160 ? "#1a2e2a" : "#fff";
+    return `<button class="color-palette-swatch${isCurrent ? " is-current" : ""}" data-color="${color}" style="background:${hex}; color:${textColor}" aria-label="${color}" type="button">${isCurrent ? "✓" : ""}</button>`;
+  }).join("");
+
   popup.innerHTML = `
     <h3>Kukla ${carrierNo} — renk seç</h3>
-    <div class="color-palette-swatches">
-      ${colors.map((color) => {
-        const hex = colorToHex(color);
-        const isCurrent = String(color).toLowerCase() === currentColor;
-        const textColor = (hex === "#1b1f1d" || hex === "#1f3d70" || hex === "#bd2f2b") ? "#fff" : "#1a2e2a";
-        return `<button class="color-palette-swatch${isCurrent ? " is-current" : ""}" data-color="${color}" style="background:${hex}; color:${textColor}" aria-label="${color}" type="button">${isCurrent ? "✓" : ""}</button>`;
-      }).join("")}
-    </div>
+    <div class="color-palette-swatches">${swatchesHtml}</div>
   `;
 
   overlay.appendChild(popup);
@@ -1435,7 +1455,7 @@ const baseColor = String(defaultColors[0]).toLowerCase();
 const defaultLayout = Array.from({ length: defaultCount }, (_, index) => ({
   carrier_no: index + 1,
   color: (index === 0 || index === 8) ? "siyah" : "beyaz",
-  strand_role: (index === 0 || index === 8) ? "sheath_marker" : "sheath"
+  strand_role: "sheath"
 }));
 
 // Set the form defaults
