@@ -660,7 +660,56 @@ function hasMarkerDirectionMismatch(carrierLayout = [], machineProfile = null, v
   return false;
 }
 
+function renderCarrierSimulation() {
+  const container = document.getElementById("carrierSimulation");
+  if (!container) return;
+
+  const layout = state.user_selected_options.carrier_layout;
+  const colors = state.user_selected_options.colors;
+
+  if (!Array.isArray(layout) || layout.length === 0 || !Array.isArray(colors) || colors.length === 0) {
+    container.hidden = true;
+    return;
+  }
+
+  container.hidden = false;
+
+  const profile = machineProfiles.find(
+    (p) => p.machineProfileId === state.user_selected_options.machine_profile_id
+  ) || null;
+
+  const baseColor = String(colors[0]).toLowerCase();
+  const dots = layout.map((carrier) => {
+    const angle = (Math.PI * 2 * (carrier.carrier_no - 1)) / layout.length - Math.PI / 2;
+    const x = 180 + Math.cos(angle) * 82;
+    const y = 105 + Math.sin(angle) * 82;
+    const hex = colorToHex(carrier.color);
+    const dir = getCarrierDirection(carrier.carrier_no, profile);
+    const arrow = dir === "clockwise" ? "↻" : "↺";
+    const isMarker = carrier.strand_role === "sheath_marker";
+    const strokeColor = isMarker ? "#111" : "#666";
+    const strokeW = isMarker ? 2.5 : 1.2;
+    return `<g class="carrier-circle" data-carrier="${carrier.carrier_no}" role="button" tabindex="0" aria-label="Kukla ${carrier.carrier_no} — ${carrier.color}">
+      <circle cx="${x}" cy="${y}" r="15" fill="${hex}" stroke="${strokeColor}" stroke-width="${strokeW}" stroke-opacity="0.85"/>
+      <text class="carrier-label" x="${x}" y="${y - 1}" font-size="11" fill="#fff" font-weight="700">${carrier.carrier_no}</text>
+      <text class="carrier-arrow" x="${x}" y="${y + 14}" font-size="9" fill="rgba(255,255,255,0.8)">${arrow}</text>
+    </g>`;
+  }).join("");
+
+  container.innerHTML = `
+    <h4>🧵 Kukla simülasyonu <span style="font-weight:400;font-size:12px;color:#6f7e78">(tıkla renk değiştir)</span></h4>
+    <div class="sim-svg-wrap">
+      <svg viewBox="0 0 360 220" role="img" aria-label="Kukla dizilim simülasyonu">
+        <circle cx="180" cy="105" r="82" fill="none" stroke="#bbb" stroke-width="1.2" stroke-dasharray="4 3"/>
+        ${dots}
+      </svg>
+    </div>
+    <p class="click-hint">${layout.length} kukla · ${colors.length} renk · kuklaya tıkla rengini değiştir</p>
+  `;
+}
+
 function render() {
+  renderCarrierSimulation();
   renderRecipeSheet(state.generated_recipe);
   renderAlbum();
 }
@@ -1164,6 +1213,42 @@ selectionForm.addEventListener("change", (event) => {
     finalSelection: state.user_selected_options,
     layoutRebuilt: layoutSync.rebuilt,
     mismatch: buildMismatchReport()
+  });
+  render();
+});
+
+/* ── Interactive carrier simulation ── */
+document.getElementById("carrierSimulation")?.addEventListener("click", (event) => {
+  const circleGroup = event.target.closest(".carrier-circle");
+  if (!circleGroup) return;
+
+  const carrierNo = Number(circleGroup.dataset.carrier);
+  const layout = state.user_selected_options.carrier_layout;
+  const colors = state.user_selected_options.colors;
+  if (!Array.isArray(layout) || !Array.isArray(colors) || colors.length < 2) return;
+
+  const carrier = layout.find((c) => c.carrier_no === carrierNo);
+  if (!carrier) return;
+
+  const currentIdx = colors.findIndex((c) => String(c).toLowerCase() === String(carrier.color).toLowerCase());
+  const nextIdx = currentIdx === -1 ? 0 : (currentIdx + 1) % colors.length;
+  const newColor = colors[nextIdx];
+  const baseColor = String(colors[0]).toLowerCase();
+  const isBase = String(newColor).toLowerCase() === baseColor;
+
+  const updatedLayout = layout.map((c) =>
+    c.carrier_no === carrierNo
+      ? { ...c, color: newColor, strand_role: isBase ? "sheath" : "sheath_marker" }
+      : c
+  );
+
+  state = applyUserSelection(state, { carrier_layout: updatedLayout });
+  clearGeneratedRecipe();
+  logProcess("Simülasyon", `Kukla ${carrierNo} rengi değişti: ${carrier.color} → ${newColor}`, {
+    carrierNo,
+    oldColor: carrier.color,
+    newColor,
+    strandRole: isBase ? "sheath" : "sheath_marker"
   });
   render();
 });
