@@ -10,7 +10,7 @@ export const initialRecipeState = {
     machine_id: null,
     machine_profile_id: "mp_16_std",
     direction: "clockwise",
-    braid_walk_type: "standard",
+    braid_walk_type: "two-over-two",
     sheath: {
       enabled: true,
       material: null
@@ -56,9 +56,10 @@ export function generateRecipe(state) {
   const colors = finalSelection.colors.length ? finalSelection.colors : ["tanımsız"];
   const carrierCount = Number(finalSelection.carrier_count || 0);
   const machineProfile = findMachineProfile(finalSelection.machine_profile_id, carrierCount);
-  const carrierLayout = Array.isArray(finalSelection.carrier_layout) && finalSelection.carrier_layout.length === carrierCount
+  const rawCarrierLayout = Array.isArray(finalSelection.carrier_layout) && finalSelection.carrier_layout.length === carrierCount
     ? finalSelection.carrier_layout
     : buildCarrierLayout(finalSelection, carrierCount, colors);
+  const carrierLayout = normalizeCarrierLayoutOrder(rawCarrierLayout, carrierCount);
   const colorSequence = carrierLayout.map((carrier) => carrier.color);
   const layoutRegenerated = Array.isArray(finalSelection.carrier_layout)
     && finalSelection.carrier_layout.length > 0
@@ -140,6 +141,27 @@ export function generateRecipe(state) {
       }
     ]
   };
+}
+
+function normalizeCarrierLayoutOrder(carrierLayout, carrierCount) {
+  const byCarrierNo = new Map();
+  for (const carrier of carrierLayout || []) {
+    const carrierNo = Number(carrier.carrier_no);
+    if (Number.isFinite(carrierNo) && carrierNo >= 1 && carrierNo <= carrierCount) {
+      byCarrierNo.set(carrierNo, {
+        ...carrier,
+        carrier_no: carrierNo
+      });
+    }
+  }
+  return Array.from({ length: carrierCount }, (_, index) => {
+    const carrierNo = index + 1;
+    return byCarrierNo.get(carrierNo) || {
+      carrier_no: carrierNo,
+      color: "white",
+      strand_role: "sheath"
+    };
+  });
 }
 
 function buildCarrierLayout(finalSelection, carrierCount, colors) {

@@ -17,12 +17,19 @@
         </header>
 
         <div class="workgrid">
-          <section class="panel upload-panel">
-            <details class="upload-collapsible" open>
-              <summary class="upload-summary">
-                <h2>📷 Görsel yükle</h2>
+          <section class="panel simulation-panel">
+            <div class="panel-heading">
+              <div>
+                <h2>🧵 Kukla simülasyonu</h2>
+                <span>Kuklalara tıkla renk ata · ortadaki sayıya tıkla kukla sayısını değiştir</span>
+              </div>
+              <button id="toggleUploadButton" type="button" class="mini-action" aria-controls="uploadPanel" aria-expanded="false">Görsel yükle</button>
+            </div>
+            <section id="uploadPanel" class="upload-panel inline-upload-panel" hidden>
+              <div class="upload-summary">
+                <h2>📷 Görselden simülasyona aktar</h2>
                 <span id="imageStatus">İsteğe bağlı</span>
-              </summary>
+              </div>
               <label class="dropzone" for="imageInput">
                 <input id="imageInput" type="file" accept="image/*">
                 <img id="imagePreview" alt="" hidden>
@@ -78,14 +85,7 @@
                 </div>
                 <ol id="analysisProgressSteps" class="analysis-progress-steps"></ol>
               </div>
-            </details>
-          </section>
-
-          <section class="panel simulation-panel">
-            <div class="panel-heading">
-              <h2>🧵 Kukla simülasyonu</h2>
-              <span>Kuklalara tıkla renk ata · ortadaki sayıya tıkla kukla sayısını değiştir</span>
-            </div>
+            </section>
             <div id="carrierSimulation" class="carrier-simulation"></div>
             <form id="selectionForm" class="sim-form">
               <div class="sim-form-row">
@@ -125,10 +125,10 @@
                 <label>
                   Yürüyüş tipi
                   <select name="braid_walk_type" id="walkTypeSelect">
-                    <option value="1_over_1">1 over 1</option>
-                    <option value="standard">Standard</option>
-                    <option value="counter-rotating">Karşı yürüyüş</option>
-                    <option value="two-over-two">2 üst 2 alt</option>
+                    <option value="1_over_1">1 over 1 / Diamond</option>
+                    <option value="standard">Standard / 1-over-1</option>
+                    <option value="counter-rotating">Karşı yürüyüş / ters faz</option>
+                    <option value="two-over-two" selected>2 alt 2 üst / 2-over-2</option>
                   </select>
                 </label>
               </div>
@@ -141,34 +141,24 @@
                   İç dolgu
                   <select name="core_enabled" id="coreEnabledSelect">
                     <option value="false">Yok</option>
-                    <option value="true">Var</option>
+                    <option value="true" selected>Var</option>
                   </select>
                 </label>
-                <label>
+                <label id="coreMaterialLabel" hidden>
                   İç dolgu malzemesi
-                  <input name="core_material" id="coreMaterialInput" value="">
+                  <input name="core_material" id="coreMaterialInput" value="polyester">
                 </label>
               </div>
             </form>
+            <section class="album-section simulation-album-section">
+              <div class="section-heading">
+                <h2>Desen albümü</h2>
+              </div>
+              <div id="patternAlbum" class="pattern-album"></div>
+            </section>
             <button id="generateButton" type="button" class="primary generate-pattern-btn">Desen Üret</button>
           </section>
         </div>
-
-        <section class="panel process-panel">
-          <div class="panel-heading">
-            <h2>Süreç logları</h2>
-            <span id="processStatus">Bekliyor</span>
-          </div>
-          <div id="mismatchReport" class="mismatch-report"></div>
-          <div id="processLog" class="process-log"></div>
-        </section>
-
-        <section class="album-section">
-          <div class="section-heading">
-            <h2>Desen albümü</h2>
-          </div>
-          <div id="patternAlbum" class="pattern-album"></div>
-        </section>
 
         <section class="panel recipe-panel">
           <div class="panel-heading">
@@ -184,6 +174,15 @@
             <img id="recipeImagePreview" alt="Teknik reçete PNG çıktısı" hidden>
           </figure>
           <div id="recipeSheet" class="recipe-sheet technical-sheet-page"></div>
+        </section>
+
+        <section class="panel process-panel">
+          <div class="panel-heading">
+            <h2>Süreç logları</h2>
+            <span id="processStatus">Bekliyor</span>
+          </div>
+          <div id="mismatchReport" class="mismatch-report"></div>
+          <div id="processLog" class="process-log"></div>
         </section>
       </section>
     </main>

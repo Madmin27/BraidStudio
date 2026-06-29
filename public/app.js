@@ -48,6 +48,8 @@ const analyzeButton = document.querySelector("#analyzeButton");
 const generateButton = document.querySelector("#generateButton");
 const selectionForm = document.querySelector("#selectionForm");
 const imageInput = document.querySelector("#imageInput");
+const toggleUploadButton = document.querySelector("#toggleUploadButton");
+const uploadPanel = document.querySelector("#uploadPanel");
 const imagePreview = document.querySelector("#imagePreview");
 const imageStatus = document.querySelector("#imageStatus");
 const uploadPrompt = document.querySelector("#uploadPrompt");
@@ -67,6 +69,7 @@ const walkTypeSelect = document.querySelector("#walkTypeSelect");
 const sheathInput = document.querySelector("#sheathInput");
 const coreEnabledSelect = document.querySelector("#coreEnabledSelect");
 const coreMaterialInput = document.querySelector("#coreMaterialInput");
+const coreMaterialLabel = document.querySelector("#coreMaterialLabel");
 const recipeSheet = document.querySelector("#recipeSheet");
 const downloadPngButton = document.querySelector("#downloadPngButton");
 const printPdfButton = document.querySelector("#printPdfButton");
@@ -380,7 +383,10 @@ function normalizePattern(patternType) {
 function normalizeWalkType(value, colors = []) {
   const text = String(value || "").toLowerCase();
   const colorSet = new Set(colors.map((color) => String(color).toLowerCase()));
-  if (text.includes("2_over_2") || text.includes("two-over-two") || text.includes("twill")) return "two-over-two";
+  if (text.includes("2_over_2") || text.includes("two-over-two") || text.includes("twill") || text.includes("2 üst") || text.includes("2 alt")) return "two-over-two";
+  if (text.includes("counter-rotating") || text.includes("counter_rotating") || text.includes("karşı")) return "counter-rotating";
+  if (text.includes("standard")) return "standard";
+  if (text.includes("1_over_1") || text.includes("one-over-one") || text.includes("1 over 1") || text.includes("diamond")) return "1_over_1";
   if (colorSet.has("yellow") && colorSet.has("black")) return "two-over-two";
   return "1_over_1";
 }
@@ -511,6 +517,26 @@ function rebuildCarrierLayoutForSelection(selection, visualSignature = currentVi
   }));
 }
 
+function colorsFromCarrierLayout(carrierLayout = [], fallbackColors = []) {
+  const layoutColors = carrierLayout
+    .map((carrier) => String(carrier.color || "").trim())
+    .filter(Boolean);
+  if (!layoutColors.length) {
+    return fallbackColors.length ? [...fallbackColors] : ["beyaz"];
+  }
+  const counts = new Map();
+  for (const color of layoutColors) {
+    const key = color.toLowerCase();
+    const current = counts.get(key) || { color, count: 0, firstIndex: layoutColors.length };
+    current.count += 1;
+    current.firstIndex = Math.min(current.firstIndex, layoutColors.indexOf(color));
+    counts.set(key, current);
+  }
+  return [...counts.values()]
+    .sort((a, b) => b.count - a.count || a.firstIndex - b.firstIndex)
+    .map((item) => item.color);
+}
+
 function shouldRebuildCarrierLayout(selection) {
   const carrierCount = Number(selection.carrier_count || 0);
   const layout = Array.isArray(selection.carrier_layout) ? selection.carrier_layout : [];
@@ -531,7 +557,22 @@ function syncMachineProfileToCarrierCount() {
 }
 
 function syncSelectionStateWithLayout(reason = "selection_sync") {
+  const previousLayout = Array.isArray(state.user_selected_options.carrier_layout)
+    ? state.user_selected_options.carrier_layout
+    : [];
   syncSelectionState();
+  if (
+    reason === "recipe_generate"
+    && previousLayout.length === Number(state.user_selected_options.carrier_count || 0)
+  ) {
+    const syncedColors = colorsFromCarrierLayout(previousLayout, state.user_selected_options.colors);
+    state = applyUserSelection(state, {
+      carrier_layout: previousLayout,
+      colors: syncedColors
+    });
+    if (colorsInput) colorsInput.value = syncedColors.join(", ");
+    return { rebuilt: false, layout: previousLayout };
+  }
   const forceRebuild = ["carrier_count", "colors", "pattern_type"].includes(reason);
   if (!forceRebuild && !shouldRebuildCarrierLayout(state.user_selected_options)) {
     return { rebuilt: false, layout: state.user_selected_options.carrier_layout };
@@ -841,11 +882,15 @@ function buildRecipeSheetSvgMarkup() {
       ${clone.outerHTML}
     </div>
   `;
-  return `
+  return sanitizeSvgXml(`
     <svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1050" viewBox="0 0 1600 1050">
       <foreignObject width="1600" height="1050">${html}</foreignObject>
     </svg>
-  `;
+  `);
+}
+
+function sanitizeSvgXml(markup) {
+  return String(markup).replace(/&(?!#\d+;|#x[0-9a-fA-F]+;|[a-zA-Z][\w.-]*;)/g, "&amp;");
 }
 
 function renderRecipeSheetToPng() {
@@ -1040,18 +1085,35 @@ function renderSectionSvg(sheet) {
 }
 
 function renderColorSequence(sheet) {
-  return `<div class="color-strip">${sheet.color_sequence.map((color, index) => `<span><i style="background:${colorToHex(color)}"></i>${index + 1}</span>`).join("")}</div>`;
+  const carriers = orderedCarrierLayout(sheet);
+  return `<div class="color-strip">${carriers.map((carrier) => `<span><i style="background:${colorToHex(carrier.color)}"></i>${carrier.carrier_no}</span>`).join("")}</div>`;
 }
 
 function renderCarrierRingSvg(sheet) {
-  const carriers = sheet.carrier_layout;
+  const carriers = orderedCarrierLayout(sheet);
   const dots = carriers.map((carrier, index) => {
     const angle = (Math.PI * 2 * index) / carriers.length - Math.PI / 2;
     const x = 180 + Math.cos(angle) * 82;
     const y = 105 + Math.sin(angle) * 82;
-    return `<g><circle cx="${x}" cy="${y}" r="13" fill="${colorToHex(carrier.color)}" stroke="#111"/><text x="${x}" y="${y + 4}" text-anchor="middle" font-size="10">${carrier.carrier_no}</text></g>`;
+    const fill = colorToHex(carrier.color);
+    const textColor = readableTextColor(fill);
+    return `<g><circle cx="${x}" cy="${y}" r="13" fill="${fill}" stroke="#222" stroke-width="1.4"/><text x="${x}" y="${y + 4}" text-anchor="middle" font-size="10" font-weight="800" fill="${textColor}">${carrier.carrier_no}</text></g>`;
   }).join("");
   return `<svg viewBox="0 0 360 220" role="img"><circle cx="180" cy="105" r="82" fill="none" stroke="#888"/>${dots}</svg>`;
+}
+
+function readableTextColor(hex) {
+  const value = String(hex || "#ffffff").replace("#", "");
+  const r = parseInt(value.slice(0, 2), 16) || 255;
+  const g = parseInt(value.slice(2, 4), 16) || 255;
+  const b = parseInt(value.slice(4, 6), 16) || 255;
+  const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+  return brightness > 160 ? "#111" : "#fff";
+}
+
+function orderedCarrierLayout(sheet) {
+  const carriers = Array.isArray(sheet.carrier_layout) ? sheet.carrier_layout : [];
+  return [...carriers].sort((a, b) => Number(a.carrier_no) - Number(b.carrier_no));
 }
 
 function renderWalkSvg(sheet) {
@@ -1068,7 +1130,7 @@ function applyPattern(patternId) {
   carrierSelect.value = String(pattern.carriers.at(-1));
   const matchedProfile = machineProfiles.find((profile) => profile.carrierCount === Number(carrierSelect.value) && profile.machineFamily === "maypole_circular");
   machineProfileSelect.value = matchedProfile?.machineProfileId || "mp_16_std";
-  walkTypeSelect.value = matchedProfile?.walkType || pattern.walk;
+  walkTypeSelect.value = pattern.walk || matchedProfile?.walkType || "standard";
   sheathInput.value = pattern.material;
   syncSelectionState();
   clearGeneratedRecipe();
@@ -1087,9 +1149,11 @@ imageInput.addEventListener("change", async () => {
   uploadPrompt.hidden = true;
   imageContextPanel.hidden = false;
   imageContextPanel.open = true;
+  uploadPanel.hidden = false;
+  toggleUploadButton?.setAttribute("aria-expanded", "true");
+  if (toggleUploadButton) toggleUploadButton.textContent = "Görseli gizle";
   imageStatus.textContent = "Yüklendi";
   clearGeneratedRecipe();
-  generateButton.disabled = true;
   logProcess("Görsel yükleme", "Görsel yüklendi", {
     name: file.name,
     type: file.type,
@@ -1305,13 +1369,19 @@ function applyColorToCarrier(carrierNo, newColor) {
       : c
   );
 
-  state = applyUserSelection(state, { carrier_layout: updatedLayout });
+  const updatedColors = colorsFromCarrierLayout(updatedLayout, colors);
+  state = applyUserSelection(state, {
+    carrier_layout: updatedLayout,
+    colors: updatedColors
+  });
+  if (colorsInput) colorsInput.value = updatedColors.join(", ");
   clearGeneratedRecipe();
   logProcess("Simülasyon", `Kukla ${carrierNo} rengi değişti: ${oldColor} → ${newColor}`, {
     carrierNo,
     oldColor,
     newColor,
-    strandRole: isBase ? "sheath" : "sheath_marker"
+    strandRole: isBase ? "sheath" : "sheath_marker",
+    colors: updatedColors
   });
   render();
 }
@@ -1409,6 +1479,16 @@ patternAlbum.addEventListener("click", (event) => {
   if (card) applyPattern(card.dataset.pattern);
 });
 
+toggleUploadButton?.addEventListener("click", () => {
+  const willOpen = uploadPanel.hidden;
+  uploadPanel.hidden = !willOpen;
+  toggleUploadButton.setAttribute("aria-expanded", String(willOpen));
+  toggleUploadButton.textContent = willOpen ? "Görseli gizle" : "Görsel yükle";
+  if (willOpen) {
+    imageStatus.textContent = currentImage ? "Yüklendi" : "İsteğe bağlı";
+  }
+});
+
 downloadPngButton.addEventListener("click", async () => {
   if (!state.generated_recipe) return;
   try {
@@ -1454,8 +1534,8 @@ const defaultColors = ["beyaz", "siyah"];
 const baseColor = String(defaultColors[0]).toLowerCase();
 const defaultLayout = Array.from({ length: defaultCount }, (_, index) => ({
   carrier_no: index + 1,
-  color: (index === 0 || index === 8) ? "siyah" : "beyaz",
-  strand_role: "sheath"
+  color: (index === 0 || index === 1) ? "siyah" : "beyaz",
+  strand_role: (index === 0 || index === 1) ? "sheath_marker" : "sheath"
 }));
 
 // Set the form defaults
@@ -1463,6 +1543,7 @@ if (carrierSelect) carrierSelect.value = String(defaultCount);
 if (colorsInput) colorsInput.value = defaultColors.join(", ");
 if (sheathInput) sheathInput.value = "polyester";
 if (patternSelect) patternSelect.value = selectedPatternId;
+if (walkTypeSelect) walkTypeSelect.value = "two-over-two";
 syncMachineProfileToCarrierCount();
 
 state = applyUserSelection(state, {
@@ -1470,7 +1551,8 @@ state = applyUserSelection(state, {
   carrier_count: defaultCount,
   colors: [...defaultColors],
   material: "polyester",
-  pattern_type: "diamond"
+  pattern_type: selectedPatternId,
+  braid_walk_type: "two-over-two"
 });
 generateButton.disabled = false;
 render();

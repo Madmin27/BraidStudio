@@ -29,3 +29,26 @@ test("generateRecipe rebuilds carrier layout when carrier count changes", () => 
   assert.equal(next.generated_recipe.finalSelection.carrier_layout.length, 24);
   assert.ok(next.generated_recipe.preview.warnings.some((warning) => warning.includes("layout deterministic olarak yeniden kuruldu")));
 });
+
+test("generateRecipe orders color sequence by carrier number", () => {
+  const state = structuredClone(initialRecipeState);
+  state.user_selected_options = {
+    ...state.user_selected_options,
+    pattern_type: "spiral",
+    colors: ["white", "blue"],
+    material: "polyester",
+    carrier_count: 4,
+    machine_profile_id: "mp_16_std",
+    braid_walk_type: "standard",
+    carrier_layout: [
+      { carrier_no: 3, color: "blue", strand_role: "sheath_marker" },
+      { carrier_no: 1, color: "white", strand_role: "sheath" },
+      { carrier_no: 4, color: "white", strand_role: "sheath" },
+      { carrier_no: 2, color: "yellow", strand_role: "sheath_marker" }
+    ]
+  };
+
+  const next = generateRecipe(state);
+  assert.deepEqual(next.generated_recipe.technical_sheet.color_sequence, ["white", "yellow", "blue", "white"]);
+  assert.deepEqual(next.generated_recipe.technical_sheet.carrier_layout.map((carrier) => carrier.carrier_no), [1, 2, 3, 4]);
+});

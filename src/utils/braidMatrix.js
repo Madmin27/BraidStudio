@@ -76,8 +76,13 @@ export function buildBraidMatrix({
 
 export function topDirectionAt({ time, column, braidLogic = "1_over_1" }) {
   const value = String(braidLogic || "").toLowerCase();
-  const span = value.includes("2_over_2") || value.includes("two-over-two") || value.includes("twill") ? 2 : 1;
-  return Math.floor((time + column) / span) % 2 === 0 ? "clockwise" : "counterClockwise";
+  const span = value.includes("2_over_2") || value.includes("two-over-two") || value.includes("twill") || value.includes("2 üst") || value.includes("2 alt") ? 2 : 1;
+  const counterRotating = value.includes("counter-rotating") || value.includes("counter_rotating") || value.includes("karşı");
+  const clockwiseOnTop = Math.floor((time + column) / span) % 2 === 0;
+  if (counterRotating) {
+    return clockwiseOnTop ? "counterClockwise" : "clockwise";
+  }
+  return clockwiseOnTop ? "clockwise" : "counterClockwise";
 }
 
 function findCarrierAt({ carriers, carrierCount, column, time, direction }) {

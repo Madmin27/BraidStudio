@@ -1,14 +1,30 @@
-import { buildBraidMatrix } from "./braidMatrix.js";
+import { buildBraidMatrix, topDirectionAt } from "./braidMatrix.js";
 
+/* app.js'teki colorMap ile birebir uyumlu. Turkish/English renk adlarının
+   her ikisi de aynı hex'e çözümlenir, böylece "siyah" FALLBACK_COLORS'ta
+   bulunamayıp gri/#8d9892'ye düşmez. */
 const FALLBACK_COLORS = {
-  white: "#f8faf9",
-  blue: "#134074",
-  red: "#d90429",
+  siyah: "#1b1f1d",
   black: "#1b1f1d",
-  yellow: "#d7d900",
-  sarı: "#d7d900",
+  kırmızı: "#bd2f2b",
+  red: "#bd2f2b",
+  lacivert: "#1f3d70",
+  blue: "#1f3d70",
+  beyaz: "#f8faf9",
+  white: "#f8faf9",
   gray: "#77817b",
-  gri: "#77817b"
+  gri: "#77817b",
+  nylon: "#d8dde0",
+  sarı: "#d7a800",
+  yellow: "#d7d900",
+  yeşil: "#2d7d46",
+  green: "#2d7d46",
+  turuncu: "#d96c1a",
+  orange: "#d96c1a",
+  mor: "#6b3fa0",
+  purple: "#6b3fa0",
+  pembe: "#d45087",
+  pink: "#d45087"
 };
 
 export function drawMainRopeCanvas(canvas, sheet, options = {}) {
@@ -46,55 +62,53 @@ export function drawMainRopeCanvas(canvas, sheet, options = {}) {
 function drawTechnicalRopeView(ctx, sheet, width, height) {
   return drawMatrixTextileCells(ctx, sheet, width, height, {
     close: false,
-    background: "#fbfbf8",
-    strokeAlpha: 0.18,
-    shadowAlpha: 0.16
+    background: "#fcfcfc",
+    strokeAlpha: 0.08,
+    shadowAlpha: 0.06
   });
 }
 
 function drawCloseTextileView(ctx, sheet, width, height) {
   return drawMatrixTextileCells(ctx, sheet, width, height, {
     close: true,
-    background: "#f5f4ef",
-    strokeAlpha: 0.10,
-    shadowAlpha: 0.34
+    background: "#fafafa",
+    strokeAlpha: 0.06,
+    shadowAlpha: 0.12
   });
 }
 
 function drawMatrixTextileCells(ctx, sheet, width, height, options) {
   const carrierCount = Number(sheet.carrier_count || sheet.carrier_layout?.length || 0);
   const grid = calculateCalibratedBraidGrid({ width, height, carrierCount, close: options.close });
-  const rows = grid.rows;
-  const steps = grid.steps;
-  const cellWidth = grid.cellWidth;
-  const cellHeight = grid.cellHeight;
-  const span = isTwoOverTwo(sheet.braid_walk_type) ? 2 : 1;
-  const colors = normalizeColorSequence(sheet.color_sequence, sheet.carrier_layout, carrierCount);
+  const matrix = buildBraidMatrix({
+    carrierLayout: normalizeCarrierLayout(sheet.carrier_layout, sheet.color_sequence, carrierCount),
+    machineProfile: sheet.machineProfile,
+    braidLogic: sheet.braid_walk_type,
+    steps: grid.steps
+  });
 
   ctx.fillStyle = options.background;
   ctx.fillRect(0, 0, width, height);
+  drawRopeBodyBase(ctx, width, height, options.close);
 
-  drawDeterministicStrands(ctx, {
-    colors,
-    rows,
-    steps,
-    cellWidth,
-    cellHeight,
+  drawBraidCrowns(ctx, {
+    matrix,
     width,
+    height,
     close: options.close,
-    shadowAlpha: options.shadowAlpha,
-    span
+    shadowAlpha: options.shadowAlpha
   });
+  drawRopeBodyOverlay(ctx, width, height, options.close);
   return grid;
 }
 
 export function calculateCalibratedBraidGrid({ width, height, carrierCount, close = false }) {
   const rows = Math.max(1, Math.ceil(Number(carrierCount || 0)));
   const cellHeight = height / rows;
-  const maxMainSteps = 40;
-  const closeSteps = Math.max(rows + 8, Math.ceil(rows * 1.5));
-  const naturalMainSteps = Math.max(1, Math.floor(width / cellHeight));
-  const steps = close ? closeSteps : Math.min(maxMainSteps, naturalMainSteps);
+  const naturalSteps = Math.max(rows * 2, Math.ceil(width / Math.max(cellHeight * 0.58, 1)));
+  const steps = close
+    ? Math.max(rows * 3, Math.min(96, naturalSteps))
+    : Math.max(rows * 4, Math.min(160, naturalSteps));
   const cellWidth = cellHeight;
   return {
     rows,
@@ -104,124 +118,185 @@ export function calculateCalibratedBraidGrid({ width, height, carrierCount, clos
   };
 }
 
-function normalizeColorSequence(colorSequence, carrierLayout, carrierCount) {
+function normalizeCarrierLayout(carrierLayout, colorSequence, carrierCount) {
   const fromSequence = Array.isArray(colorSequence) ? colorSequence : [];
   const fromLayout = Array.isArray(carrierLayout) ? carrierLayout : [];
   return Array.from({ length: carrierCount }, (_, index) => {
-    if (fromSequence[index]) return fromSequence[index];
     const carrier = fromLayout.find((item) => Number(item.carrier_no) === index + 1);
-    return carrier?.color || "white";
+    const color = carrier?.color || fromSequence[index] || "white";
+    return {
+      carrier_no: index + 1,
+      color,
+      strand_role: carrier?.strand_role || (color === "white" ? "sheath" : "sheath_marker")
+    };
   });
 }
 
-function drawDeterministicStrands(ctx, { colors, rows, steps, cellWidth, cellHeight, width, close, shadowAlpha, span }) {
-  // İplik kalınlığı %30 artırıldı (üretim halatındaki dolgunluğu yansıtmak için)
-  const lineWidth = close
-    ? Math.max(5, cellHeight * 1.07)
-    : Math.max(2.2, cellHeight * 0.76);
-
-  // Tüm kuklalar eşit stillendirme ile çizilir.
-  // Eski base/marker ayrımı ve marker solid outline kaldırıldı:
-  // marker ipliklerin #111 kontur + aşırı gölgesi beyaz alanları yutuyor,
-  // hücre sınır çizgilerinin iplik rengini boğmasına yol açıyordu.
-  const allCarriers = colors.map((color, index) => ({ color, index }));
-  const patternWidth = Math.max(cellWidth, steps * cellWidth);
-  for (let offsetX = 0; offsetX < width + patternWidth; offsetX += patternWidth) {
-    for (const carrier of allCarriers) {
-      drawCarrierStrand(ctx, {
-        carrier,
-        rows,
-        steps,
-        cellWidth,
-        cellHeight,
-        offsetX,
-        lineWidth,
-        close,
-        shadowAlpha: shadowAlpha * 0.65,
-        dashed: false,
-        span
-      });
-    }
-  }
+function drawRopeBodyBase(ctx, width, height, close) {
+  const gradient = ctx.createLinearGradient(0, 0, 0, height);
+  gradient.addColorStop(0, close ? "#dbe2de" : "#eef2ef");
+  gradient.addColorStop(0.18, "#ffffff");
+  gradient.addColorStop(0.48, close ? "#f8faf8" : "#fbfcfb");
+  gradient.addColorStop(0.78, close ? "#d5ddd8" : "#e7ece8");
+  gradient.addColorStop(1, close ? "#aeb9b2" : "#d5ddd8");
+  ctx.save();
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, width, height);
+  ctx.restore();
 }
 
-function drawCarrierStrand(ctx, { carrier, rows, steps, cellWidth, cellHeight, offsetX, lineWidth, close, shadowAlpha, dashed, span }) {
-  const direction = carrier.index % 2 === 0 ? 1 : -1;
-  const segments = [];
-  let current = [];
+function drawBraidCrowns(ctx, { matrix, width, height, close, shadowAlpha }) {
+  const cellW = width / Math.max(matrix.steps, 1);
+  const cellH = height / Math.max(matrix.carrierCount, 1);
+  const baseColor = mostCommonColor(matrix.carrierPaths.map((path) => path.carrier.color));
+  const underCrowns = [];
+  const topCrowns = [];
 
-  for (let time = 0; time <= steps; time += 1) {
-    const yGrid = positiveModulo(carrier.index + direction * time, rows);
-    const previous = current.at(-1);
-    if (previous && Math.abs(yGrid - previous.yGrid) > rows / 2) {
-      segments.push(current);
-      current = [];
-    }
-    current.push({
-      x: offsetX + time * cellWidth,
-      y: yGrid * cellHeight + cellHeight / 2,
-      yGrid,
-      upper: Math.floor((time + yGrid) / span) % 2 === (direction === 1 ? 0 : 1)
+  matrix.carrierPaths.forEach((path) => {
+    path.points.forEach((point) => {
+      const x = point.time * cellW;
+      const y = point.column * cellH;
+      const isTop = topDirectionAt({
+        time: point.time,
+        column: point.column,
+        braidLogic: matrix.braidLogic
+      }) === path.carrier.direction;
+      const crown = { carrier: path.carrier, x, y, top: isTop };
+      if (isTop) topCrowns.push(crown);
+      else underCrowns.push(crown);
     });
-  }
-  if (current.length > 1) segments.push(current);
+  });
 
-  for (const segment of segments) {
-    drawStrandSegment(ctx, {
-      points: segment,
-      color: carrier.color,
-      lineWidth,
+  [...underCrowns, ...topCrowns]
+    .sort((a, b) => (a.top === b.top ? a.y - b.y : Number(a.top) - Number(b.top)))
+    .forEach((crown) => drawBraidCrown(ctx, {
+      x: crown.x,
+      y: crown.y,
+      width: cellW,
+      height: cellH,
+      color: crown.carrier.color || baseColor,
+      direction: crown.carrier.direction,
+      top: crown.top,
       close,
       shadowAlpha,
-      dashed
-    });
-  }
+      marker: crown.carrier.color !== baseColor
+    }));
 }
 
-function drawStrandSegment(ctx, { points, color, lineWidth, close, shadowAlpha, dashed }) {
-  if (points.length < 2) return;
-  const first = points[0];
-  const last = points[points.length - 1];
-  const base = colorToHex(color);
-
-  // NOT: Marker ipliklerde eski solid outline (#111) + aşırı gölge kaldırıldı.
-  // Tüm iplikler aynı gölge/nurlama ile render edilir; marker'lar sadece dashed çizgiyle ayrışır.
-
-  const gradient = ctx.createLinearGradient(first.x, first.y, last.x, last.y);
-  gradient.addColorStop(0, shadeHex(base, -22));
-  gradient.addColorStop(0.45, shadeHex(base, 38));
-  gradient.addColorStop(0.68, shadeHex(base, -4));
-  gradient.addColorStop(1, shadeHex(base, -18));
+function drawBraidCrown(ctx, { x, y, width, height, color, direction, top, close, shadowAlpha, marker }) {
+  const padX = width * (close ? 0.42 : 0.34);
+  const p1 = {
+    x: x - padX,
+    y: direction === "clockwise" ? y + height * 0.84 : y + height * 0.16
+  };
+  const p2 = {
+    x: x + width + padX,
+    y: direction === "clockwise" ? y + height * 0.16 : y + height * 0.84
+  };
+  const dx = p2.x - p1.x;
+  const dy = p2.y - p1.y;
+  const length = Math.hypot(dx, dy) || 1;
+  const nx = -dy / length;
+  const ny = dx / length;
+  const half = height * (close ? 0.52 : 0.43);
+  const points = [
+    { x: p1.x + nx * half, y: p1.y + ny * half },
+    { x: p2.x + nx * half, y: p2.y + ny * half },
+    { x: p2.x - nx * half, y: p2.y - ny * half },
+    { x: p1.x - nx * half, y: p1.y - ny * half }
+  ];
+  const base = top ? colorToHex(color) : neutralTone(colorToHex(color));
+  const gradient = ctx.createLinearGradient(
+    x + width * 0.5 - nx * half,
+    y + height * 0.5 - ny * half,
+    x + width * 0.5 + nx * half,
+    y + height * 0.5 + ny * half
+  );
+  gradient.addColorStop(0, shadeHex(base, top ? -18 : -8));
+  gradient.addColorStop(0.28, shadeHex(base, top ? 8 : 2));
+  gradient.addColorStop(0.50, shadeHex(base, top ? 34 : 14));
+  gradient.addColorStop(0.72, shadeHex(base, top ? 4 : 0));
+  gradient.addColorStop(1, shadeHex(base, top ? -14 : -6));
 
   ctx.save();
-  ctx.lineCap = "round";
-  ctx.lineJoin = "round";
-  ctx.shadowColor = `rgba(45, 54, 48, ${shadowAlpha})`;
-  ctx.shadowBlur = close ? 2.2 : 0.8;
-  ctx.shadowOffsetY = close ? 1.2 : 0.4;
-  if (dashed) {
-    const dash = Math.max(4, lineWidth * (close ? 1.1 : 0.9));
-    ctx.setLineDash([dash, dash * 1.4]);
-  }
-  ctx.strokeStyle = gradient;
-  ctx.lineWidth = lineWidth;
-  ctx.beginPath();
-  ctx.moveTo(first.x, first.y);
-  for (const point of points.slice(1)) {
-    ctx.lineTo(point.x, point.y);
-  }
-  ctx.stroke();
+  ctx.globalAlpha = top ? 1 : 0.48;
+  ctx.shadowColor = `rgba(34, 42, 38, ${top ? shadowAlpha * 2.6 : shadowAlpha * 1.1})`;
+  ctx.shadowBlur = top ? (close ? 2.6 : 1.1) : 0.5;
+  ctx.shadowOffsetY = top ? (close ? 1.2 : 0.35) : 0.15;
+  ctx.fillStyle = gradient;
+  roundedCrownPath(ctx, points);
+  ctx.fill();
 
   ctx.shadowColor = "transparent";
-  ctx.setLineDash([]);
-  ctx.strokeStyle = close ? "rgba(255,255,255,0.34)" : "rgba(255,255,255,0.22)";
-  ctx.lineWidth = Math.max(0.5, lineWidth * 0.18);
-  ctx.beginPath();
-  ctx.moveTo(first.x, first.y - lineWidth * 0.14);
-  for (const point of points.slice(1)) {
-    ctx.lineTo(point.x, point.y - lineWidth * 0.14);
-  }
+  ctx.strokeStyle = marker ? "rgba(15,15,15,0.22)" : "rgba(60,70,64,0.16)";
+  ctx.lineWidth = close ? 0.8 : 0.45;
   ctx.stroke();
+
+  const fiberCount = close ? 3 : 2;
+  for (let index = 1; index <= fiberCount; index += 1) {
+    const offset = (index / (fiberCount + 1) - 0.5) * half * 0.95;
+    ctx.strokeStyle = `rgba(255,255,255,${top ? 0.20 : 0.08})`;
+    ctx.lineWidth = Math.max(0.25, height * (close ? 0.015 : 0.010));
+    ctx.beginPath();
+    ctx.moveTo(p1.x + nx * offset, p1.y + ny * offset);
+    ctx.lineTo(p2.x + nx * offset, p2.y + ny * offset);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+function roundedCrownPath(ctx, points) {
+  ctx.beginPath();
+  ctx.moveTo(points[0].x, points[0].y);
+  ctx.quadraticCurveTo(
+    (points[0].x + points[1].x) / 2,
+    (points[0].y + points[1].y) / 2,
+    points[1].x,
+    points[1].y
+  );
+  ctx.quadraticCurveTo(
+    (points[1].x + points[2].x) / 2,
+    (points[1].y + points[2].y) / 2,
+    points[2].x,
+    points[2].y
+  );
+  ctx.quadraticCurveTo(
+    (points[2].x + points[3].x) / 2,
+    (points[2].y + points[3].y) / 2,
+    points[3].x,
+    points[3].y
+  );
+  ctx.quadraticCurveTo(
+    (points[3].x + points[0].x) / 2,
+    (points[3].y + points[0].y) / 2,
+    points[0].x,
+    points[0].y
+  );
+  ctx.closePath();
+}
+
+function drawRopeBodyOverlay(ctx, width, height, close) {
+  ctx.save();
+
+  const cylinder = ctx.createLinearGradient(0, 0, 0, height);
+  cylinder.addColorStop(0, "rgba(24, 31, 27, 0.16)");
+  cylinder.addColorStop(0.16, "rgba(255, 255, 255, 0.18)");
+  cylinder.addColorStop(0.50, "rgba(255, 255, 255, 0.02)");
+  cylinder.addColorStop(0.78, "rgba(20, 28, 24, 0.10)");
+  cylinder.addColorStop(1, "rgba(20, 28, 24, 0.30)");
+  ctx.globalCompositeOperation = "multiply";
+  ctx.fillStyle = cylinder;
+  ctx.fillRect(0, 0, width, height);
+
+  const highlight = ctx.createLinearGradient(0, 0, 0, height);
+  highlight.addColorStop(0, "rgba(255,255,255,0.24)");
+  highlight.addColorStop(0.28, "rgba(255,255,255,0.08)");
+  highlight.addColorStop(1, "rgba(255,255,255,0)");
+  ctx.globalCompositeOperation = "screen";
+  ctx.fillStyle = highlight;
+  ctx.fillRect(0, 0, width, height * (close ? 0.52 : 0.46));
+
+  ctx.globalCompositeOperation = "source-over";
   ctx.restore();
 }
 
@@ -238,16 +313,17 @@ function drawTextileCell(ctx, { x, y, width, height, color, direction, close, st
     : ctx.createLinearGradient(drawX, drawY, drawX + drawW, drawY + drawH);
   const base = colorToHex(color);
 
-  gradient.addColorStop(0, shadeHex(base, -24));
-  gradient.addColorStop(0.34, shadeHex(base, -2));
-  gradient.addColorStop(0.52, shadeHex(base, 44));
-  gradient.addColorStop(0.72, shadeHex(base, -4));
-  gradient.addColorStop(1, shadeHex(base, -20));
+  // 3D efekt kısma: gradient aşırılıkları yumuşatıldı
+  gradient.addColorStop(0, shadeHex(base, -8));
+  gradient.addColorStop(0.34, shadeHex(base, -1));
+  gradient.addColorStop(0.52, shadeHex(base, 16));
+  gradient.addColorStop(0.72, shadeHex(base, -2));
+  gradient.addColorStop(1, shadeHex(base, -6));
 
   ctx.save();
   ctx.shadowColor = `rgba(65, 74, 68, ${shadowAlpha})`;
-  ctx.shadowBlur = close ? 2.4 : 0.8;
-  ctx.shadowOffsetY = close ? 1.2 : 0.5;
+  ctx.shadowBlur = close ? 1.6 : 0.5;
+  ctx.shadowOffsetY = close ? 0.8 : 0.3;
   roundedRectPath(ctx, drawX, drawY, drawW, drawH, radius);
   ctx.fillStyle = gradient;
   ctx.fill();
@@ -256,8 +332,25 @@ function drawTextileCell(ctx, { x, y, width, height, color, direction, close, st
   ctx.lineWidth = close ? 0.7 : 0.45;
   ctx.stroke();
 
-  ctx.strokeStyle = close ? "rgba(255,255,255,0.46)" : "rgba(255,255,255,0.34)";
-  ctx.lineWidth = Math.max(0.6, Math.min(width, height) * (close ? 0.08 : 0.045));
+  // Lif/vein çizgileri — hücre içinde paralel ince hatlar
+  const fiberCount = close ? 3 : 2;
+  const fiberAlpha = close ? 0.14 : 0.10;
+  for (let f = 1; f <= fiberCount; f++) {
+    const t = f / (fiberCount + 1);
+    const fx = drawX + drawW * (direction === "clockwise" ? t * 0.6 + 0.1 : t * 0.6 + 0.1);
+    const fy1 = drawY + drawH * 0.15;
+    const fy2 = drawY + drawH * 0.85;
+    ctx.strokeStyle = `rgba(255,255,255,${fiberAlpha})`;
+    ctx.lineWidth = Math.max(0.3, Math.min(width, height) * 0.025);
+    ctx.beginPath();
+    ctx.moveTo(fx, fy1);
+    ctx.lineTo(fx, fy2);
+    ctx.stroke();
+  }
+
+  // İnce highlight — eski kalın çizginin yerine hafif vurgu
+  ctx.strokeStyle = close ? "rgba(255,255,255,0.28)" : "rgba(255,255,255,0.20)";
+  ctx.lineWidth = Math.max(0.4, Math.min(width, height) * (close ? 0.05 : 0.03));
   ctx.beginPath();
   if (direction === "clockwise") {
     ctx.moveTo(drawX + drawW * 0.20, drawY + drawH * 0.72);
@@ -272,7 +365,12 @@ function drawTextileCell(ctx, { x, y, width, height, color, direction, close, st
 
 function isTwoOverTwo(walkType) {
   const value = String(walkType || "").toLowerCase();
-  return value.includes("2_over_2") || value.includes("two-over-two") || value.includes("twill") || value.includes("2 üst");
+  return value.includes("2_over_2") || value.includes("two-over-two") || value.includes("twill") || value.includes("2 üst") || value.includes("2 alt");
+}
+
+function isCounterRotating(walkType) {
+  const value = String(walkType || "").toLowerCase();
+  return value.includes("counter-rotating") || value.includes("counter_rotating") || value.includes("karşı");
 }
 
 function positiveModulo(value, modulo) {
@@ -305,11 +403,15 @@ export function drawWalkDiagramCanvas(canvas, sheet) {
 
   const width = canvas.width;
   const height = canvas.height;
+  const carrierCount = Number(sheet.carrier_count || sheet.carrier_layout?.length || 0);
+  const walkSteps = isTwoOverTwo(sheet.braid_walk_type)
+    ? Math.max(16, Math.min(32, carrierCount * 2))
+    : Math.max(12, Math.min(24, carrierCount));
   const matrix = buildBraidMatrix({
     carrierLayout: sheet.carrier_layout,
     machineProfile: sheet.machineProfile,
     braidLogic: sheet.braid_walk_type,
-    steps: 8
+    steps: walkSteps
   });
   const paddingLeft = 34;
   const paddingTop = 20;
@@ -453,16 +555,28 @@ function drawVolumetricStrand(ctx, { x1, y1, x2, y2, color, lineWidth, shadowAlp
 function createStrandGradient(ctx, x1, y1, x2, y2, baseColor) {
   const hex = colorToHex(baseColor);
   const gradient = ctx.createLinearGradient(x1, y1, x2, y2);
-  gradient.addColorStop(0, shadeHex(hex, -24));
-  gradient.addColorStop(0.30, shadeHex(hex, -4));
-  gradient.addColorStop(0.50, shadeHex(hex, 42));
-  gradient.addColorStop(0.72, shadeHex(hex, -3));
-  gradient.addColorStop(1, shadeHex(hex, -22));
+  gradient.addColorStop(0, shadeHex(hex, -8));
+  gradient.addColorStop(0.30, shadeHex(hex, -1));
+  gradient.addColorStop(0.50, shadeHex(hex, 14));
+  gradient.addColorStop(0.72, shadeHex(hex, -1));
+  gradient.addColorStop(1, shadeHex(hex, -6));
   return gradient;
 }
 
 function colorToHex(color) {
   return FALLBACK_COLORS[String(color || "").toLowerCase()] || "#8d9892";
+}
+
+function neutralTone(hex) {
+  // Rengin doygunluğunu düşürerek nötr bir ton döndürür:
+  // gri ortalamaya yaklaştır, hafifçe aç.
+  const value = hex.replace("#", "");
+  const r = parseInt(value.substring(0, 2), 16);
+  const g = parseInt(value.substring(2, 4), 16);
+  const b = parseInt(value.substring(4, 6), 16);
+  const avg = Math.round((r + g + b) / 3);
+  const mix = Math.round(avg * 0.55 + 255 * 0.45);
+  return `#${((1 << 24) + (mix << 16) + (mix << 8) + mix).toString(16).slice(1)}`;
 }
 
 function shadeHex(hex, percent) {

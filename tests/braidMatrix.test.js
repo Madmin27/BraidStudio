@@ -51,9 +51,37 @@ test("odd/even marker carriers move in opposite directions", () => {
   assert.deepEqual(carrier8.points.map((point) => point.column), [7, 6, 5, 4]);
 });
 
+test("adjacent marker carriers 1 and 2 create opposing maypole paths", () => {
+  const matrix = buildBraidMatrix({
+    carrierLayout: layoutWithBlue([1, 2]),
+    machineProfile: mp16,
+    braidLogic: "two-over-two",
+    steps: 5
+  });
+  const carrier1 = matrix.carrierPaths.find((path) => path.carrier.carrier_no === 1);
+  const carrier2 = matrix.carrierPaths.find((path) => path.carrier.carrier_no === 2);
+
+  assert.equal(carrier1.carrier.direction, "clockwise");
+  assert.equal(carrier2.carrier.direction, "counterClockwise");
+  assert.deepEqual(carrier1.points.map((point) => point.column), [0, 1, 2, 3, 4]);
+  assert.deepEqual(carrier2.points.map((point) => point.column), [1, 0, 15, 14, 13]);
+});
+
 test("two over two top direction changes every two cells", () => {
   assert.equal(topDirectionAt({ time: 0, column: 0, braidLogic: "2_over_2" }), "clockwise");
   assert.equal(topDirectionAt({ time: 0, column: 1, braidLogic: "2_over_2" }), "clockwise");
   assert.equal(topDirectionAt({ time: 0, column: 2, braidLogic: "2_over_2" }), "counterClockwise");
   assert.equal(topDirectionAt({ time: 0, column: 3, braidLogic: "2_over_2" }), "counterClockwise");
+});
+
+test("standard walk is one-over-one top alternation", () => {
+  assert.equal(topDirectionAt({ time: 0, column: 0, braidLogic: "standard" }), "clockwise");
+  assert.equal(topDirectionAt({ time: 0, column: 1, braidLogic: "standard" }), "counterClockwise");
+  assert.equal(topDirectionAt({ time: 0, column: 2, braidLogic: "standard" }), "clockwise");
+});
+
+test("counter rotating walk mirrors the standard top phase", () => {
+  assert.equal(topDirectionAt({ time: 0, column: 0, braidLogic: "counter-rotating" }), "counterClockwise");
+  assert.equal(topDirectionAt({ time: 0, column: 1, braidLogic: "counter-rotating" }), "clockwise");
+  assert.equal(topDirectionAt({ time: 0, column: 2, braidLogic: "counter-rotating" }), "counterClockwise");
 });
