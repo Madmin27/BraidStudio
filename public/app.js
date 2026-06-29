@@ -564,12 +564,7 @@ function applyAiSuggestionToSelection(analysis) {
   const suggestedCarrierCount = Number(structuralAnalysis.carrierCount || predictions.carrier_count || predictions.estimated_carrier_count || 0);
   const currentCarrierCount = Number(carrierSelect.value || state.user_selected_options.carrier_count || 0);
   const hasReliableCarrierCount = allowedCarrierCounts.includes(suggestedCarrierCount);
-  let normalizedCarrierCount = hasReliableCarrierCount ? suggestedCarrierCount : currentCarrierCount;
-  // 24 kukla sabitleme: 32 çok seyrek örgü şeması yaratıyor, gerçekçi sınır 24
-  if (normalizedCarrierCount > 24) {
-    logProcess("Kukla sayısı düzeltmesi", `AI ${normalizedCarrierCount} önerdi, 24'e sabitlendi (32 çok seyrek)`);
-    normalizedCarrierCount = 24;
-  }
+  const normalizedCarrierCount = hasReliableCarrierCount ? suggestedCarrierCount : currentCarrierCount;
   const bestCandidate = pickRecipeCandidate(analysis, normalizedCarrierCount);
   const candidateLayout = carrierLayoutFromColorMap(bestCandidate?.carrierColorMap);
   const predictedLayout = carrierLayoutFromPrediction(predictions);

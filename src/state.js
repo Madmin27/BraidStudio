@@ -54,10 +54,7 @@ export function applyUserSelection(state, selectedOptions) {
 export function generateRecipe(state) {
   const finalSelection = state.user_selected_options;
   const colors = finalSelection.colors.length ? finalSelection.colors : ["tanımsız"];
-  let carrierCount = Number(finalSelection.carrier_count || 0);
-  if (carrierCount > 24) {
-    carrierCount = 24;
-  }
+  const carrierCount = Number(finalSelection.carrier_count || 0);
   const machineProfile = findMachineProfile(finalSelection.machine_profile_id, carrierCount);
   const carrierLayout = Array.isArray(finalSelection.carrier_layout) && finalSelection.carrier_layout.length === carrierCount
     ? finalSelection.carrier_layout
