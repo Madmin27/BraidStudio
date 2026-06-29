@@ -493,6 +493,12 @@ function buildMathRecipePrompt(visualAnalysisText) {
     "- Eğer Pattern_Flow Paralel_Spiral ise, renkli olan TÜM kuklalar ya sadece TEK indekslerde (Odd -> Clockwise) ya da sadece ÇİFT indekslerde (Even -> Counter-Clockwise) yer almalıdır. Asla tek/çift karıştırma.",
     "- Eğer Pattern_Flow X_Kesişim ise, renkli kuklalar hem tek hem çift indekslere dengeli dağıtılmalıdır.",
     "",
+    "YÖN KİLİTLEME KURALI:",
+    "- Paralel_Spiral / tracer / marker reçetelerinde zemin dışındaki tüm renkli iplikler kesinlikle tek bir hareket yönüne kilitlenir.",
+    "- 1 tabanlı indekslerde hem tek hem çift yuvalara aynı anda renk atanamaz.",
+    "- 32 kukla Paralel_Spiral için doğru şablon: 1,3,5 = siyah,sarı,siyah ve 17,19,21 = siyah,sarı,siyah; geri kalan tüm yuvalar white.",
+    "- Bu kural patternType için de geçerlidir: paralel marker reçetesi plain/solid olamaz, solid_with_markers veya spiral_tracer kabul edilir.",
+    "",
     "3. TWO-OVER-TWO ÖRGÜ MANTIĞI:",
     "- walkType two-over-two olarak setlenecektir.",
     "- colorSequence dizisinin uzunluğu tam olarak belirlenen carrierCount değerine eşit olmalıdır.",
@@ -687,19 +693,45 @@ function enforceKinematicColorSequence(sequence, visualAnalysisText) {
   const markers = sequence
     .map((color, index) => ({ color, index }))
     .filter((item) => item.color && item.color !== base);
-  const markerParities = new Set(markers.map((item) => item.index % 2));
-  if (markerParities.size <= 1) return sequence;
+  if (!markers.length) return sequence;
 
   const rebuilt = Array.from({ length: sequence.length }, () => base);
-  const targetParity = 0;
-  let slot = 0;
-  for (const marker of markers) {
-    const index = targetParity + slot * 2;
-    if (index >= rebuilt.length) break;
-    rebuilt[index] = marker.color;
-    slot += 1;
+  const slots = parallelSpiralMarkerSlots(sequence.length, markers.length);
+  markers.forEach((marker, index) => {
+    const slot = slots[index];
+    if (slot !== undefined) {
+      rebuilt[slot] = marker.color;
+    }
+  });
+  if (JSON.stringify(rebuilt) !== JSON.stringify(sequence)) {
+    logAnalysisServer("kinematic_guard", "Paralel spiral renk dizilimi tek yöne kilitlendi", {
+      carrierCount: sequence.length,
+      before: sequence,
+      after: rebuilt,
+      oneBasedMarkerSlots: slots.map((slot) => slot + 1)
+    });
   }
   return rebuilt;
+}
+
+function parallelSpiralMarkerSlots(carrierCount, markerCount) {
+  if (carrierCount === 32 && markerCount >= 6) {
+    return [0, 2, 4, 16, 18, 20];
+  }
+
+  const starts = [0, Math.floor(carrierCount / 2)];
+  const clusterSize = Math.max(1, Math.ceil(markerCount / starts.length));
+  const slots = [];
+  for (const start of starts) {
+    for (let offset = 0; offset < clusterSize; offset += 1) {
+      const slot = start + offset * 2;
+      if (slot < carrierCount) {
+        slots.push(slot);
+      }
+      if (slots.length >= markerCount) return slots;
+    }
+  }
+  return slots;
 }
 
 function mostCommonColor(colors) {

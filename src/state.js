@@ -165,8 +165,8 @@ function markerPattern(patternType) {
 function markerCarrierPositions(carrierCount, patternType) {
   if (!markerPattern(patternType)) return [];
   if (carrierCount === 16) return [1, 9];
-  if (carrierCount === 24) return [1, 9, 17];
-  if (carrierCount === 32) return [1, 9, 17, 25];
+  if (carrierCount === 24) return [1, 13];
+  if (carrierCount === 32) return [1, 17];
   const count = Math.max(1, Math.min(3, Math.floor(carrierCount / 5)));
   return Array.from({ length: count }, (_, index) => Math.round(((index + 0.5) * carrierCount) / count));
 }

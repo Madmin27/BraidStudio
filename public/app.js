@@ -431,8 +431,10 @@ function markerLayoutFromColors(carrierCount, colors, visualSignature = "spiral_
   const starts = carrierCount === 16
     ? (wantsDual ? [1, 8] : [1, 9])
     : carrierCount === 24
-      ? (wantsDual ? [1, 8, 17] : [1, 9, 17])
-      : Array.from({ length: Math.max(1, Math.round(carrierCount / 8)) }, (_, index) => 1 + index * Math.max(4, Math.floor(carrierCount / Math.max(1, Math.round(carrierCount / 8)))));
+      ? (wantsDual ? [1, 8, 17] : [1, 13])
+      : carrierCount === 32
+        ? (wantsDual ? [1, 8, 17, 24] : [1, 17])
+        : Array.from({ length: Math.max(1, Math.round(carrierCount / 8)) }, (_, index) => 1 + index * Math.max(4, Math.floor(carrierCount / Math.max(1, Math.round(carrierCount / 8)))));
 
   for (const start of starts) {
     cluster.forEach((color, index) => {

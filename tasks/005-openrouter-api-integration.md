@@ -22,3 +22,4 @@ Analiz sırasında upload panelinde canlı progress bar, pulse efekti ve hibrit 
 Backend `/api/analyze-image` için istek/cache/pipeline/aşama/hata logları journala yazılır. OpenRouter çağrılarına 110sn, frontend analiz isteğine 240sn timeout eklendi.
 Görsel yüklendikten sonra upload panelinde katlanabilir `Görsel bilgileri` alanı açılır; kullanım, çap, beklenen kukla, marker yönü, beyaz şerit sayımı ve notlar Flash analiz promptuna yardımcı bağlam olarak gönderilir.
 R1 çağrısına sert `Promise.race` timeout ve `max_tokens=2200` eklendi; progress metni tek backend isteğini “Flash + R1 hibrit analiz” olarak gösterir.
+Paralel_Spiral için `YÖN KİLİTLEME KURALI` eklendi; 32 kuklada marker şablonu 1,3,5 / 17,19,21 olarak normalize edilir.
