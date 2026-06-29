@@ -14,7 +14,7 @@ const publicDir = join(__dirname, "public");
 const srcDir = join(__dirname, "src");
 const dataDir = join(__dirname, "data");
 const analysisCacheFile = join(dataDir, "analysis-cache.json");
-const analysisPromptVersion = "fingerprint-v1";
+const analysisPromptVersion = "fingerprint-v2";
 
 loadEnvFile(join(__dirname, ".env"));
 
@@ -271,8 +271,10 @@ function normalizeUnknown(value) {
 }
 
 function inferCarrierCount(result, colors) {
-  const pattern = String(result.pattern_type || result.braid_pattern || "").toLowerCase();
-  if (pattern.includes("marker") || pattern.includes("tracer") || colors.length >= 2) return 16;
+  const sequenceCount = Array.isArray(result.estimated_color_sequence) ? result.estimated_color_sequence.length : 0;
+  const layoutCount = Array.isArray(result.estimated_carrier_layout) ? result.estimated_carrier_layout.length : 0;
+  const inferred = sequenceCount || layoutCount;
+  if ([8, 12, 16, 24, 32].includes(inferred)) return inferred;
   return null;
 }
 
@@ -353,11 +355,12 @@ async function analyzeWithOpenRouter({ imageHash, mimeType, dataBase64 }) {
     "predictedSignature must be one of: plain_weave, diagonal_rib, single_spiral_tracer, dual_counter_spiral, spiral_tracer, block_stripe, block_striped_segment, unknown.",
     "confidenceScore must be a number between 0 and 1.",
     "structuralAnalysis must contain carrierCount, symmetry, primaryApplication, braidLogic.",
+    "carrierCount must be one of 8, 12, 16, 24, 32 only when visible repeat/strand evidence supports it; otherwise use null and add a warning.",
     "For tight rope where strands pass in paired over-under bands, set structuralAnalysis.braidLogic to 2_over_2.",
     "For white rope with adjacent yellow/black tracer blocks, prefer spiral_tracer with braidLogic 2_over_2 unless the visual clearly shows one-over-one.",
-    "Example structuralAnalysis values: carrierCount 16, symmetry rotational_periodic, primaryApplication general_purpose_rope, braidLogic 2_over_2.",
+    "Do not default carrierCount to 16. Do not guess carrierCount from color count alone.",
     "AI must not output recipeId, walkMap, carrier path or production-ready claims.",
-    "If carrier count is uncertain, still provide structuralAnalysis.carrierCount as a candidate with lower confidence.",
+    "If carrier count is uncertain, set structuralAnalysis.carrierCount to null with lower confidence.",
     "For white/blue braided rope with flecks/tracers, polyester is a reasonable material suggestion unless visual evidence says otherwise.",
     "Final recipe is selected later by backend library solver and user confirmation."
   ].join(" ");

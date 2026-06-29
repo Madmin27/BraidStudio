@@ -475,8 +475,11 @@ function applyAiSuggestionToSelection(analysis) {
   const fingerprint = predictions.fingerprint || {};
   const predictorResult = predictions.predictor_result || analysis?.predictor_result || {};
   const structuralAnalysis = fingerprint.structuralAnalysis || predictions.structuralAnalysis || {};
-  const carrierCount = Number(structuralAnalysis.carrierCount || predictions.carrier_count || predictions.estimated_carrier_count || 16);
-  const normalizedCarrierCount = [8, 12, 16, 24, 32].includes(carrierCount) ? carrierCount : 16;
+  const allowedCarrierCounts = [8, 12, 16, 24, 32];
+  const suggestedCarrierCount = Number(structuralAnalysis.carrierCount || predictions.carrier_count || predictions.estimated_carrier_count || 0);
+  const currentCarrierCount = Number(carrierSelect.value || state.user_selected_options.carrier_count || 0);
+  const hasReliableCarrierCount = allowedCarrierCounts.includes(suggestedCarrierCount);
+  const normalizedCarrierCount = hasReliableCarrierCount ? suggestedCarrierCount : currentCarrierCount;
   const bestCandidate = pickRecipeCandidate(analysis, normalizedCarrierCount);
   const candidateLayout = carrierLayoutFromColorMap(bestCandidate?.carrierColorMap);
   const predictedLayout = carrierLayoutFromPrediction(predictions);
@@ -492,7 +495,9 @@ function applyAiSuggestionToSelection(analysis) {
     predictorSignature: predictorResult.visualSignature,
     predictorReliable: predictorResult.isReliable,
     predictorWarnings: predictorResult.warnings,
-    carrierCount: normalizedCarrierCount,
+    aiCarrierCount: suggestedCarrierCount || null,
+    selectedCarrierCount: normalizedCarrierCount,
+    carrierCountSource: hasReliableCarrierCount ? "ai_analysis" : "user_selection_kept",
     colors,
     predictorBraidLogic: predictorResult.analysis?.braidLogic,
     structuralBraidLogic: structuralAnalysis.braidLogic,
@@ -501,8 +506,10 @@ function applyAiSuggestionToSelection(analysis) {
   patternSelect.value = normalizePattern(predictorResult.visualSignature || fingerprint.predictedSignature || predictions.predictedSignature || predictions.visualSignature || predictions.pattern_type);
   colorsInput.value = colors.join(", ");
   materialSelect.value = normalizeMaterial(predictions.material || predictions.estimated_material);
-  carrierSelect.value = String(normalizedCarrierCount);
-  machineProfileSelect.value = matchedProfile?.machineProfileId || "mp_16_std";
+  if (hasReliableCarrierCount) {
+    carrierSelect.value = String(normalizedCarrierCount);
+  }
+  machineProfileSelect.value = matchedProfile?.machineProfileId || machineProfileSelect.value || "mp_16_std";
   walkTypeSelect.value = normalizeWalkType(predictorResult.analysis?.braidLogic || bestCandidate?.braidLogic || structuralAnalysis.braidLogic || predictions.braid_walk_type, colors);
   sheathInput.value = materialSelect.value;
   coreEnabledSelect.value = String(Boolean(predictions.core && String(predictions.core).toLowerCase() !== "unknown" && String(predictions.core).toLowerCase() !== "no"));
@@ -546,6 +553,9 @@ function applyAiSuggestionToSelection(analysis) {
   clearGeneratedRecipe();
   generateButton.disabled = false;
   logAnalysis(`${bestCandidate ? `${bestCandidate.recipeId} adayı` : "AI önerisi"} kullanıcı seçimi alanlarına aktarıldı. Reçete Görseli butonuna basınca teknik resim üretilecek.`);
+  if (!hasReliableCarrierCount) {
+    logAnalysis("AI kukla sayısını güvenilir vermedi; mevcut kullanıcı kukla seçimi korundu.");
+  }
 }
 
 function hasMarkerDirectionMismatch(carrierLayout = [], machineProfile = null, visualSignature = "") {
