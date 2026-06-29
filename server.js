@@ -340,9 +340,15 @@ function buildEstimatedColorSequence(colors, carrierCount) {
   });
 }
 
-function analysisCacheKey(imageHash) {
+function analysisCacheKey(imageHash, imageContext = {}) {
   const { openRouterModel, openRouterModel2 } = getRuntimeConfig();
-  return `openrouter:${openRouterModel}:${openRouterModel2}:${analysisPromptVersion}:${imageHash}`;
+  return `openrouter:${openRouterModel}:${openRouterModel2}:${analysisPromptVersion}:${imageHash}:${contextCacheKey(imageContext)}`;
+}
+
+function contextCacheKey(imageContext = {}) {
+  const normalized = normalizeImageContext(imageContext);
+  const serialized = JSON.stringify(normalized);
+  return Buffer.from(serialized).toString("base64url").slice(0, 48);
 }
 
 function logAnalysisServer(stage, message, details = {}) {
@@ -416,10 +422,23 @@ async function callOpenRouter({ model, messages, appUrl, openRouterApiKey, tempe
   };
 }
 
-function buildVisualAnalysisPrompt() {
+function buildVisualAnalysisPrompt(imageContext = {}) {
+  const context = normalizeImageContext(imageContext);
+  const contextLines = [
+    context.productUse ? `- Kullanıcı ürün/kullanım notu: ${context.productUse}` : "",
+    context.knownDiameter ? `- Kullanıcı bilinen çap notu: ${context.knownDiameter}` : "",
+    context.expectedCarrierCount ? `- Kullanıcı beklenen kukla ipucu: ${context.expectedCarrierCount}` : "",
+    context.markerFlowHint ? `- Kullanıcı marker yönü ipucu: ${context.markerFlowHint}` : "",
+    context.whiteStrandCountHint ? `- Kullanıcı beyaz şerit sayımı ipucu: ${context.whiteStrandCountHint}` : "",
+    context.notes ? `- Kullanıcı serbest notu: ${context.notes}` : ""
+  ].filter(Boolean);
+
   return [
     "Görevin, yüklenen örgü halat görselini bir tekstil laboratuvarı tarayıcısı gibi objektif olarak incelemek ve aşağıdaki spesifik sorulara sayısal/net cevaplar vermektir.",
     "Kesinlikle bir reçete JSON'u üretme, sadece gözlemlerini raporla.",
+    "Kullanıcı ipuçları sadece yardımcı bağlamdır; fotoğrafla çelişirse bunu raporda uyarı olarak belirt.",
+    contextLines.length ? "Kullanıcıdan gelen görsel bilgileri:" : "",
+    ...contextLines,
     "",
     "Analiz Parametreleri:",
     "1. RENKLER: Halat yüzeyinde baskın zemin rengi haricinde hangi izleyici (marker) renkleri görüyorsun?",
@@ -431,6 +450,18 @@ function buildVisualAnalysisPrompt() {
     "- Pattern_Flow: [X_Kesişim veya Paralel_Spiral]",
     "- White_Strand_Count_Between_Markers: [Sayı]"
   ].join("\n");
+}
+
+function normalizeImageContext(imageContext = {}) {
+  const source = imageContext && typeof imageContext === "object" ? imageContext : {};
+  return {
+    productUse: String(source.productUse || "").trim().slice(0, 160),
+    knownDiameter: String(source.knownDiameter || "").trim().slice(0, 80),
+    expectedCarrierCount: ["16", "24", "32"].includes(String(source.expectedCarrierCount || "")) ? String(source.expectedCarrierCount) : "",
+    markerFlowHint: ["Paralel_Spiral", "X_Kesişim"].includes(String(source.markerFlowHint || "")) ? String(source.markerFlowHint) : "",
+    whiteStrandCountHint: String(source.whiteStrandCountHint || "").trim().slice(0, 40),
+    notes: String(source.notes || "").trim().slice(0, 240)
+  };
 }
 
 function buildMathRecipePrompt(visualAnalysisText) {
@@ -470,7 +501,7 @@ function buildMathRecipePrompt(visualAnalysisText) {
   ].join("\n");
 }
 
-async function analyzeWithOpenRouter({ imageHash, mimeType, dataBase64 }) {
+async function analyzeWithOpenRouter({ imageHash, mimeType, dataBase64, imageContext = {} }) {
   const { openRouterApiKey, openRouterModel, openRouterModel2, appUrl } = getRuntimeConfig();
   if (!openRouterApiKey) {
     throw Object.assign(new Error("missing_openrouter_api_key"), { statusCode: 503 });
@@ -487,7 +518,7 @@ async function analyzeWithOpenRouter({ imageHash, mimeType, dataBase64 }) {
       {
         role: "user",
         content: [
-          { type: "text", text: buildVisualAnalysisPrompt() },
+          { type: "text", text: buildVisualAnalysisPrompt(imageContext) },
           {
             type: "image_url",
             image_url: {
@@ -737,6 +768,7 @@ async function handleAnalyzeImage(req, res) {
     const imageHash = String(body.imageHash || "");
     const mimeType = String(body.mimeType || "");
     const dataBase64 = String(body.dataBase64 || "");
+    const imageContext = normalizeImageContext(body.imageContext);
     const force = Boolean(body.force);
     if (!imageHash || !mimeType.startsWith("image/") || !dataBase64) {
       jsonResponse(res, 400, { error: "invalid_image_payload" });
@@ -746,11 +778,12 @@ async function handleAnalyzeImage(req, res) {
       imageHash: imageHash.slice(0, 16),
       mimeType,
       dataBase64Length: dataBase64.length,
-      force
+      force,
+      imageContext
     });
 
     const cache = await readAnalysisCache();
-    const cacheKey = analysisCacheKey(imageHash);
+    const cacheKey = analysisCacheKey(imageHash, imageContext);
     if (!force && cache[cacheKey]) {
       logAnalysisServer("cache", "Analiz cache hit", {
         imageHash: imageHash.slice(0, 16),
@@ -766,7 +799,7 @@ async function handleAnalyzeImage(req, res) {
     logAnalysisServer("pipeline", "Hibrit analiz pipeline başladı", {
       imageHash: imageHash.slice(0, 16)
     });
-    const analysis = await enrichAnalysisWithPatternCandidates(await analyzeWithOpenRouter({ imageHash, mimeType, dataBase64 }));
+    const analysis = await enrichAnalysisWithPatternCandidates(await analyzeWithOpenRouter({ imageHash, mimeType, dataBase64, imageContext }));
     cache[cacheKey] = analysis;
     await writeAnalysisCache(cache);
     logAnalysisServer("pipeline", "Hibrit analiz pipeline tamamlandı", {

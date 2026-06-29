@@ -43,6 +43,13 @@ const imageInput = document.querySelector("#imageInput");
 const imagePreview = document.querySelector("#imagePreview");
 const imageStatus = document.querySelector("#imageStatus");
 const uploadPrompt = document.querySelector("#uploadPrompt");
+const imageContextPanel = document.querySelector("#imageContextPanel");
+const imageContextUse = document.querySelector("#imageContextUse");
+const imageContextDiameter = document.querySelector("#imageContextDiameter");
+const imageContextCarrierHint = document.querySelector("#imageContextCarrierHint");
+const imageContextFlowHint = document.querySelector("#imageContextFlowHint");
+const imageContextWhiteCount = document.querySelector("#imageContextWhiteCount");
+const imageContextNotes = document.querySelector("#imageContextNotes");
 const patternAlbum = document.querySelector("#patternAlbum");
 const patternSelect = document.querySelector("#patternSelect");
 const colorsInput = document.querySelector("#colorsInput");
@@ -94,6 +101,17 @@ async function hashFile(file) {
 
 function saveCachedAnalysis(analysis) {
   localStorage.setItem(cacheKey(analysis.image_hash), JSON.stringify(analysis));
+}
+
+function collectImageContext() {
+  return {
+    productUse: imageContextUse?.value.trim() || "",
+    knownDiameter: imageContextDiameter?.value.trim() || "",
+    expectedCarrierCount: imageContextCarrierHint?.value || "",
+    markerFlowHint: imageContextFlowHint?.value || "",
+    whiteStrandCountHint: imageContextWhiteCount?.value.trim() || "",
+    notes: imageContextNotes?.value.trim() || ""
+  };
 }
 
 function setAnalysisProgress({ active = true, step = 0, title = "", status = "active" } = {}) {
@@ -965,6 +983,8 @@ imageInput.addEventListener("change", async () => {
   imagePreview.alt = file.name;
   imagePreview.hidden = false;
   uploadPrompt.hidden = true;
+  imageContextPanel.hidden = false;
+  imageContextPanel.open = true;
   imageStatus.textContent = "Yüklendi";
   clearGeneratedRecipe();
   generateButton.disabled = true;
@@ -994,7 +1014,8 @@ analyzeButton.addEventListener("click", async () => {
   logProcess("AI analiz", "Analiz başlatıldı", {
     imageHash: currentImage.imageHash.slice(0, 16),
     fileType: currentImage.file.type,
-    forceRefresh: true
+    forceRefresh: true,
+    imageContext: collectImageContext()
   });
   logAnalysis("Görsel base64 hazırlanıyor.");
   try {
@@ -1021,6 +1042,7 @@ analyzeButton.addEventListener("click", async () => {
         imageHash: currentImage.imageHash,
         mimeType: currentImage.file.type,
         dataBase64,
+        imageContext: collectImageContext(),
         force: true
       })
     }).finally(() => clearTimeout(timeout));

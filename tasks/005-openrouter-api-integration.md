@@ -20,3 +20,4 @@ Hibrit pipeline eklendi: Flash sadece `Detected_Colors`, `Pattern_Flow`, `White_
 Flash sıcaklığı `0.05`, R1 sıcaklığı `0.65` olarak ayrıldı. R1 JSON parse öncesi `<think>...</think>` ve markdown fence blokları temizlenir.
 Analiz sırasında upload panelinde canlı progress bar, pulse efekti ve hibrit aşama listesi gösterilir.
 Backend `/api/analyze-image` için istek/cache/pipeline/aşama/hata logları journala yazılır. OpenRouter çağrılarına 110sn, frontend analiz isteğine 240sn timeout eklendi.
+Görsel yüklendikten sonra upload panelinde katlanabilir `Görsel bilgileri` alanı açılır; kullanım, çap, beklenen kukla, marker yönü, beyaz şerit sayımı ve notlar Flash analiz promptuna yardımcı bağlam olarak gönderilir.

@@ -28,6 +28,44 @@
               <img id="imagePreview" alt="" hidden>
               <span id="uploadPrompt">Ürün veya halat görselini seç</span>
             </label>
+            <details id="imageContextPanel" class="image-context-panel" hidden>
+              <summary>Görsel bilgileri</summary>
+              <div class="image-context-grid">
+                <label>
+                  Kullanım / ürün
+                  <input id="imageContextUse" placeholder="iskota, statik halat, marin...">
+                </label>
+                <label>
+                  Bilinen çap
+                  <input id="imageContextDiameter" placeholder="örn. 20 mm">
+                </label>
+                <label>
+                  Beklenen kukla
+                  <select id="imageContextCarrierHint">
+                    <option value="">Bilmiyorum</option>
+                    <option value="16">16</option>
+                    <option value="24">24</option>
+                    <option value="32">32</option>
+                  </select>
+                </label>
+                <label>
+                  Marker yönü
+                  <select id="imageContextFlowHint">
+                    <option value="">Bilmiyorum</option>
+                    <option value="Paralel_Spiral">Paralel spiral</option>
+                    <option value="X_Kesişim">X / baklava</option>
+                  </select>
+                </label>
+                <label>
+                  Beyaz şerit sayımı
+                  <input id="imageContextWhiteCount" inputmode="numeric" placeholder="örn. 10-11">
+                </label>
+                <label>
+                  Not
+                  <textarea id="imageContextNotes" rows="2" placeholder="Fotoğrafta bildiğin teknik ipucu varsa yaz"></textarea>
+                </label>
+              </div>
+            </details>
             <button id="analyzeButton" type="button" class="secondary">AI ile analiz et</button>
             <div id="analysisProgress" class="analysis-progress" hidden>
               <div class="analysis-progress-head">
