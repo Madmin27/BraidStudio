@@ -42,7 +42,7 @@ const colorMap = {
 
 let state = structuredClone(initialRecipeState);
 let currentImage = null;
-let selectedPatternId = "diamond";
+let selectedPatternId = "spiral";
 
 const analyzeButton = document.querySelector("#analyzeButton");
 const generateButton = document.querySelector("#generateButton");
@@ -488,6 +488,53 @@ function markerLayoutFromColors(carrierCount, colors, visualSignature = "spiral_
   return layout;
 }
 
+function buildPatternCarrierLayout(selection, patternId = selection.pattern_type) {
+  const carrierCount = Number(selection.carrier_count || 0);
+  const colors = Array.isArray(selection.colors) && selection.colors.length ? selection.colors : ["beyaz"];
+  const base = colors[0] || "beyaz";
+  const accents = colors.slice(1);
+  const layout = Array.from({ length: carrierCount }, (_, index) => ({
+    carrier_no: index + 1,
+    color: base,
+    strand_role: "sheath"
+  }));
+  if (!carrierCount) return layout;
+
+  const normalizedPattern = String(patternId || "").toLowerCase();
+  if (normalizedPattern === "plain") {
+    return layout.map((carrier, index) => ({
+      ...carrier,
+      color: colors[index % colors.length] || base,
+      strand_role: index % colors.length === 0 ? "sheath" : "sheath_marker"
+    }));
+  }
+
+  if (!accents.length) return layout;
+
+  const half = Math.max(1, Math.floor(carrierCount / 2));
+  const quarter = Math.max(1, Math.floor(carrierCount / 4));
+  const markerPositionsByPattern = {
+    spiral: [1, half + 1],
+    diamond: [1, 2],
+    ladder: [1, 3, half + 1, half + 3],
+    herringbone: [1, 2, half + 1, half + 2],
+    chevron: [1, 2, quarter + 1, quarter + 2, half + 1, half + 2]
+  };
+  const positions = markerPositionsByPattern[normalizedPattern] || [1, half + 1];
+  const used = new Set();
+  positions.forEach((position, index) => {
+    const carrierNo = ((position - 1) % carrierCount) + 1;
+    if (used.has(carrierNo)) return;
+    used.add(carrierNo);
+    layout[carrierNo - 1] = {
+      carrier_no: carrierNo,
+      color: accents[index % accents.length],
+      strand_role: "sheath_marker"
+    };
+  });
+  return layout;
+}
+
 function isMarkerPattern(patternType) {
   const value = String(patternType || "").toLowerCase();
   return value.includes("marker") || value.includes("fleck") || value.includes("izli") || value.includes("tracer") || value.includes("solid_with");
@@ -573,7 +620,7 @@ function syncSelectionStateWithLayout(reason = "selection_sync") {
     if (colorsInput) colorsInput.value = syncedColors.join(", ");
     return { rebuilt: false, layout: previousLayout };
   }
-  const forceRebuild = ["carrier_count", "colors", "pattern_type"].includes(reason);
+  const forceRebuild = ["carrier_count", "colors"].includes(reason);
   if (!forceRebuild && !shouldRebuildCarrierLayout(state.user_selected_options)) {
     return { rebuilt: false, layout: state.user_selected_options.carrier_layout };
   }
@@ -1126,14 +1173,20 @@ function applyPattern(patternId) {
 
   selectedPatternId = pattern.id;
   patternSelect.value = pattern.id;
-  colorsInput.value = pattern.colors.join(", ");
-  carrierSelect.value = String(pattern.carriers.at(-1));
-  const matchedProfile = machineProfiles.find((profile) => profile.carrierCount === Number(carrierSelect.value) && profile.machineFamily === "maypole_circular");
-  machineProfileSelect.value = matchedProfile?.machineProfileId || "mp_16_std";
-  walkTypeSelect.value = pattern.walk || matchedProfile?.walkType || "standard";
-  sheathInput.value = pattern.material;
   syncSelectionState();
+  const layout = buildPatternCarrierLayout(state.user_selected_options, pattern.id);
+  state = applyUserSelection(state, {
+    pattern_type: pattern.id,
+    carrier_layout: layout
+  });
   clearGeneratedRecipe();
+  logProcess("Desen seçimi", "Desen değişti; renk, kukla ve yürüyüş tercihleri korundu, kukla yerleşimi desene göre güncellendi", {
+    selectedPattern: selectedPatternId,
+    colors: state.user_selected_options.colors,
+    carrierCount: state.user_selected_options.carrier_count,
+    walkType: state.user_selected_options.braid_walk_type,
+    carrierLayoutPreview: layout.slice(0, 24)
+  });
   render();
 }
 
@@ -1288,7 +1341,13 @@ selectionForm.addEventListener("change", (event) => {
   if (event.target === carrierSelect) {
     syncMachineProfileToCarrierCount();
   }
-  const layoutSync = syncSelectionStateWithLayout(event.target?.name || "selection_change");
+  const reason = event.target?.name || "selection_change";
+  let layoutSync = syncSelectionStateWithLayout(reason);
+  if (event.target === patternSelect) {
+    const layout = buildPatternCarrierLayout(state.user_selected_options, selectedPatternId);
+    state = applyUserSelection(state, { carrier_layout: layout });
+    layoutSync = { rebuilt: true, layout };
+  }
   clearGeneratedRecipe();
   logProcess("Kullanıcı değişikliği", "Final seçim manuel değişti, eski reçete temizlendi", {
     finalSelection: state.user_selected_options,
