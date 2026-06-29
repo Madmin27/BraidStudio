@@ -152,6 +152,21 @@ button.is-loading::after {
   background: #26352f;
 }
 
+.generate-pattern-btn {
+  width: 100%;
+  margin-top: 16px;
+  padding: 12px 16px;
+  font-size: 15px;
+  font-weight: 700;
+  background: #0f684f;
+  color: #fff;
+  border-radius: 8px;
+}
+
+.generate-pattern-btn:hover {
+  background: #0a4d3a;
+}
+
 .analysis-progress {
   display: grid;
   gap: 10px;
@@ -938,6 +953,100 @@ dd {
 #carrierSimulation .carrier-circle:hover {
   filter: brightness(1.25);
   stroke-opacity: 1;
+}
+
+/* ── Color palette popup ── */
+.color-palette-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: rgba(0,0,0,0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.color-palette-popup {
+  background: #fff;
+  border-radius: 20px;
+  padding: 24px 20px 20px;
+  box-shadow: 0 12px 48px rgba(0,0,0,0.3);
+  display: grid;
+  gap: 16px;
+  min-width: 200px;
+  max-width: 320px;
+  width: 100%;
+  animation: palette-in 0.2s ease-out;
+}
+
+@keyframes palette-in {
+  from {
+    opacity: 0;
+    transform: scale(0.92) translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.color-palette-popup h3 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: #1a2e2a;
+  text-align: center;
+}
+
+.color-palette-swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: center;
+}
+
+.color-palette-swatch {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: 3px solid #e0e8e4;
+  cursor: pointer;
+  transition: transform 0.12s, border-color 0.12s, box-shadow 0.12s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  font-weight: 700;
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+  box-sizing: border-box;
+  background: none;
+  padding: 0;
+  min-height: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.color-palette-swatch:hover,
+.color-palette-swatch:focus-visible {
+  transform: scale(1.15);
+  border-color: #0f684f;
+}
+
+.color-palette-swatch.is-current {
+  border-color: #0f684f;
+  box-shadow: 0 0 0 3px #74b99f;
+}
+
+@media (max-width: 480px) {
+  .color-palette-swatch {
+    width: 64px;
+    height: 64px;
+  }
+  .color-palette-popup {
+    min-width: 240px;
+    max-width: 300px;
+  }
 }
 #carrierSimulation .carrier-label {
   pointer-events: none;

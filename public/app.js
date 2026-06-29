@@ -713,7 +713,7 @@ function renderCarrierSimulation() {
         </g>
       </svg>
     </div>
-    <p class="click-hint">${layout.length} kukla · ${colors.length} renk · kuklaya tıkla renk · ortadaki sayıya tıkla kukla adedi</p>
+    <p class="click-hint">${layout.length} kukla · ${colors.length} renk · kuklaya tıkla renk paleti · ortadaki sayıya tıkla kukla adedi</p>
   `;
 }
 
@@ -1279,6 +1279,98 @@ function cycleCarrierCount() {
   render();
 }
 
+/* ── Apply a color to a carrier ── */
+function applyColorToCarrier(carrierNo, newColor) {
+  const layout = state.user_selected_options.carrier_layout;
+  const colors = state.user_selected_options.colors;
+
+  const carrier = layout.find((c) => c.carrier_no === carrierNo);
+  if (!carrier) return;
+
+  const oldColor = carrier.color;
+  const baseColor = String(colors[0]).toLowerCase();
+  const isBase = String(newColor).toLowerCase() === baseColor;
+
+  const updatedLayout = layout.map((c) =>
+    c.carrier_no === carrierNo
+      ? { ...c, color: newColor, strand_role: isBase ? "sheath" : "sheath_marker" }
+      : c
+  );
+
+  state = applyUserSelection(state, { carrier_layout: updatedLayout });
+  clearGeneratedRecipe();
+  logProcess("Simülasyon", `Kukla ${carrierNo} rengi değişti: ${oldColor} → ${newColor}`, {
+    carrierNo,
+    oldColor,
+    newColor,
+    strandRole: isBase ? "sheath" : "sheath_marker"
+  });
+  render();
+}
+
+/* ── Color palette popup ── */
+function showColorPalette(carrierNo) {
+  const layout = state.user_selected_options.carrier_layout;
+  const colors = state.user_selected_options.colors;
+  if (!Array.isArray(layout) || !Array.isArray(colors) || !colors.length) return;
+
+  const carrier = layout.find((c) => c.carrier_no === carrierNo);
+  if (!carrier) return;
+
+  // Remove existing palette
+  document.querySelector(".color-palette-overlay")?.remove();
+
+  const overlay = document.createElement("div");
+  overlay.className = "color-palette-overlay";
+  overlay.setAttribute("role", "dialog");
+  overlay.setAttribute("aria-label", `Kukla ${carrierNo} rengini seç`);
+
+  const currentColor = String(carrier.color).toLowerCase();
+
+  const popup = document.createElement("div");
+  popup.className = "color-palette-popup";
+
+  popup.innerHTML = `
+    <h3>Kukla ${carrierNo} — renk seç</h3>
+    <div class="color-palette-swatches">
+      ${colors.map((color) => {
+        const hex = colorToHex(color);
+        const isCurrent = String(color).toLowerCase() === currentColor;
+        const textColor = (hex === "#1b1f1d" || hex === "#1f3d70" || hex === "#bd2f2b") ? "#fff" : "#1a2e2a";
+        return `<button class="color-palette-swatch${isCurrent ? " is-current" : ""}" data-color="${color}" style="background:${hex}; color:${textColor}" aria-label="${color}" type="button">${isCurrent ? "✓" : ""}</button>`;
+      }).join("")}
+    </div>
+  `;
+
+  overlay.appendChild(popup);
+  document.body.appendChild(overlay);
+
+  // Handle color selection
+  popup.querySelectorAll(".color-palette-swatch").forEach((btn) => {
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      applyColorToCarrier(carrierNo, btn.dataset.color);
+      overlay.remove();
+    });
+  });
+
+  // Close on overlay click (outside popup)
+  overlay.addEventListener("click", (e) => {
+    if (e.target === overlay) {
+      overlay.remove();
+    }
+  });
+
+  // Close on Escape
+  const onKey = (e) => {
+    if (e.key === "Escape") {
+      overlay.remove();
+      document.removeEventListener("keydown", onKey);
+    }
+  };
+  document.addEventListener("keydown", onKey);
+}
+
 /* ── Interactive carrier simulation ── */
 document.getElementById("carrierSimulation")?.addEventListener("click", (event) => {
   // Center count badge click
@@ -1291,34 +1383,7 @@ document.getElementById("carrierSimulation")?.addEventListener("click", (event) 
   if (!circleGroup) return;
 
   const carrierNo = Number(circleGroup.dataset.carrier);
-  const layout = state.user_selected_options.carrier_layout;
-  const colors = state.user_selected_options.colors;
-  if (!Array.isArray(layout) || !Array.isArray(colors) || colors.length < 2) return;
-
-  const carrier = layout.find((c) => c.carrier_no === carrierNo);
-  if (!carrier) return;
-
-  const currentIdx = colors.findIndex((c) => String(c).toLowerCase() === String(carrier.color).toLowerCase());
-  const nextIdx = currentIdx === -1 ? 0 : (currentIdx + 1) % colors.length;
-  const newColor = colors[nextIdx];
-  const baseColor = String(colors[0]).toLowerCase();
-  const isBase = String(newColor).toLowerCase() === baseColor;
-
-  const updatedLayout = layout.map((c) =>
-    c.carrier_no === carrierNo
-      ? { ...c, color: newColor, strand_role: isBase ? "sheath" : "sheath_marker" }
-      : c
-  );
-
-  state = applyUserSelection(state, { carrier_layout: updatedLayout });
-  clearGeneratedRecipe();
-  logProcess("Simülasyon", `Kukla ${carrierNo} rengi değişti: ${carrier.color} → ${newColor}`, {
-    carrierNo,
-    oldColor: carrier.color,
-    newColor,
-    strandRole: isBase ? "sheath" : "sheath_marker"
-  });
-  render();
+  showColorPalette(carrierNo);
 });
 
 patternAlbum.addEventListener("click", (event) => {
@@ -1371,8 +1436,8 @@ const defaultColors = ["beyaz", "siyah"];
 const baseColor = String(defaultColors[0]).toLowerCase();
 const defaultLayout = Array.from({ length: defaultCount }, (_, index) => ({
   carrier_no: index + 1,
-  color: defaultColors[index % defaultColors.length],
-  strand_role: index % 2 === 0 ? "sheath" : "sheath_marker"
+  color: (index === 0 || index === 8) ? "siyah" : "beyaz",
+  strand_role: (index === 0 || index === 8) ? "sheath_marker" : "sheath"
 }));
 
 // Set the form defaults
