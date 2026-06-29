@@ -31,5 +31,6 @@ Kukla sayısı/renk/desen değişince carrier layout AI çağırmadan determinis
 Canvas grid tam silindir açılımına geçirildi: rows=`carrierCount`; CW/CCW aktif carrier indeksi doğrudan `yGrid +/- time` ile hesaplanır. Böylece 16 kuklada 2 marker görsel oranı matematiksel olarak 2/16 düzeyine iner.
 Yakın görünüm en az bir carrier çevrimini göstermek için 16 kuklada 24 adıma kilitlenir.
 Teknik sheet `Notlar` bloğu tek saha doğrulama cümlesine indirildi.
-Ana halat görünümünde yatay matrix adımı 40 ile sınırlandı; canvas genişliği artık 164 gibi aşırı hücre üretip mozaik/ekose görüntü oluşturmaz.
+Ana halat görünümünde yatay matrix adımı 40 ile sınırlandı; `cellWidth=cellHeight` kare-grid korunur ve desen yatayda tekrar ettirilir. Canvas genişliği artık 164 gibi aşırı hücre üretip mozaik/ekose görüntü oluşturmaz.
 `spiral_tracer` marker kümeleri aynı pariteye yerleştirilir (`1,3,5` gibi); renkli iplikler tek yönde kalır, `dual_counter_spiral` haricinde CW/CCW karışmaz.
+Canvas halat görünümü hücre boyama yerine carrier başına sürekli strand path katmanları çizer; base iplikler altta, marker iplikler fazlı/kesikli üst katmanda render edilir.

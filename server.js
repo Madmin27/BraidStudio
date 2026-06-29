@@ -14,7 +14,7 @@ const publicDir = join(__dirname, "public");
 const srcDir = join(__dirname, "src");
 const dataDir = join(__dirname, "data");
 const analysisCacheFile = join(dataDir, "analysis-cache.json");
-const analysisPromptVersion = "fingerprint-v3";
+const analysisPromptVersion = "hybrid-v1";
 
 loadEnvFile(join(__dirname, ".env"));
 
@@ -56,6 +56,7 @@ function getRuntimeConfig() {
   return {
     openRouterApiKey: fileEnv.OPENROUTER_API_KEY || process.env.OPENROUTER_API_KEY || fileEnv.GEMINI_API_KEY || process.env.GEMINI_API_KEY || "",
     openRouterModel: fileEnv.OPENROUTER_MODEL || process.env.OPENROUTER_MODEL || fileEnv.GEMINI_MODEL || process.env.GEMINI_MODEL || "google/gemini-2.5-flash",
+    openRouterModel2: fileEnv.OPENROUTER_MODEL2 || process.env.OPENROUTER_MODEL2 || "deepseek/deepseek-r1",
     appUrl: fileEnv.PUBLIC_APP_URL || process.env.PUBLIC_APP_URL || "https://braidstudio.minen.com.tr"
   };
 }
@@ -338,11 +339,305 @@ function buildEstimatedColorSequence(colors, carrierCount) {
 }
 
 function analysisCacheKey(imageHash) {
-  const { openRouterModel } = getRuntimeConfig();
-  return `openrouter:${openRouterModel}:${analysisPromptVersion}:${imageHash}`;
+  const { openRouterModel, openRouterModel2 } = getRuntimeConfig();
+  return `openrouter:${openRouterModel}:${openRouterModel2}:${analysisPromptVersion}:${imageHash}`;
+}
+
+async function callOpenRouter({ model, messages, appUrl, openRouterApiKey, temperature = 0.1, responseFormat = null }) {
+  const body = {
+    model,
+    temperature,
+    messages
+  };
+  if (responseFormat) {
+    body.response_format = responseFormat;
+  }
+
+  const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "authorization": `Bearer ${openRouterApiKey}`,
+      "content-type": "application/json",
+      "http-referer": appUrl,
+      "x-title": "BraidStudio"
+    },
+    body: JSON.stringify(body)
+  });
+
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const providerMessage = payload.error?.message || payload.error || "openrouter_request_failed";
+    throw Object.assign(new Error(String(providerMessage)), {
+      statusCode: response.status,
+      details: {
+        provider: "openrouter",
+        model,
+        http_status: response.status,
+        raw_error: payload
+      }
+    });
+  }
+
+  return {
+    text: payload.choices?.[0]?.message?.content || "",
+    usage: payload.usage || null
+  };
+}
+
+function buildVisualAnalysisPrompt() {
+  return [
+    "Görevin, yüklenen örgü halat görselini bir tekstil laboratuvarı tarayıcısı gibi objektif olarak incelemek ve aşağıdaki spesifik sorulara sayısal/net cevaplar vermektir.",
+    "Kesinlikle bir reçete JSON'u üretme, sadece gözlemlerini raporla.",
+    "",
+    "Analiz Parametreleri:",
+    "1. RENKLER: Halat yüzeyinde baskın zemin rengi haricinde hangi izleyici (marker) renkleri görüyorsun?",
+    "2. MARKER YÖNÜ: Renkli izleyici benekleri takip edildiğinde, bu çizgiler birbiriyle kesişip X (baklava/diamond) deseni mi oluşturuyor, yoksa birbirine paralel olarak tek bir yöne (spiral/sarmal) doğru mu akıyor?",
+    "3. ŞERİT SAYIMI (KRİTİK): İki paralel marker hattı veya aynı marker'ın bir tur dönüp tekrar aynı hizaya geldiği mesafe arasında kalan bölgede, yan yana dizilmiş kaç adet beyaz iplik şeridi/lif demeti sayabiliyorsun? Örn: 3-4, 7-8, 11-12.",
+    "",
+    "Çıktı Formatı:",
+    "- Detected_Colors: [Renkler]",
+    "- Pattern_Flow: [X_Kesişim veya Paralel_Spiral]",
+    "- White_Strand_Count_Between_Markers: [Sayı]"
+  ].join("\n");
+}
+
+function buildMathRecipePrompt(visualAnalysisText) {
+  return [
+    "Sen BraidStudio sisteminin Endüstriyel Tekstil Matematik Çekirdeğisin.",
+    "Görevin, sana metin olarak iletilen görsel analiz verilerini alıp, aşağıdaki kesin matematiksel kısıtlamaları uygulayarak hatasız bir Maypole örgü makinesi reçetesi JSON'u üretmektir.",
+    "",
+    "[MÜHENDİSLİK VE KINEMATİK KISITLAMALARI]",
+    "1. KUKLA SAYISI (carrierCount) TESPİTİ:",
+    "- Eğer gelen veride White_Strand_Count_Between_Markers değeri 3-5 arasındaysa, carrierCount KESİNLİKLE 16 olmalıdır.",
+    "- Eğer 7-9 arasındaysa, carrierCount KESİNLİKLE 24 olmalıdır.",
+    "- Eğer 10-13 arasındaysa, carrierCount KESİNLİKLE 32 olmalıdır.",
+    "Asla ezbere 16 seçme. Girdi orantısını kullan.",
+    "",
+    "2. YÖN VE İNDEKS UYUMU (Pattern_Flow):",
+    "- Eğer Pattern_Flow Paralel_Spiral ise, renkli olan TÜM kuklalar ya sadece TEK indekslerde (Odd -> Clockwise) ya da sadece ÇİFT indekslerde (Even -> Counter-Clockwise) yer almalıdır. Asla tek/çift karıştırma.",
+    "- Eğer Pattern_Flow X_Kesişim ise, renkli kuklalar hem tek hem çift indekslere dengeli dağıtılmalıdır.",
+    "",
+    "3. TWO-OVER-TWO ÖRGÜ MANTIĞI:",
+    "- walkType two-over-two olarak setlenecektir.",
+    "- colorSequence dizisinin uzunluğu tam olarak belirlenen carrierCount değerine eşit olmalıdır.",
+    "",
+    "Girdi Gözlemleri:",
+    visualAnalysisText,
+    "",
+    "Sadece aşağıdaki JSON şablonuna uygun ve başka hiçbir açıklama metni içermeyen temiz JSON çıktısı ver:",
+    "{",
+    "  \"recipeId\": \"REC-POL-N-SO-DRAFT\",",
+    "  \"productionReady\": false,",
+    "  \"technicalSheet\": {",
+    "    \"carrierCount\": 16,",
+    "    \"walkType\": \"two-over-two\",",
+    "    \"colorSequence\": [\"white\"],",
+    "    \"carrierLayoutCount\": 16",
+    "  }",
+    "}"
+  ].join("\n");
 }
 
 async function analyzeWithOpenRouter({ imageHash, mimeType, dataBase64 }) {
+  const { openRouterApiKey, openRouterModel, openRouterModel2, appUrl } = getRuntimeConfig();
+  if (!openRouterApiKey) {
+    throw Object.assign(new Error("missing_openrouter_api_key"), { statusCode: 503 });
+  }
+
+  const startedAt = Date.now();
+  const visual = await callOpenRouter({
+    model: openRouterModel,
+    appUrl,
+    openRouterApiKey,
+    temperature: 0.05,
+    messages: [
+      {
+        role: "user",
+        content: [
+          { type: "text", text: buildVisualAnalysisPrompt() },
+          {
+            type: "image_url",
+            image_url: {
+              url: `data:${mimeType};base64,${dataBase64}`
+            }
+          }
+        ]
+      }
+    ]
+  });
+
+  const math = await callOpenRouter({
+    model: openRouterModel2,
+    appUrl,
+    openRouterApiKey,
+    temperature: 0,
+    messages: [
+      {
+        role: "system",
+        content: buildMathRecipePrompt(visual.text)
+      }
+    ]
+  });
+
+  const recipeJson = extractJson(math.text);
+  return {
+    image_hash: imageHash,
+    provider: "openrouter",
+    model: `${openRouterModel} -> ${openRouterModel2}`,
+    models: {
+      visual_analysis: openRouterModel,
+      math_recipe: openRouterModel2
+    },
+    prompt_version: analysisPromptVersion,
+    analyzed_at: new Date().toISOString(),
+    duration_ms: Date.now() - startedAt,
+    visual_analysis: {
+      model: openRouterModel,
+      raw_text: visual.text,
+      usage: visual.usage
+    },
+    math_recipe: {
+      model: openRouterModel2,
+      raw_text: math.text,
+      json: recipeJson,
+      usage: math.usage
+    },
+    predictions: normalizeHybridRecipeAnalysis(recipeJson, visual.text),
+    raw_text: math.text,
+    usage: combineUsage(visual.usage, math.usage)
+  };
+}
+
+function combineUsage(...usages) {
+  const present = usages.filter(Boolean);
+  if (!present.length) return null;
+  return present.reduce((total, usage) => ({
+    prompt_tokens: Number(total.prompt_tokens || 0) + Number(usage.prompt_tokens || 0),
+    completion_tokens: Number(total.completion_tokens || 0) + Number(usage.completion_tokens || 0),
+    total_tokens: Number(total.total_tokens || 0) + Number(usage.total_tokens || 0),
+    cost: Number(total.cost || 0) + Number(usage.cost || 0)
+  }), {});
+}
+
+function normalizeHybridRecipeAnalysis(recipe, visualAnalysisText) {
+  const technicalSheet = recipe?.technicalSheet || recipe?.technical_sheet || {};
+  const carrierCount = normalizeAllowedCarrierCount(technicalSheet.carrierCount || technicalSheet.carrier_count || technicalSheet.carrierLayoutCount || technicalSheet.carrier_layout_count);
+  const rawSequence = Array.isArray(technicalSheet.colorSequence)
+    ? technicalSheet.colorSequence
+    : Array.isArray(technicalSheet.color_sequence)
+      ? technicalSheet.color_sequence
+      : [];
+  const normalizedSequence = normalizeColorSequenceLength(rawSequence, carrierCount);
+  const colorSequence = enforceKinematicColorSequence(normalizedSequence, visualAnalysisText);
+  const colors = colorsFromSequence(colorSequence);
+  const patternFlow = parsePatternFlow(visualAnalysisText);
+  const visualSignature = patternFlow === "X_Kesişim" ? "dual_counter_spiral" : "spiral_tracer";
+  const estimatedCarrierLayout = colorSequence.map((color, index) => ({
+    carrier_no: index + 1,
+    color,
+    role: color === colors[0] ? "sheath" : "sheath_marker"
+  }));
+
+  return normalizeAnalysis({
+    fingerprint: {
+      predictedSignature: visualSignature,
+      confidenceScore: carrierCount ? 0.82 : 0.45,
+      structuralAnalysis: {
+        carrierCount,
+        symmetry: visualSignature === "dual_counter_spiral" ? "bilateral_periodic" : "rotational_periodic",
+        primaryApplication: "general_purpose_rope",
+        braidLogic: "two-over-two"
+      }
+    },
+    predictedSignature: visualSignature,
+    confidenceScore: carrierCount ? 0.82 : 0.45,
+    pattern_type: "solid_with_markers",
+    colors,
+    material: "polyester",
+    carrier_count: carrierCount,
+    estimated_carrier_count: carrierCount,
+    estimated_color_sequence: colorSequence,
+    estimated_carrier_layout: estimatedCarrierLayout,
+    estimated_layout_basis: "hybrid_flash_visual_analysis_plus_r1_math_recipe",
+    braid_walk_type: "two-over-two",
+    machine_fit: "requires_user_confirmation",
+    sheath: "braided sheath",
+    core: "unknown",
+    warnings: [
+      "AI sonucu üretim gerçeği değildir; final reçete kullanıcı seçimiyle üretilir.",
+      "Hybrid pipeline: Flash görsel ölçüm, R1 matematiksel reçete adımı kullanıldı."
+    ]
+  });
+}
+
+function normalizeAllowedCarrierCount(value) {
+  const count = Number(value || 0);
+  return [16, 24, 32].includes(count) ? count : null;
+}
+
+function normalizeColorSequenceLength(sequence, carrierCount) {
+  if (!carrierCount) return [];
+  const normalized = sequence.map((color) => normalizeColorName(color)).filter(Boolean);
+  const base = mostCommonColor(normalized) || "white";
+  return Array.from({ length: carrierCount }, (_, index) => normalized[index] || base);
+}
+
+function normalizeColorName(color) {
+  const text = String(color || "").trim().toLowerCase();
+  if (!text) return "";
+  if (text === "siyah") return "black";
+  if (text === "sarı") return "yellow";
+  if (text === "beyaz") return "white";
+  if (text === "mavi") return "blue";
+  if (text === "kırmızı") return "red";
+  return text;
+}
+
+function colorsFromSequence(sequence) {
+  const base = mostCommonColor(sequence) || sequence[0] || "white";
+  const rest = [...new Set(sequence.filter((color) => color && color !== base))];
+  return [base, ...rest];
+}
+
+function enforceKinematicColorSequence(sequence, visualAnalysisText) {
+  const patternFlow = parsePatternFlow(visualAnalysisText);
+  if (patternFlow !== "Paralel_Spiral" || sequence.length < 2) return sequence;
+
+  const base = mostCommonColor(sequence) || "white";
+  const markers = sequence
+    .map((color, index) => ({ color, index }))
+    .filter((item) => item.color && item.color !== base);
+  const markerParities = new Set(markers.map((item) => item.index % 2));
+  if (markerParities.size <= 1) return sequence;
+
+  const rebuilt = Array.from({ length: sequence.length }, () => base);
+  const targetParity = 0;
+  let slot = 0;
+  for (const marker of markers) {
+    const index = targetParity + slot * 2;
+    if (index >= rebuilt.length) break;
+    rebuilt[index] = marker.color;
+    slot += 1;
+  }
+  return rebuilt;
+}
+
+function mostCommonColor(colors) {
+  const counts = new Map();
+  for (const color of colors) {
+    if (!color) continue;
+    counts.set(color, (counts.get(color) || 0) + 1);
+  }
+  return [...counts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] || null;
+}
+
+function parsePatternFlow(text) {
+  const value = String(text || "").toLowerCase();
+  if (value.includes("x_kesişim") || value.includes("x kesişim") || value.includes("diamond") || value.includes("baklava")) return "X_Kesişim";
+  return "Paralel_Spiral";
+}
+
+async function legacyAnalyzeWithOpenRouter({ imageHash, mimeType, dataBase64 }) {
   const { openRouterApiKey, openRouterModel, appUrl } = getRuntimeConfig();
   if (!openRouterApiKey) {
     throw Object.assign(new Error("missing_openrouter_api_key"), { statusCode: 503 });
@@ -365,21 +660,14 @@ async function analyzeWithOpenRouter({ imageHash, mimeType, dataBase64 }) {
     "For white/blue braided rope with flecks/tracers, polyester is a reasonable material suggestion unless visual evidence says otherwise.",
     "Final recipe is selected later by backend library solver and user confirmation."
   ].join(" ");
-  const endpoint = "https://openrouter.ai/api/v1/chat/completions";
   const startedAt = Date.now();
-  const response = await fetch(endpoint, {
-    method: "POST",
-    headers: {
-      "authorization": `Bearer ${openRouterApiKey}`,
-      "content-type": "application/json",
-      "http-referer": appUrl,
-      "x-title": "BraidStudio"
-    },
-    body: JSON.stringify({
-      model: openRouterModel,
+  const result = await callOpenRouter({
+    model: openRouterModel,
+    appUrl,
+    openRouterApiKey,
       temperature: 0.1,
-      response_format: { type: "json_object" },
-      messages: [
+    responseFormat: { type: "json_object" },
+    messages: [
         {
           role: "user",
           content: [
@@ -393,24 +681,8 @@ async function analyzeWithOpenRouter({ imageHash, mimeType, dataBase64 }) {
           ]
         }
       ]
-    })
   });
 
-  const payload = await response.json().catch(() => ({}));
-  if (!response.ok) {
-    const providerMessage = payload.error?.message || payload.error || "openrouter_request_failed";
-    throw Object.assign(new Error(String(providerMessage)), {
-      statusCode: response.status,
-      details: {
-        provider: "openrouter",
-        model: openRouterModel,
-        http_status: response.status,
-        raw_error: payload
-      }
-    });
-  }
-
-  const text = payload.choices?.[0]?.message?.content || "{}";
   return {
     image_hash: imageHash,
     provider: "openrouter",
@@ -418,9 +690,9 @@ async function analyzeWithOpenRouter({ imageHash, mimeType, dataBase64 }) {
     prompt_version: analysisPromptVersion,
     analyzed_at: new Date().toISOString(),
     duration_ms: Date.now() - startedAt,
-    predictions: normalizeAnalysis(extractJson(text)),
-    raw_text: text,
-    usage: payload.usage || null
+    predictions: normalizeAnalysis(extractJson(result.text)),
+    raw_text: result.text,
+    usage: result.usage
   };
 }
 

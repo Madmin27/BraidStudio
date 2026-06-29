@@ -74,27 +74,18 @@ function drawMatrixTextileCells(ctx, sheet, width, height, options) {
   ctx.fillStyle = options.background;
   ctx.fillRect(0, 0, width, height);
 
-  for (let time = 0; time < steps; time += 1) {
-    for (let yGrid = 0; yGrid < rows; yGrid += 1) {
-      const clockwiseCarrierIndex = positiveModulo(yGrid - time, carrierCount);
-      const counterCarrierIndex = positiveModulo(yGrid + time, carrierCount);
-      const clockwiseUpper = Math.floor((time + yGrid) / span) % 2 === 0;
-      const activeCarrierIndex = clockwiseUpper ? clockwiseCarrierIndex : counterCarrierIndex;
-      const cellColor = colors[activeCarrierIndex] || "white";
-
-      drawTextileCell(ctx, {
-        x: time * cellWidth,
-        y: yGrid * cellHeight,
-        width: cellWidth,
-        height: cellHeight,
-        color: cellColor,
-        direction: clockwiseUpper ? "clockwise" : "counterClockwise",
-        close: options.close,
-        strokeAlpha: options.strokeAlpha,
-        shadowAlpha: options.shadowAlpha
-      });
-    }
-  }
+  drawDeterministicStrands(ctx, {
+    colors,
+    rows,
+    steps,
+    cellWidth,
+    cellHeight,
+    width,
+    baseColor: mostCommonColor(colors) || "white",
+    close: options.close,
+    shadowAlpha: options.shadowAlpha,
+    span
+  });
   return grid;
 }
 
@@ -105,7 +96,7 @@ export function calculateCalibratedBraidGrid({ width, height, carrierCount, clos
   const closeSteps = Math.max(rows + 8, Math.ceil(rows * 1.5));
   const naturalMainSteps = Math.max(1, Math.floor(width / cellHeight));
   const steps = close ? closeSteps : Math.min(maxMainSteps, naturalMainSteps);
-  const cellWidth = width / steps;
+  const cellWidth = cellHeight;
   return {
     rows,
     cellHeight,
@@ -122,6 +113,129 @@ function normalizeColorSequence(colorSequence, carrierLayout, carrierCount) {
     const carrier = fromLayout.find((item) => Number(item.carrier_no) === index + 1);
     return carrier?.color || "white";
   });
+}
+
+function drawDeterministicStrands(ctx, { colors, rows, steps, cellWidth, cellHeight, width, baseColor, close, shadowAlpha, span }) {
+  const baseCarriers = colors
+    .map((color, index) => ({ color, index }))
+    .filter((carrier) => carrier.color === baseColor);
+  const markerCarriers = colors
+    .map((color, index) => ({ color, index }))
+    .filter((carrier) => carrier.color !== baseColor);
+  const lineWidth = close
+    ? Math.max(5, cellHeight * 0.82)
+    : Math.max(2.2, cellHeight * 0.58);
+
+  const patternWidth = Math.max(cellWidth, steps * cellWidth);
+  for (let offsetX = 0; offsetX < width + patternWidth; offsetX += patternWidth) {
+    for (const carrier of baseCarriers) {
+      drawCarrierStrand(ctx, {
+        carrier,
+        rows,
+        steps,
+        cellWidth,
+        cellHeight,
+        offsetX,
+        lineWidth,
+        close,
+        shadowAlpha: shadowAlpha * 0.65,
+        dashed: false,
+        span
+      });
+    }
+
+    for (const carrier of markerCarriers) {
+      drawCarrierStrand(ctx, {
+        carrier,
+        rows,
+        steps,
+        cellWidth,
+        cellHeight,
+        offsetX,
+        lineWidth: lineWidth * 0.96,
+        close,
+        shadowAlpha: Math.min(0.5, shadowAlpha + 0.12),
+        dashed: true,
+        span
+      });
+    }
+  }
+}
+
+function drawCarrierStrand(ctx, { carrier, rows, steps, cellWidth, cellHeight, offsetX, lineWidth, close, shadowAlpha, dashed, span }) {
+  const direction = carrier.index % 2 === 0 ? 1 : -1;
+  const segments = [];
+  let current = [];
+
+  for (let time = 0; time <= steps; time += 1) {
+    const yGrid = positiveModulo(carrier.index + direction * time, rows);
+    const previous = current.at(-1);
+    if (previous && Math.abs(yGrid - previous.yGrid) > rows / 2) {
+      segments.push(current);
+      current = [];
+    }
+    current.push({
+      x: offsetX + time * cellWidth,
+      y: yGrid * cellHeight + cellHeight / 2,
+      yGrid,
+      upper: Math.floor((time + yGrid) / span) % 2 === (direction === 1 ? 0 : 1)
+    });
+  }
+  if (current.length > 1) segments.push(current);
+
+  for (const segment of segments) {
+    drawStrandSegment(ctx, {
+      points: segment,
+      color: carrier.color,
+      lineWidth,
+      close,
+      shadowAlpha,
+      dashed
+    });
+  }
+}
+
+function drawStrandSegment(ctx, { points, color, lineWidth, close, shadowAlpha, dashed }) {
+  if (points.length < 2) return;
+  const first = points[0];
+  const last = points[points.length - 1];
+  const gradient = ctx.createLinearGradient(first.x, first.y, last.x, last.y);
+  const base = colorToHex(color);
+  gradient.addColorStop(0, shadeHex(base, -22));
+  gradient.addColorStop(0.45, shadeHex(base, 38));
+  gradient.addColorStop(0.68, shadeHex(base, -4));
+  gradient.addColorStop(1, shadeHex(base, -18));
+
+  ctx.save();
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+  ctx.shadowColor = `rgba(45, 54, 48, ${shadowAlpha})`;
+  ctx.shadowBlur = close ? 2.2 : 0.8;
+  ctx.shadowOffsetY = close ? 1.2 : 0.4;
+  if (dashed) {
+    const dash = Math.max(4, lineWidth * (close ? 1.1 : 0.9));
+    ctx.setLineDash([dash, dash * 1.4]);
+  }
+  ctx.strokeStyle = gradient;
+  ctx.lineWidth = lineWidth;
+  ctx.beginPath();
+  ctx.moveTo(first.x, first.y);
+  for (const point of points.slice(1)) {
+    ctx.lineTo(point.x, point.y);
+  }
+  ctx.stroke();
+
+  ctx.shadowColor = "transparent";
+  ctx.setLineDash([]);
+  ctx.strokeStyle = close ? "rgba(255,255,255,0.34)" : "rgba(255,255,255,0.22)";
+  ctx.lineWidth = Math.max(0.5, lineWidth * 0.18);
+  ctx.beginPath();
+  ctx.moveTo(first.x, first.y - lineWidth * 0.14);
+  for (const point of points.slice(1)) {
+    ctx.lineTo(point.x, point.y - lineWidth * 0.14);
+  }
+  ctx.stroke();
+  ctx.restore();
 }
 
 function drawTextileCell(ctx, { x, y, width, height, color, direction, close, strokeAlpha, shadowAlpha }) {

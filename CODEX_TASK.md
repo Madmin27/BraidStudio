@@ -23,14 +23,15 @@ AI tahmini kullanıcı seçimini ezemez. Nihai reçete her zaman `user_selected_
 - AI sonucu cache/persist edilir; kullanıcı onayı kalıcı veri kabul edilir.
 - AI görselden teknik parmak izi üretir: `predictedSignature`, `confidenceScore`, `structuralAnalysis`, renkler, baskın/iz renkleri, materyal ve uyarı.
 - `structuralAnalysis` en az `carrierCount`, `symmetry`, `primaryApplication` alanlarını taşır.
-- AI `recipeId`, `walkMap`, carrier yolu veya production-ready sonucu üretmez.
+- AI iki aşamalı çalışır: Flash sadece görsel ölçüm/metadata metni üretir, `OPENROUTER_MODEL2` bu metinden endüstriyel kurallı reçete adayı üretir.
+- AI `walkMap`, carrier yolu veya production-ready sonucu üretmez; nihai reçete yine kullanıcı onaylı `finalSelection` üzerinden üretilir.
 - Fotoğraf analizi sonrası `server/lib/patternSolver.js`, `data/` kütüphanesinden olası reçete adaylarını döndürür.
 - Carrier color map adayları `server/lib/candidateColorGenerator.js` ile deterministik üretilir; kullanıcı onayı olmadan kesin kabul edilmez.
 - İlk UI'da görsel yükleme, önizleme ve desen albümünden seçim bulunur.
 - Capture flow sonunda chat cevabı değil, teknik reçete sheet ve JSON preview üretilir.
 - Görsel preview fotogerçekçi üretilmez; reçete verisinden deterministik çizilir.
 - Shop validation olmadan reçete `production_ready` olamaz.
-- OpenRouter API key `/root/sunucu/BraidStudio/.env` içindeki `OPENROUTER_API_KEY` alanına yazılır.
+- OpenRouter API key `/root/sunucu/BraidStudio/.env` içindeki `OPENROUTER_API_KEY` alanına yazılır. Görsel model `OPENROUTER_MODEL`, matematik/reçete modeli `OPENROUTER_MODEL2` ile seçilir.
 - TechnicalSheetRenderer sabit şablon kullanır; ana halat, yakın görünüm, kesit, makara, desen, renk dizilimi, kukla dizilimi ve yürüyüş diyagramı SVG/HTML ile hesaplanır.
 - Carrier color map ve kukla yürüyüşü AI tarafından çizilmez; Recipe Engine finalSelection üzerinden deterministik üretir.
 - Generic machine profiles `generic_candidate` statüsündedir. Aynı profile/direction/walkType aynı walkMap üretir.

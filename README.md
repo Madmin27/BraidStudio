@@ -28,11 +28,15 @@ OpenRouter API:
 nano /root/sunucu/BraidStudio/.env
 ```
 
-`OPENROUTER_API_KEY` değerini girip servisi yeniden başlat:
+`OPENROUTER_API_KEY`, `OPENROUTER_MODEL` ve `OPENROUTER_MODEL2` değerlerini girip servisi yeniden başlat:
 
 ```bash
 systemctl restart braidstudio.service
 ```
+
+AI analiz akışı iki aşamalıdır:
+- `OPENROUTER_MODEL`: Görseli objektif ölçüm/metadata metnine çevirir.
+- `OPENROUTER_MODEL2`: Ölçümü endüstriyel örgü kurallarıyla reçete adayına çevirir.
 
 # BraidStudio AI Öğrenme Protokolü
 
