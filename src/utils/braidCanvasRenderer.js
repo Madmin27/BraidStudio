@@ -122,9 +122,10 @@ function drawDeterministicStrands(ctx, { colors, rows, steps, cellWidth, cellHei
   const markerCarriers = colors
     .map((color, index) => ({ color, index }))
     .filter((carrier) => carrier.color !== baseColor);
+  // İplik kalınlığı %30 artırıldı (üretim halatındaki dolgunluğu yansıtmak için)
   const lineWidth = close
-    ? Math.max(5, cellHeight * 0.82)
-    : Math.max(2.2, cellHeight * 0.58);
+    ? Math.max(5, cellHeight * 1.07)
+    : Math.max(2.2, cellHeight * 0.76);
 
   const patternWidth = Math.max(cellWidth, steps * cellWidth);
   for (let offsetX = 0; offsetX < width + patternWidth; offsetX += patternWidth) {
@@ -199,8 +200,30 @@ function drawStrandSegment(ctx, { points, color, lineWidth, close, shadowAlpha, 
   if (points.length < 2) return;
   const first = points[0];
   const last = points[points.length - 1];
-  const gradient = ctx.createLinearGradient(first.x, first.y, last.x, last.y);
   const base = colorToHex(color);
+  const isMarker = dashed;
+
+  // Marker (renkli) ipliklerde kontur + güçlü gölge: beyaz ipliklerin
+  // ters yönden renkli şeridi yutmasını engeller, blok halinde akmasını sağlar
+  if (isMarker) {
+    ctx.save();
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    ctx.shadowColor = `rgba(25, 28, 26, ${Math.min(0.6, shadowAlpha + 0.35)})`;
+    ctx.shadowBlur = close ? 6 : 3.5;
+    ctx.shadowOffsetY = close ? 1.6 : 0.6;
+    ctx.strokeStyle = "#111";
+    ctx.lineWidth = lineWidth + (close ? 3 : 2);
+    ctx.beginPath();
+    ctx.moveTo(first.x, first.y);
+    for (const point of points.slice(1)) {
+      ctx.lineTo(point.x, point.y);
+    }
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  const gradient = ctx.createLinearGradient(first.x, first.y, last.x, last.y);
   gradient.addColorStop(0, shadeHex(base, -22));
   gradient.addColorStop(0.45, shadeHex(base, 38));
   gradient.addColorStop(0.68, shadeHex(base, -4));
