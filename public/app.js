@@ -1011,16 +1011,19 @@ analyzeButton.addEventListener("click", async () => {
       title: "Flash görsel ölçüm yapıyor"
     });
     logAnalysis("Backend /api/analyze-image isteği gönderildi.");
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 240000);
     const response = await fetch("/api/analyze-image", {
       method: "POST",
       headers: { "content-type": "application/json" },
+      signal: controller.signal,
       body: JSON.stringify({
         imageHash: currentImage.imageHash,
         mimeType: currentImage.file.type,
         dataBase64,
         force: true
       })
-    });
+    }).finally(() => clearTimeout(timeout));
     const payload = await response.json();
     if (!response.ok) {
       throw new Error(`${payload.error || "analysis_failed"}${payload.details?.http_status ? ` (${payload.details.http_status})` : ""}`);
@@ -1051,12 +1054,13 @@ analyzeButton.addEventListener("click", async () => {
     applyAiSuggestionToSelection(payload.analysis);
     finishAnalysisProgress("Analiz tamamlandı");
   } catch (error) {
-    imageStatus.textContent = `Hata: ${error.message}`;
-    failAnalysisProgress(`Analiz hata verdi: ${error.message}`, 2);
+    const message = error.name === "AbortError" ? "analysis_client_timeout" : error.message;
+    imageStatus.textContent = `Hata: ${message}`;
+    failAnalysisProgress(`Analiz hata verdi: ${message}`, 2);
     logProcess("AI analiz", "Analiz hata verdi", {
-      error: error.message
+      error: message
     }, "error");
-    logAnalysis(`Hata: ${error.message}`);
+    logAnalysis(`Hata: ${message}`);
   } finally {
     analyzeButton.disabled = false;
     analyzeButton.textContent = "AI ile analiz et";

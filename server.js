@@ -345,7 +345,11 @@ function analysisCacheKey(imageHash) {
   return `openrouter:${openRouterModel}:${openRouterModel2}:${analysisPromptVersion}:${imageHash}`;
 }
 
-async function callOpenRouter({ model, messages, appUrl, openRouterApiKey, temperature = 0.1, responseFormat = null }) {
+function logAnalysisServer(stage, message, details = {}) {
+  console.info("[BraidStudio:analysis]", stage, message, details);
+}
+
+async function callOpenRouter({ model, messages, appUrl, openRouterApiKey, temperature = 0.1, responseFormat = null, stage = "openrouter", timeoutMs = 110000 }) {
   const body = {
     model,
     temperature,
@@ -355,16 +359,35 @@ async function callOpenRouter({ model, messages, appUrl, openRouterApiKey, tempe
     body.response_format = responseFormat;
   }
 
-  const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      "authorization": `Bearer ${openRouterApiKey}`,
-      "content-type": "application/json",
-      "http-referer": appUrl,
-      "x-title": "BraidStudio"
-    },
-    body: JSON.stringify(body)
-  });
+  const startedAt = Date.now();
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  logAnalysisServer(stage, "OpenRouter isteği başladı", { model, timeoutMs });
+
+  let response;
+  try {
+    response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "authorization": `Bearer ${openRouterApiKey}`,
+        "content-type": "application/json",
+        "http-referer": appUrl,
+        "x-title": "BraidStudio"
+      },
+      body: JSON.stringify(body),
+      signal: controller.signal
+    });
+  } catch (error) {
+    if (error.name === "AbortError") {
+      throw Object.assign(new Error(`${stage}_timeout`), {
+        statusCode: 504,
+        details: { provider: "openrouter", model, timeoutMs }
+      });
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeout);
+  }
 
   const payload = await response.json().catch(() => ({}));
   if (!response.ok) {
@@ -379,6 +402,13 @@ async function callOpenRouter({ model, messages, appUrl, openRouterApiKey, tempe
       }
     });
   }
+
+  logAnalysisServer(stage, "OpenRouter cevabı alındı", {
+    model,
+    durationMs: Date.now() - startedAt,
+    promptTokens: payload.usage?.prompt_tokens || null,
+    completionTokens: payload.usage?.completion_tokens || null
+  });
 
   return {
     text: payload.choices?.[0]?.message?.content || "",
@@ -452,6 +482,7 @@ async function analyzeWithOpenRouter({ imageHash, mimeType, dataBase64 }) {
     appUrl,
     openRouterApiKey,
     temperature: 0.05,
+    stage: "flash_visual_analysis",
     messages: [
       {
         role: "user",
@@ -473,6 +504,7 @@ async function analyzeWithOpenRouter({ imageHash, mimeType, dataBase64 }) {
     appUrl,
     openRouterApiKey,
     temperature: 0.65,
+    stage: "r1_math_recipe",
     messages: [
       {
         role: "system",
@@ -699,6 +731,7 @@ async function legacyAnalyzeWithOpenRouter({ imageHash, mimeType, dataBase64 }) 
 }
 
 async function handleAnalyzeImage(req, res) {
+  const startedAt = Date.now();
   try {
     const body = await readRequestJson(req);
     const imageHash = String(body.imageHash || "");
@@ -709,10 +742,20 @@ async function handleAnalyzeImage(req, res) {
       jsonResponse(res, 400, { error: "invalid_image_payload" });
       return;
     }
+    logAnalysisServer("request", "Analiz isteği alındı", {
+      imageHash: imageHash.slice(0, 16),
+      mimeType,
+      dataBase64Length: dataBase64.length,
+      force
+    });
 
     const cache = await readAnalysisCache();
     const cacheKey = analysisCacheKey(imageHash);
     if (!force && cache[cacheKey]) {
+      logAnalysisServer("cache", "Analiz cache hit", {
+        imageHash: imageHash.slice(0, 16),
+        cacheKey
+      });
       const analysis = await enrichAnalysisWithPatternCandidates(cache[cacheKey]);
       cache[cacheKey] = analysis;
       await writeAnalysisCache(cache);
@@ -720,11 +763,25 @@ async function handleAnalyzeImage(req, res) {
       return;
     }
 
+    logAnalysisServer("pipeline", "Hibrit analiz pipeline başladı", {
+      imageHash: imageHash.slice(0, 16)
+    });
     const analysis = await enrichAnalysisWithPatternCandidates(await analyzeWithOpenRouter({ imageHash, mimeType, dataBase64 }));
     cache[cacheKey] = analysis;
     await writeAnalysisCache(cache);
+    logAnalysisServer("pipeline", "Hibrit analiz pipeline tamamlandı", {
+      imageHash: imageHash.slice(0, 16),
+      durationMs: Date.now() - startedAt,
+      model: analysis.model,
+      carrierCount: analysis.predictions?.estimated_carrier_count || analysis.predictions?.carrier_count || null
+    });
     jsonResponse(res, 200, { analysis, cache: force ? "refresh" : "miss" });
   } catch (error) {
+    logAnalysisServer("error", "Analiz hata verdi", {
+      durationMs: Date.now() - startedAt,
+      error: error.message || "analysis_failed",
+      details: error.details || null
+    });
     jsonResponse(res, error.statusCode || 500, {
       error: error.message || "analysis_failed",
       details: error.details || null

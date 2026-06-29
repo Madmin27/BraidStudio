@@ -19,3 +19,4 @@ Prompt carrierCount tahmininde beyaz şerit frekansını dikkate alır: iki trac
 Hibrit pipeline eklendi: Flash sadece `Detected_Colors`, `Pattern_Flow`, `White_Strand_Count_Between_Markers` metadata metni üretir; R1 bu metni endüstriyel kısıtlarla `technicalSheet` JSON adayına çevirir.
 Flash sıcaklığı `0.05`, R1 sıcaklığı `0.65` olarak ayrıldı. R1 JSON parse öncesi `<think>...</think>` ve markdown fence blokları temizlenir.
 Analiz sırasında upload panelinde canlı progress bar, pulse efekti ve hibrit aşama listesi gösterilir.
+Backend `/api/analyze-image` için istek/cache/pipeline/aşama/hata logları journala yazılır. OpenRouter çağrılarına 110sn, frontend analiz isteğine 240sn timeout eklendi.
