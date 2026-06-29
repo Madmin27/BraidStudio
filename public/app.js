@@ -61,6 +61,11 @@ const recipeImageOutput = document.querySelector(".recipe-image-output");
 const processLog = document.querySelector("#processLog");
 const processStatus = document.querySelector("#processStatus");
 const mismatchReport = document.querySelector("#mismatchReport");
+const analysisProgress = document.querySelector("#analysisProgress");
+const analysisProgressTitle = document.querySelector("#analysisProgressTitle");
+const analysisProgressPercent = document.querySelector("#analysisProgressPercent");
+const analysisProgressBar = document.querySelector("#analysisProgressBar");
+const analysisProgressSteps = document.querySelector("#analysisProgressSteps");
 recipeImagePreview.addEventListener("error", () => {
   recipeImagePreview.hidden = true;
   recipeImagePreview.removeAttribute("src");
@@ -68,6 +73,12 @@ recipeImagePreview.addEventListener("error", () => {
 });
 const analysisSteps = [];
 const processSteps = [];
+const analysisProgressItems = [
+  "Görsel base64 hazırlanıyor",
+  "Flash görsel ölçüm yapıyor",
+  "R1 matematiksel reçete adayını kuruyor",
+  "Sonuç kullanıcı seçimlerine aktarılıyor"
+];
 let latestRecipePngUrl = "";
 
 function cacheKey(imageHash) {
@@ -83,6 +94,34 @@ async function hashFile(file) {
 
 function saveCachedAnalysis(analysis) {
   localStorage.setItem(cacheKey(analysis.image_hash), JSON.stringify(analysis));
+}
+
+function setAnalysisProgress({ active = true, step = 0, title = "", status = "active" } = {}) {
+  if (!analysisProgress) return;
+  analysisProgress.hidden = false;
+  analysisProgress.dataset.status = status;
+  const maxStep = analysisProgressItems.length;
+  const safeStep = Math.max(0, Math.min(step, maxStep));
+  const percent = Math.round((safeStep / maxStep) * 100);
+  analysisProgressTitle.textContent = title || analysisProgressItems[Math.max(0, safeStep - 1)] || "Analiz hazırlanıyor";
+  analysisProgressPercent.textContent = `${percent}%`;
+  analysisProgressBar.style.width = `${percent}%`;
+  analyzeButton.classList.toggle("is-loading", active && status === "active");
+  analysisProgressSteps.innerHTML = analysisProgressItems.map((item, index) => {
+    const itemStatus = index < safeStep ? "done" : index === safeStep && status === "active" ? "active" : "pending";
+    const errorClass = status === "error" && index === Math.max(0, safeStep - 1) ? " error" : "";
+    return `<li class="${itemStatus}${errorClass}"><span></span>${escapeHtml(item)}</li>`;
+  }).join("");
+}
+
+function finishAnalysisProgress(title) {
+  setAnalysisProgress({ active: false, step: analysisProgressItems.length, title, status: "done" });
+  analyzeButton.classList.remove("is-loading");
+}
+
+function failAnalysisProgress(title, step = 1) {
+  setAnalysisProgress({ active: false, step, title, status: "error" });
+  analyzeButton.classList.remove("is-loading");
 }
 
 function colorToHex(color) {
@@ -946,8 +985,12 @@ analyzeButton.addEventListener("click", async () => {
   }
 
   analyzeButton.disabled = true;
-  analyzeButton.textContent = "Analiz ediliyor...";
+  analyzeButton.textContent = "Analiz sürüyor";
   imageStatus.textContent = "Analiz ediliyor";
+  setAnalysisProgress({
+    step: 0,
+    title: "Analiz kuyruğa alındı"
+  });
   logProcess("AI analiz", "Analiz başlatıldı", {
     imageHash: currentImage.imageHash.slice(0, 16),
     fileType: currentImage.file.type,
@@ -955,9 +998,17 @@ analyzeButton.addEventListener("click", async () => {
   });
   logAnalysis("Görsel base64 hazırlanıyor.");
   try {
+    setAnalysisProgress({
+      step: 1,
+      title: "Görsel base64 hazırlanıyor"
+    });
     const dataBase64 = await fileToBase64(currentImage.file);
     logProcess("AI analiz", "Görsel base64 hazırlandı", {
       base64Length: dataBase64.length
+    });
+    setAnalysisProgress({
+      step: 2,
+      title: "Flash görsel ölçüm yapıyor"
     });
     logAnalysis("Backend /api/analyze-image isteği gönderildi.");
     const response = await fetch("/api/analyze-image", {
@@ -974,6 +1025,10 @@ analyzeButton.addEventListener("click", async () => {
     if (!response.ok) {
       throw new Error(`${payload.error || "analysis_failed"}${payload.details?.http_status ? ` (${payload.details.http_status})` : ""}`);
     }
+    setAnalysisProgress({
+      step: 3,
+      title: "R1 matematiksel reçete adayını kurdu"
+    });
     saveCachedAnalysis(payload.analysis);
     state = { ...state, ai_analysis_result: payload.analysis };
     imageStatus.textContent = "Analiz tamamlandı";
@@ -983,13 +1038,21 @@ analyzeButton.addEventListener("click", async () => {
       model: payload.analysis.model,
       durationMs: payload.analysis.duration_ms,
       predictions: payload.analysis.predictions,
+      visualAnalysis: payload.analysis.visual_analysis,
+      mathRecipe: payload.analysis.math_recipe,
       predictorResult: payload.analysis.predictor_result,
       candidateCount: payload.analysis.recipe_candidates?.length || 0
     });
     logAnalysis(`${payload.cache === "refresh" ? "Cache bypass edildi, yeni OpenRouter cevabı alındı" : "OpenRouter cevabı alındı"}: ${payload.analysis.model}`);
+    setAnalysisProgress({
+      step: 4,
+      title: "Sonuç kullanıcı seçimlerine aktarılıyor"
+    });
     applyAiSuggestionToSelection(payload.analysis);
+    finishAnalysisProgress("Analiz tamamlandı");
   } catch (error) {
     imageStatus.textContent = `Hata: ${error.message}`;
+    failAnalysisProgress(`Analiz hata verdi: ${error.message}`, 2);
     logProcess("AI analiz", "Analiz hata verdi", {
       error: error.message
     }, "error");

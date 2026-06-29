@@ -29,6 +29,17 @@
               <span id="uploadPrompt">Ürün veya halat görselini seç</span>
             </label>
             <button id="analyzeButton" type="button" class="secondary">AI ile analiz et</button>
+            <div id="analysisProgress" class="analysis-progress" hidden>
+              <div class="analysis-progress-head">
+                <span id="analysisProgressPulse" class="analysis-pulse"></span>
+                <strong id="analysisProgressTitle">Analiz hazırlanıyor</strong>
+                <span id="analysisProgressPercent">0%</span>
+              </div>
+              <div class="analysis-progress-track">
+                <div id="analysisProgressBar" class="analysis-progress-bar"></div>
+              </div>
+              <ol id="analysisProgressSteps" class="analysis-progress-steps"></ol>
+            </div>
           </section>
 
           <section class="panel">

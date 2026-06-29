@@ -18,3 +18,4 @@ Kukla sayısı için 16 fallback'i kaldırıldı. AI görselden güvenilir carri
 Prompt carrierCount tahmininde beyaz şerit frekansını dikkate alır: iki tracer hattı arasında 10+ beyaz strand görünüyorsa 16 yerine 24/32 adayı tercih edilir.
 Hibrit pipeline eklendi: Flash sadece `Detected_Colors`, `Pattern_Flow`, `White_Strand_Count_Between_Markers` metadata metni üretir; R1 bu metni endüstriyel kısıtlarla `technicalSheet` JSON adayına çevirir.
 Flash sıcaklığı `0.05`, R1 sıcaklığı `0.65` olarak ayrıldı. R1 JSON parse öncesi `<think>...</think>` ve markdown fence blokları temizlenir.
+Analiz sırasında upload panelinde canlı progress bar, pulse efekti ve hibrit aşama listesi gösterilir.
