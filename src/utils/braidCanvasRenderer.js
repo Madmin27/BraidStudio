@@ -179,12 +179,18 @@ function normalizeCarrierLayout(carrierLayout, colorSequence, carrierCount) {
 }
 
 function drawRopeBodyBase(ctx, width, height, close) {
+  // Silindirik halat gövdesi: üst/alt kenarlarda belirgin kararma, merkezde parlama
+  // close modunda daha dramatik gölge geçişi
   const gradient = ctx.createLinearGradient(0, 0, 0, height);
-  gradient.addColorStop(0, "#f7f8f7");
-  gradient.addColorStop(0.16, "#ffffff");
-  gradient.addColorStop(0.52, "#fbfbfb");
-  gradient.addColorStop(0.82, "#f2f2f2");
-  gradient.addColorStop(1, close ? "#e5e2df" : "#ededed");
+  gradient.addColorStop(0, close ? "#9a9690" : "#b0b2b0");
+  gradient.addColorStop(0.05, close ? "#b8b4ae" : "#c8c9c8");
+  gradient.addColorStop(0.15, close ? "#d6d2cc" : "#e2e3e2");
+  gradient.addColorStop(0.30, close ? "#efecf0" : "#f2f3f2");
+  gradient.addColorStop(0.5, close ? "#fcfcfa" : "#ffffff");
+  gradient.addColorStop(0.70, close ? "#efecf0" : "#f2f3f2");
+  gradient.addColorStop(0.85, close ? "#d6d2cc" : "#e2e3e2");
+  gradient.addColorStop(0.95, close ? "#b8b4ae" : "#c8c9c8");
+  gradient.addColorStop(1, close ? "#9a9690" : "#b0b2b0");
   ctx.save();
   ctx.fillStyle = gradient;
   ctx.fillRect(0, 0, width, height);
@@ -223,12 +229,29 @@ function drawVectorBraidSurface(ctx, sheet, width, height, close, grid) {
     drawIllustrationCrown(ctx, crown);
   }
 
-  const floorShadow = ctx.createLinearGradient(0, height * 0.78, 0, height);
+  // Zemin gölgesi (alt kenarda) — daha geniş alana yayılan yoğun gölge
+  const floorShadow = ctx.createLinearGradient(0, height * 0.70, 0, height);
   floorShadow.addColorStop(0, "rgba(255,255,255,0)");
-  floorShadow.addColorStop(0.55, close ? "rgba(90,70,55,0.16)" : "rgba(90,70,55,0.10)");
-  floorShadow.addColorStop(1, close ? "rgba(48,36,28,0.34)" : "rgba(48,36,28,0.22)");
+  floorShadow.addColorStop(0.40, close ? "rgba(70,55,42,0.12)" : "rgba(70,55,42,0.06)");
+  floorShadow.addColorStop(0.70, close ? "rgba(48,36,28,0.24)" : "rgba(48,36,28,0.15)");
+  floorShadow.addColorStop(1, close ? "rgba(28,20,16,0.42)" : "rgba(28,20,16,0.30)");
   ctx.fillStyle = floorShadow;
-  ctx.fillRect(0, height * 0.74, width, height * 0.26);
+  ctx.fillRect(0, height * 0.68, width, height * 0.32);
+
+  // 3B tüp gölgelemesi: üst/alt kenarlarda kararma ile silindirik hacim hissi
+  // close modunda daha belirgin gölge katmanı
+  const tubeShading = ctx.createLinearGradient(0, 0, 0, height);
+  tubeShading.addColorStop(0, close ? "rgba(36,28,22,0.28)" : "rgba(0,0,0,0.20)");
+  tubeShading.addColorStop(0.05, close ? "rgba(36,28,22,0.12)" : "rgba(0,0,0,0.08)");
+  tubeShading.addColorStop(0.15, close ? "rgba(36,28,22,0.03)" : "rgba(0,0,0,0.02)");
+  tubeShading.addColorStop(0.30, "rgba(0,0,0,0)");
+  tubeShading.addColorStop(0.70, "rgba(0,0,0,0)");
+  tubeShading.addColorStop(0.85, close ? "rgba(36,28,22,0.03)" : "rgba(0,0,0,0.02)");
+  tubeShading.addColorStop(0.95, close ? "rgba(36,28,22,0.12)" : "rgba(0,0,0,0.08)");
+  tubeShading.addColorStop(1, close ? "rgba(36,28,22,0.28)" : "rgba(0,0,0,0.22)");
+  ctx.fillStyle = tubeShading;
+  ctx.fillRect(0, 0, width, height);
+
   ctx.restore();
 }
 
@@ -491,56 +514,114 @@ function drawIllustrationCrown(ctx, { x, y, width, height, color, direction, top
   const length = Math.hypot(dx, dy) || 1;
   const nx = -dy / length;
   const ny = dx / length;
-  const half = Math.min(width, height) * (close ? 0.42 : 0.40);
-  const points = [
-    { x: p1.x + nx * half, y: p1.y + ny * half },
-    { x: p2.x + nx * half, y: p2.y + ny * half },
-    { x: p2.x - nx * half, y: p2.y - ny * half },
-    { x: p1.x - nx * half, y: p1.y - ny * half }
-  ];
-  const center = {
-    x: x + width * 0.5,
-    y: y + height * 0.5
-  };
-  const scaledPoints = scaleCrownPoints(points, center, 1.06);
+  const half = Math.min(width, height) * (close ? 0.44 : 0.42);
   const hex = colorToHex(color);
-  const gradient = setupTextileGradient(ctx, {
-    x: x + width * 0.5 - nx * half,
-    y: y + height * 0.5 - ny * half
-  }, {
-    x: x + width * 0.5 + nx * half,
-    y: y + height * 0.5 + ny * half
-  }, color);
+  const bVal = brightness(hex);
+  const isBlack = isBlackColor(color, hex);
 
+  // Bezier kontrol noktası — helisel sarılımdan kaynaklanan doğal kavis
+  const curveMag = 0.36;
+  const cp = {
+    x: (p1.x + p2.x) / 2 + nx * half * curveMag,
+    y: (p1.y + p2.y) / 2 + ny * half * curveMag
+  };
+
+  const strandWidth = half * 2 * 1.10;
+  const centerX = (p1.x + p2.x) / 2;
+  const centerY = (p1.y + p2.y) / 2;
+
+  // Yuvarlak kesitli iplik gradienti (simetrik: koyu kenar → parlak merkez → koyu kenar)
+  const grad = ctx.createLinearGradient(
+    centerX - nx * half * 1.10,
+    centerY - ny * half * 1.10,
+    centerX + nx * half * 1.10,
+    centerY + ny * half * 1.10
+  );
+
+  if (isBlack) {
+    grad.addColorStop(0, "#060606");
+    grad.addColorStop(0.10, "#101010");
+    grad.addColorStop(0.30, "#282828");
+    grad.addColorStop(0.5, "#505050");
+    grad.addColorStop(0.70, "#282828");
+    grad.addColorStop(0.90, "#101010");
+    grad.addColorStop(1, "#040404");
+  } else if (bVal > 180) {
+    grad.addColorStop(0, "#a0a0a0");
+    grad.addColorStop(0.10, "#c4c4c4");
+    grad.addColorStop(0.28, "#ececec");
+    grad.addColorStop(0.5, "#ffffff");
+    grad.addColorStop(0.72, "#ececec");
+    grad.addColorStop(0.90, "#c4c4c4");
+    grad.addColorStop(1, "#a0a0a0");
+  } else {
+    grad.addColorStop(0, shadeHex(hex, -34));
+    grad.addColorStop(0.10, shadeHex(hex, -16));
+    grad.addColorStop(0.28, shadeHex(hex, 4));
+    grad.addColorStop(0.5, shadeHex(hex, 38));
+    grad.addColorStop(0.72, shadeHex(hex, 4));
+    grad.addColorStop(0.90, shadeHex(hex, -16));
+    grad.addColorStop(1, shadeHex(hex, -34));
+  }
+
+  // --- İPLİK GÖVDESİ (yuvarlak uçlu kalın bezier eğrisi) ---
   ctx.save();
-  ctx.globalAlpha = (top ? 1 : 0.88) * alphaScale;
-  ctx.shadowColor = top ? "rgba(0,0,0,0.18)" : "rgba(0,0,0,0.06)";
-  ctx.shadowBlur = top ? (close ? 5 : 3.8) : (close ? 1.2 : 0.9);
-  ctx.shadowOffsetX = top ? (close ? 1.1 : 0.55) : 0;
-  ctx.shadowOffsetY = top ? (close ? 2.4 : 1.25) : 0.35;
-  ctx.fillStyle = gradient;
-  roundedCrownPath(ctx, scaledPoints);
-  ctx.fill();
-
-  ctx.shadowColor = "transparent";
-  ctx.strokeStyle = "rgba(0,0,0,0.22)";
-  ctx.lineWidth = 0.6;
+  ctx.globalAlpha = (top ? 1 : 0.84) * alphaScale;
+  ctx.shadowColor = top ? "rgba(0,0,0,0.26)" : "rgba(0,0,0,0.08)";
+  ctx.shadowBlur = top ? (close ? 9 : 6) : (close ? 2.5 : 1.5);
+  ctx.shadowOffsetX = top ? (close ? 2.0 : 1.0) : 0;
+  ctx.shadowOffsetY = top ? (close ? 4.0 : 2.8) : 0.8;
+  ctx.lineCap = "round";
+  ctx.lineWidth = strandWidth;
+  ctx.strokeStyle = grad;
+  ctx.beginPath();
+  ctx.moveTo(p1.x, p1.y);
+  ctx.quadraticCurveTo(cp.x, cp.y, p2.x, p2.y);
   ctx.stroke();
+  ctx.restore();
 
+  // --- SPEKÜLER VURGU (iplik boyunca merkeze yakın parlak çizgi — 3B parlaklık) ---
+  if (top) {
+    ctx.save();
+    ctx.globalAlpha = (isBlack ? 0.24 : (bVal > 180 ? 0.55 : 0.32)) * alphaScale;
+    ctx.lineCap = "round";
+    ctx.lineWidth = Math.max(1.2, strandWidth * 0.18);
+    ctx.strokeStyle = "#ffffff";
+    const hlOffset = nx * half * 0.24;
+    ctx.beginPath();
+    ctx.moveTo(p1.x + hlOffset, p1.y + ny * half * 0.24);
+    ctx.quadraticCurveTo(
+      cp.x + hlOffset,
+      cp.y + ny * half * 0.24,
+      p2.x + hlOffset,
+      p2.y + ny * half * 0.24
+    );
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  // --- LİF DOKUSU ÇİZGİLERİ ---
   if (close || !marker) {
-    ctx.globalAlpha = (marker ? 0.10 : (close ? 0.10 : 0.07)) * alphaScale;
-    ctx.strokeStyle = shadeHex(hex, brightness(hex) > 120 ? -12 : 18);
-    ctx.lineWidth = close ? 0.45 : 0.38;
-    const fiberCount = close ? 3 : 2;
+    ctx.save();
+    ctx.globalAlpha = (marker ? 0.12 : (close ? 0.15 : 0.09)) * alphaScale;
+    ctx.strokeStyle = shadeHex(hex, bVal > 120 ? -18 : 24);
+    ctx.lineWidth = close ? 0.55 : 0.4;
+    ctx.lineCap = "butt";
+    const fiberCount = close ? 4 : 2;
     for (let index = 1; index <= fiberCount; index += 1) {
-      const offset = (index / (fiberCount + 1) - 0.5) * half * 0.85;
+      const offset = (index / (fiberCount + 1) - 0.5) * half * 0.88;
       ctx.beginPath();
       ctx.moveTo(p1.x + nx * offset, p1.y + ny * offset);
-      ctx.lineTo(p2.x + nx * offset, p2.y + ny * offset);
+      ctx.quadraticCurveTo(
+        cp.x + nx * offset,
+        cp.y + ny * offset,
+        p2.x + nx * offset,
+        p2.y + ny * offset
+      );
       ctx.stroke();
     }
+    ctx.restore();
   }
-  ctx.restore();
 }
 
 function setupTextileGradient(ctx, p1, p2, color) {
