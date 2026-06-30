@@ -119,13 +119,48 @@ export function calculateCalibratedBraidGrid({ width, height, carrierCount, clos
 }
 
 export function calculateMarkerPitch(carrierCount) {
-  return Math.max(4, Math.round(Number(carrierCount || 0)));
+  return calculatePatternRepeatModel({ carrierCount }).markerPitchColumns;
 }
 
 export function expectedMarkerCoverage(carrierCount, markerCount) {
   const count = Number(carrierCount || 0);
   if (!count) return 0;
   return Number(markerCount || 0) / count;
+}
+
+export function calculatePatternRepeatModel({
+  carrierCount,
+  markerCount = 0,
+  viewLengthMm = 300,
+  ropeDiameterMm = 10,
+  braidAngleDeg = 45,
+  columns = 58
+} = {}) {
+  const count = Math.max(1, Math.round(Number(carrierCount || 0)));
+  const safeColumns = Math.max(1, Math.round(Number(columns || 0)));
+  const safeDiameter = Math.max(1, Number(ropeDiameterMm || 10));
+  const safeAngle = Math.min(75, Math.max(25, Number(braidAngleDeg || 45)));
+  const circumferenceMm = Math.PI * safeDiameter;
+  const helixLeadMm = circumferenceMm / Math.tan(degToRad(safeAngle));
+  const longitudinalRepeats = Math.max(1, Number(viewLengthMm || 300) / helixLeadMm);
+  const geometricPitchColumns = Math.max(1, safeColumns / longitudinalRepeats);
+  const coveragePitchColumns = Math.max(4, count);
+  const markerPitchColumns = Math.round(Math.max(geometricPitchColumns, coveragePitchColumns));
+
+  return {
+    carrierCount: count,
+    markerCount: Math.max(0, Number(markerCount || 0)),
+    expectedMarkerCoverage: expectedMarkerCoverage(count, markerCount),
+    viewLengthMm: Number(viewLengthMm || 300),
+    ropeDiameterMm: safeDiameter,
+    braidAngleDeg: safeAngle,
+    circumferenceMm,
+    helixLeadMm,
+    longitudinalRepeats,
+    geometricPitchColumns,
+    coveragePitchColumns,
+    markerPitchColumns
+  };
 }
 
 function normalizeCarrierLayout(carrierLayout, colorSequence, carrierCount) {
@@ -165,7 +200,15 @@ function drawVectorBraidSurface(ctx, sheet, width, height, close) {
   const cellW = width / cols;
   const cellH = height / rows;
   const patternType = String(sheet.pattern_type || "").toLowerCase();
-  const pitch = calculateMarkerPitch(carrierCount);
+  const repeatModel = calculatePatternRepeatModel({
+    carrierCount,
+    markerCount: markerCarriers.length,
+    viewLengthMm: close ? 60 : 300,
+    ropeDiameterMm: sheet.diameter_mm || sheet.diameter || 10,
+    braidAngleDeg: sheet.braid_angle_deg || 45,
+    columns: cols
+  });
+  const pitch = repeatModel.markerPitchColumns;
   const markerLanes = markerLanesForPattern(patternType, markerCarriers, pitch);
 
   ctx.save();
@@ -519,6 +562,10 @@ function isCounterRotating(walkType) {
 function positiveModulo(value, modulo) {
   if (!modulo) return 0;
   return ((value % modulo) + modulo) % modulo;
+}
+
+function degToRad(value) {
+  return (Number(value || 0) * Math.PI) / 180;
 }
 
 function roundedRectPath(ctx, x, y, width, height, radius) {

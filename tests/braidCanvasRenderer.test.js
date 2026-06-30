@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import {
   calculateCalibratedBraidGrid,
   calculateMarkerPitch,
+  calculatePatternRepeatModel,
   expectedMarkerCoverage
 } from "../src/utils/braidCanvasRenderer.js";
 
@@ -56,4 +57,23 @@ test("expected marker coverage follows marker carrier ratio", () => {
   assert.equal(expectedMarkerCoverage(8, 2), 0.25);
   assert.equal(expectedMarkerCoverage(16, 2), 0.125);
   assert.equal(expectedMarkerCoverage(24, 2), 2 / 24);
+});
+
+test("pattern repeat model separates physical lead from marker coverage", () => {
+  const model = calculatePatternRepeatModel({
+    carrierCount: 16,
+    markerCount: 2,
+    viewLengthMm: 300,
+    ropeDiameterMm: 10,
+    braidAngleDeg: 45,
+    columns: 58
+  });
+
+  assert.equal(model.expectedMarkerCoverage, 0.125);
+  assert.ok(model.helixLeadMm > 31);
+  assert.ok(model.helixLeadMm < 32);
+  assert.ok(model.geometricPitchColumns > 6);
+  assert.ok(model.geometricPitchColumns < 7);
+  assert.equal(model.coveragePitchColumns, 16);
+  assert.equal(model.markerPitchColumns, 16);
 });
