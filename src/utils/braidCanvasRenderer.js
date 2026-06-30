@@ -202,7 +202,7 @@ function drawVectorBraidSurface(ctx, sheet, width, height, close) {
   const cols = close ? 22 : 48;
   const cellW = width / cols;
   const cellH = height / rows;
-  const overlap = 1.07;
+  const overlap = 1;
   const patternType = String(sheet.pattern_type || "").toLowerCase();
   const repeatModel = calculatePatternRepeatModel({
     carrierCount,
@@ -467,14 +467,19 @@ function drawIllustrationCrown(ctx, { x, y, width, height, color, direction, top
     { x: p2.x - nx * half, y: p2.y - ny * half },
     { x: p1.x - nx * half, y: p1.y - ny * half }
   ];
+  const center = {
+    x: x + width * 0.5,
+    y: y + height * 0.5
+  };
+  const scaledPoints = scaleCrownPoints(points, center, 1.06);
   const hex = colorToHex(color);
-  const gradient = createCleanStrandGradient(ctx, hex, {
+  const gradient = setupTextileGradient(ctx, {
     x: x + width * 0.5 - nx * half,
     y: y + height * 0.5 - ny * half
   }, {
     x: x + width * 0.5 + nx * half,
     y: y + height * 0.5 + ny * half
-  });
+  }, color);
 
   ctx.save();
   ctx.globalAlpha = top ? 1 : 0.88;
@@ -483,12 +488,12 @@ function drawIllustrationCrown(ctx, { x, y, width, height, color, direction, top
   ctx.shadowOffsetX = top ? (close ? 1.1 : 0.55) : 0;
   ctx.shadowOffsetY = top ? (close ? 2.4 : 1.25) : 0.35;
   ctx.fillStyle = gradient;
-  roundedCrownPath(ctx, points);
+  roundedCrownPath(ctx, scaledPoints);
   ctx.fill();
 
   ctx.shadowColor = "transparent";
-  ctx.strokeStyle = marker ? "rgba(0,0,0,0.24)" : "rgba(0,0,0,0.18)";
-  ctx.lineWidth = close ? 0.5 : 0.5;
+  ctx.strokeStyle = "rgba(0,0,0,0.22)";
+  ctx.lineWidth = 0.6;
   ctx.stroke();
 
   if (close || !marker) {
@@ -507,22 +512,41 @@ function drawIllustrationCrown(ctx, { x, y, width, height, color, direction, top
   ctx.restore();
 }
 
-function createCleanStrandGradient(ctx, hex, p1, p2) {
+function setupTextileGradient(ctx, p1, p2, color) {
+  const hex = colorToHex(color);
   const gradient = ctx.createLinearGradient(p1.x, p1.y, p2.x, p2.y);
-  if (brightness(hex) > 180) {
-    gradient.addColorStop(0, "#e2e3e1");
-    gradient.addColorStop(0.22, "#f4f5f3");
-    gradient.addColorStop(0.50, "#ffffff");
-    gradient.addColorStop(0.78, "#f0f1ef");
-    gradient.addColorStop(1, "#d8d9d7");
+  if (isBlackColor(color, hex)) {
+    gradient.addColorStop(0, "#121212");
+    gradient.addColorStop(0.2, "#242424");
+    gradient.addColorStop(0.5, "#424242");
+    gradient.addColorStop(0.8, "#242424");
+    gradient.addColorStop(1, "#0d0d0d");
+  } else if (brightness(hex) > 180) {
+    gradient.addColorStop(0, "#d5d5d5");
+    gradient.addColorStop(0.2, "#f0f0f0");
+    gradient.addColorStop(0.5, "#ffffff");
+    gradient.addColorStop(0.8, "#f0f0f0");
+    gradient.addColorStop(1, "#cccccc");
   } else {
-    gradient.addColorStop(0, shadeHex(hex, -18));
-    gradient.addColorStop(0.28, shadeHex(hex, 8));
-    gradient.addColorStop(0.52, shadeHex(hex, 24));
-    gradient.addColorStop(0.78, shadeHex(hex, 4));
-    gradient.addColorStop(1, shadeHex(hex, -18));
+    gradient.addColorStop(0, shadeHex(hex, -20));
+    gradient.addColorStop(0.2, shadeHex(hex, -4));
+    gradient.addColorStop(0.5, shadeHex(hex, 28));
+    gradient.addColorStop(0.8, shadeHex(hex, -4));
+    gradient.addColorStop(1, shadeHex(hex, -24));
   }
   return gradient;
+}
+
+function scaleCrownPoints(points, center, scale) {
+  return points.map((point) => ({
+    x: center.x + (point.x - center.x) * scale,
+    y: center.y + (point.y - center.y) * scale
+  }));
+}
+
+function isBlackColor(color, hex) {
+  const value = String(color || "").trim().toLowerCase();
+  return value === "black" || value === "siyah" || brightness(hex) < 45;
 }
 
 function roundedCrownPath(ctx, points) {
