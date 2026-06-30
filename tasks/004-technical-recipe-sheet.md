@@ -39,3 +39,4 @@ Ana halat görünümünde yatay matrix adımı 40 ile sınırlandı; `cellWidth=
 Canvas halat görünümü hücre boyama yerine carrier başına sürekli strand path katmanları çizer; base iplikler altta, marker iplikler fazlı/kesikli üst katmanda render edilir.
 Aynı yön grubundaki marker carrier'lar (örn. 1 ve 9) artık üstüne çizilmiş ayrı stroke değil, beyaz iplikle aynı kalınlıkta crown parçaları olarak render edilir; seçilen `1_over_1` / `two-over-two` üst-alt takvimi marker parçalarını görünür/gömülü yapar.
 Ana halat renderer grid'i artık dekoratif 8 satıra düşmez; `carrier_count` neyse yüzey satırı da odur. Renk dizilimi, kukla dizilimi ve desen aynı carrierCount ile hesaplanır.
+16 kukla 1/9 siyah senaryosu testlendi: reçete siyahları 1 ve 9'da tutar, renderer marker crown'larını dekoratif fazdan değil `buildBraidMatrix` carrier path'lerinden üretir.

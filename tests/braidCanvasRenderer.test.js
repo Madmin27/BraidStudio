@@ -1,12 +1,14 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
+  buildParallelTracerCrowns,
   calculateCalibratedBraidGrid,
   calculateMarkerPitch,
   calculatePatternRepeatModel,
   classifyMarkerCarrierDirections,
   expectedMarkerCoverage
 } from "../src/utils/braidCanvasRenderer.js";
+import { applyUserSelection, generateRecipe, initialRecipeState } from "../src/state.js";
 
 test("calibrated braid grid uses full carrier count as cylinder rows", () => {
   const grid = calculateCalibratedBraidGrid({
@@ -117,4 +119,65 @@ test("marker pattern classification follows machine carrier directions", () => {
 
   assert.equal(diamond.expectedPatternType, "diamond");
   assert.equal(diamond.hasIntersectingActiveStrands, true);
+});
+
+test("16 carrier recipe with 1 and 9 black reaches renderer as same-direction matrix crowns", () => {
+  const carrierLayout = Array.from({ length: 16 }, (_, index) => ({
+    carrier_no: index + 1,
+    color: [1, 9].includes(index + 1) ? "siyah" : "beyaz",
+    strand_role: [1, 9].includes(index + 1) ? "sheath_marker" : "sheath"
+  }));
+  const state = applyUserSelection(structuredClone(initialRecipeState), {
+    pattern_type: "solid_with_markers",
+    colors: ["beyaz", "siyah"],
+    material: "polyester",
+    carrier_count: 16,
+    machine_profile_id: "mp_16_std",
+    braid_walk_type: "two-over-two",
+    carrier_layout: carrierLayout
+  });
+  const next = generateRecipe(state);
+  const sheet = next.generated_recipe.technical_sheet;
+
+  assert.deepEqual(
+    sheet.carrier_layout.filter((carrier) => carrier.color === "siyah").map((carrier) => carrier.carrier_no),
+    [1, 9]
+  );
+  assert.deepEqual(sheet.color_sequence, [
+    "siyah",
+    "beyaz",
+    "beyaz",
+    "beyaz",
+    "beyaz",
+    "beyaz",
+    "beyaz",
+    "beyaz",
+    "siyah",
+    "beyaz",
+    "beyaz",
+    "beyaz",
+    "beyaz",
+    "beyaz",
+    "beyaz",
+    "beyaz"
+  ]);
+
+  const crowns = buildParallelTracerCrowns({
+    carrierLayout: sheet.carrier_layout,
+    markerCarriers: sheet.carrier_layout.filter((carrier) => carrier.color === "siyah"),
+    machineProfile: sheet.machineProfile,
+    cols: 10,
+    cellW: 10,
+    cellH: 5,
+    close: false,
+    braidLogic: sheet.braid_walk_type
+  });
+  const carrier1 = crowns.filter((crown) => crown.carrier_no === 1).slice(0, 4);
+  const carrier9 = crowns.filter((crown) => crown.carrier_no === 9).slice(0, 4);
+
+  assert.deepEqual(carrier1.map((crown) => crown.column), [0, 1, 2, 3]);
+  assert.deepEqual(carrier9.map((crown) => crown.column), [8, 9, 10, 11]);
+  assert.ok(crowns.every((crown) => crown.direction === "clockwise"));
+  assert.equal(carrier1[0].top, true);
+  assert.equal(carrier1[1].top, false);
 });

@@ -215,8 +215,9 @@ function drawVectorBraidSurface(ctx, sheet, width, height, close, grid) {
   const parallelTracerCrowns = patternKinematics.hasIntersectingActiveStrands
     ? []
     : buildParallelTracerCrowns({
-      lanes: markerLanes,
-      rows,
+      carrierLayout,
+      markerCarriers,
+      machineProfile: sheet.machineProfile,
       cols,
       cellW,
       cellH,
@@ -337,42 +338,42 @@ function isMarkerVisible({ row, col, lane, patternKinematics }) {
   return positiveModulo(Math.round(slope + phase), lane.pitch) === 0;
 }
 
-function buildParallelTracerCrowns({ lanes, rows, cols, cellW, cellH, close, braidLogic }) {
-  if (!lanes.length) return [];
+export function buildParallelTracerCrowns({ carrierLayout, markerCarriers, machineProfile, cols, cellW, cellH, close, braidLogic }) {
+  if (!markerCarriers.length) return [];
   const crowns = [];
+  const markerCarrierNos = new Set(markerCarriers.map((carrier) => Number(carrier.carrier_no)));
+  const matrix = buildBraidMatrix({
+    carrierLayout,
+    machineProfile,
+    braidLogic,
+    steps: cols + 1
+  });
 
-  for (const lane of lanes) {
-    const pitch = Math.max(1, lane.pitch);
-    const phase = lane.phase || 0;
-    const startRepeat = Math.floor((-cols - pitch) / pitch);
-    const endRepeat = Math.ceil((cols + pitch) / pitch);
+  for (const path of matrix.carrierPaths) {
+    if (!markerCarrierNos.has(path.carrier.carrier_no)) continue;
+    for (const point of path.points) {
+      const x = point.time * cellW;
+      const y = point.column * cellH;
+      const top = topDirectionAt({
+        time: point.time,
+        column: point.column,
+        braidLogic
+      }) === path.carrier.direction;
 
-    for (let repeat = startRepeat; repeat <= endRepeat; repeat += 1) {
-      for (let row = -1; row <= rows; row += 1) {
-        const col = lane.direction === "clockwise"
-          ? row * 1.75 - phase + repeat * pitch
-          : -row * 1.75 - phase + repeat * pitch;
-        const roundedCol = Math.round(col);
-        if (roundedCol < -1 || roundedCol > cols + 1) continue;
-
-        const top = topDirectionAt({
-          time: Math.max(0, roundedCol),
-          column: Math.max(0, row),
-          braidLogic
-        }) === lane.direction;
-
-        crowns.push({
-          x: col * cellW,
-          y: row * cellH,
-          width: cellW * (close ? 1.24 : 1.30),
-          height: cellH * (close ? 1.10 : 1.16),
-          color: lane.color,
-          direction: lane.direction,
-          top,
-          close,
-          marker: true
-        });
-      }
+      crowns.push({
+        carrier_no: path.carrier.carrier_no,
+        time: point.time,
+        column: point.column,
+        x,
+        y,
+        width: cellW * (close ? 1.24 : 1.30),
+        height: cellH * (close ? 1.10 : 1.16),
+        color: path.carrier.color,
+        direction: path.carrier.direction,
+        top,
+        close,
+        marker: true
+      });
     }
   }
 
