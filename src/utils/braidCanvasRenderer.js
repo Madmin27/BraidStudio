@@ -198,8 +198,8 @@ function drawVectorBraidSurface(ctx, sheet, width, height, close) {
   const carrierLayout = normalizeCarrierLayout(sheet.carrier_layout, sheet.color_sequence, carrierCount);
   const baseColor = mostCommonColor(carrierLayout.map((carrier) => carrier.color)) || "beyaz";
   const markerCarriers = carrierLayout.filter((carrier) => carrier.color !== baseColor);
-  const rows = close ? 9 : 6;
-  const cols = close ? 22 : 58;
+  const rows = close ? 9 : 8;
+  const cols = close ? 22 : 48;
   const cellW = width / cols;
   const cellH = height / rows;
   const patternType = String(sheet.pattern_type || "").toLowerCase();
@@ -227,8 +227,8 @@ function drawVectorBraidSurface(ctx, sheet, width, height, close) {
       drawIllustrationCrown(ctx, {
         x,
         y,
-        width: cellW * (close ? 1.28 : 1.16),
-        height: cellH * (close ? 1.16 : 1.02),
+        width: cellW * (close ? 1.28 : 1.34),
+        height: cellH * (close ? 1.16 : 1.22),
         color: baseColor,
         direction,
         top: (row + col) % 4 < 2,
@@ -245,8 +245,8 @@ function drawVectorBraidSurface(ctx, sheet, width, height, close) {
         drawIllustrationCrown(ctx, {
           x: col * cellW,
           y: row * cellH,
-          width: cellW * (close ? 1.08 : 0.98),
-          height: cellH * (close ? 1.02 : 0.90),
+          width: cellW * (close ? 1.08 : 1.16),
+          height: cellH * (close ? 1.02 : 1.08),
           color: lane.color,
           direction: lane.direction,
           top: true,
@@ -257,14 +257,12 @@ function drawVectorBraidSurface(ctx, sheet, width, height, close) {
     }
   }
 
-  if (close) {
-    const floorShadow = ctx.createLinearGradient(0, height * 0.78, 0, height);
-    floorShadow.addColorStop(0, "rgba(255,255,255,0)");
-    floorShadow.addColorStop(0.55, "rgba(90,70,55,0.16)");
-    floorShadow.addColorStop(1, "rgba(48,36,28,0.34)");
-    ctx.fillStyle = floorShadow;
-    ctx.fillRect(0, height * 0.74, width, height * 0.26);
-  }
+  const floorShadow = ctx.createLinearGradient(0, height * 0.78, 0, height);
+  floorShadow.addColorStop(0, "rgba(255,255,255,0)");
+  floorShadow.addColorStop(0.55, close ? "rgba(90,70,55,0.16)" : "rgba(90,70,55,0.10)");
+  floorShadow.addColorStop(1, close ? "rgba(48,36,28,0.34)" : "rgba(48,36,28,0.22)");
+  ctx.fillStyle = floorShadow;
+  ctx.fillRect(0, height * 0.74, width, height * 0.26);
   ctx.restore();
 }
 
@@ -461,7 +459,7 @@ function drawIllustrationCrown(ctx, { x, y, width, height, color, direction, top
   const length = Math.hypot(dx, dy) || 1;
   const nx = -dy / length;
   const ny = dx / length;
-  const half = Math.min(width, height) * (close ? 0.42 : 0.30);
+  const half = Math.min(width, height) * (close ? 0.42 : 0.40);
   const points = [
     { x: p1.x + nx * half, y: p1.y + ny * half },
     { x: p2.x + nx * half, y: p2.y + ny * half },
@@ -480,24 +478,25 @@ function drawIllustrationCrown(ctx, { x, y, width, height, color, direction, top
   ctx.save();
   ctx.globalAlpha = top ? 1 : 0.88;
   ctx.shadowColor = top ? "rgba(0,0,0,0.22)" : "rgba(0,0,0,0.08)";
-  ctx.shadowBlur = top ? (close ? 5 : 1.8) : (close ? 1.2 : 0.4);
-  ctx.shadowOffsetX = top ? (close ? 1.1 : 0.35) : 0;
-  ctx.shadowOffsetY = top ? (close ? 2.4 : 0.8) : 0.3;
+  ctx.shadowBlur = top ? (close ? 5 : 3.2) : (close ? 1.2 : 0.8);
+  ctx.shadowOffsetX = top ? (close ? 1.1 : 0.7) : 0;
+  ctx.shadowOffsetY = top ? (close ? 2.4 : 1.5) : 0.4;
   ctx.fillStyle = gradient;
   roundedCrownPath(ctx, points);
   ctx.fill();
 
   ctx.shadowColor = "transparent";
   ctx.strokeStyle = marker ? "rgba(0,0,0,0.30)" : "rgba(88,88,88,0.20)";
-  ctx.lineWidth = close ? 0.55 : 0.32;
+  ctx.lineWidth = close ? 0.55 : 0.42;
   ctx.stroke();
 
-  if (close) {
-    ctx.globalAlpha = marker ? 0.12 : 0.10;
+  if (close || !marker) {
+    ctx.globalAlpha = marker ? 0.10 : (close ? 0.10 : 0.07);
     ctx.strokeStyle = shadeHex(hex, brightness(hex) > 120 ? -12 : 18);
-    ctx.lineWidth = 0.45;
-    for (let index = 1; index <= 3; index += 1) {
-      const offset = (index / 4 - 0.5) * half * 0.85;
+    ctx.lineWidth = close ? 0.45 : 0.38;
+    const fiberCount = close ? 3 : 2;
+    for (let index = 1; index <= fiberCount; index += 1) {
+      const offset = (index / (fiberCount + 1) - 0.5) * half * 0.85;
       ctx.beginPath();
       ctx.moveTo(p1.x + nx * offset, p1.y + ny * offset);
       ctx.lineTo(p2.x + nx * offset, p2.y + ny * offset);
