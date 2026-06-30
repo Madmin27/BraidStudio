@@ -3,15 +3,19 @@ export function simulateBraidSurface({ recipe = {}, machineProfile = null, steps
   const carrierCount = Number(machineProfile?.carrierCount || recipe.carrierCount || Object.keys(carrierColorMap).length || 0);
   const braidLogic = normalizeBraidLogic(recipe.metadata?.braidLogic || recipe.braidLogic || machineProfile?.defaultWalk || "1_over_1");
   const warnings = [];
+  const normalizedSteps = clampSteps(steps);
+  if (Number(steps || 48) !== normalizedSteps) {
+    warnings.push(`steps clamped to ${normalizedSteps}`);
+  }
   const carrierGroups = resolveCarrierGroups(machineProfile, carrierCount, warnings);
-  const colors = normalizeCarrierColors(carrierColorMap, carrierCount);
+  const colors = normalizeCarrierColors(carrierColorMap, carrierCount, warnings);
   const baseColor = mostCommonColor(colors.filter(Boolean)) || "white";
   const accentCarriers = colors
     .map((color, index) => ({ carrierNo: index + 1, color }))
     .filter((carrier) => carrier.color && carrier.color !== baseColor);
   const accentDirections = new Set(accentCarriers.map((carrier) => carrierDirection(carrier.carrierNo, carrierGroups)));
   const crossingSchedule = crossingScheduleFor(braidLogic);
-  const surfaceGrid = buildSurfaceGrid({ colors, carrierGroups, braidLogic, crossingSchedule, steps });
+  const surfaceGrid = buildSurfaceGrid({ colors, carrierGroups, crossingSchedule, steps: normalizedSteps });
   const expectedVisualSignature = expectedSignatureFor({
     colors,
     braidLogic,
@@ -28,9 +32,12 @@ export function simulateBraidSurface({ recipe = {}, machineProfile = null, steps
     surfaceGrid,
     warnings,
     confidence: confidenceFor({ warnings, carrierCount, accentCarriers, expectedVisualSignature }),
+    isReliable: isReliable({ warnings, expectedVisualSignature }),
     analysis: {
       carrierCount,
       braidLogic,
+      requestedSteps: Number(steps || 48),
+      steps: normalizedSteps,
       baseColor,
       accentCarriers,
       accentDirections: Array.from(accentDirections),
@@ -60,9 +67,9 @@ export function resolveCarrierGroups(machineProfile, carrierCount, warnings = []
   };
 }
 
-function buildSurfaceGrid({ colors, carrierGroups, braidLogic, crossingSchedule, steps }) {
+function buildSurfaceGrid({ colors, carrierGroups, crossingSchedule, steps }) {
   const carrierCount = colors.length;
-  const normalizedSteps = Math.max(1, Number(steps || 48));
+  const normalizedSteps = clampSteps(steps);
   const grid = [];
 
   for (let step = 0; step < normalizedSteps; step += 1) {
@@ -121,7 +128,7 @@ function expectedSignatureFor({ colors, braidLogic, accentCarriers, accentDirect
     return "dual_counter_spiral_candidate";
   }
 
-  return "plain_weave";
+  return "unknown";
 }
 
 function crossingScheduleFor(braidLogic) {
@@ -137,10 +144,15 @@ function normalizeBraidLogic(value) {
   return "1_over_1";
 }
 
-function normalizeCarrierColors(carrierColorMap, carrierCount) {
+function normalizeCarrierColors(carrierColorMap, carrierCount, warnings = []) {
   return Array.from({ length: carrierCount }, (_, index) => {
     const carrierNo = String(index + 1);
-    return carrierColorMap[carrierNo] || carrierColorMap[index + 1] || null;
+    const color = carrierColorMap[carrierNo] || carrierColorMap[index + 1] || null;
+    if (color === null || color === undefined || String(color).trim() === "") {
+      warnings.push(`Missing carrier color: carrier ${carrierNo}`);
+      return null;
+    }
+    return color;
   });
 }
 
@@ -152,10 +164,20 @@ function carrierDirection(carrierNo, carrierGroups) {
 
 function confidenceFor({ warnings, carrierCount, accentCarriers, expectedVisualSignature }) {
   if (!carrierCount) return 0;
+  if (expectedVisualSignature === "unknown") return warnings.length ? 0.2 : 0.3;
   let confidence = 0.82;
   if (warnings.length) confidence -= 0.12;
   if (!accentCarriers.length && expectedVisualSignature !== "plain_weave") confidence -= 0.1;
   return Number(Math.max(0.25, Math.min(0.95, confidence)).toFixed(2));
+}
+
+function isReliable({ warnings, expectedVisualSignature }) {
+  if (expectedVisualSignature === "unknown") return false;
+  return !warnings.some((warning) => (
+    warning.includes("Missing carrier color")
+    || warning.includes("fallback")
+    || warning.includes("counter spiral unlikely")
+  ));
 }
 
 function detectPeriod(colors) {
@@ -201,4 +223,10 @@ function evenNumbers(count) {
 
 function positiveModulo(value, divisor) {
   return ((value % divisor) + divisor) % divisor;
+}
+
+function clampSteps(steps) {
+  const value = Number(steps || 48);
+  if (!Number.isFinite(value)) return 48;
+  return Math.max(8, Math.min(256, Math.round(value)));
 }

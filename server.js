@@ -962,8 +962,10 @@ async function handlePatternSimulate(req, res) {
 
     jsonResponse(res, 200, {
       recipeId: recipe.recipeId || body.recipeId || null,
+      machineProfileId: machineProfile.machineProfileId || body.machineProfileId || null,
       expectedVisualSignature: simulation.expectedVisualSignature,
       confidence: simulation.confidence,
+      isReliable: simulation.isReliable,
       warnings: simulation.warnings,
       surfaceGrid: simulation.surfaceGrid,
       analysis: simulation.analysis
