@@ -698,11 +698,9 @@ export function drawWalkDiagramCanvas(canvas, sheet) {
 
 export function renderTechnicalSheetCanvases(root, sheet) {
   const main = root.querySelector("[data-braid-canvas='main']");
-  const close = root.querySelector("[data-braid-canvas='close']");
   const walk = root.querySelector("[data-braid-canvas='walk']");
   return {
     main: drawMainRopeCanvas(main, sheet),
-    close: drawMainRopeCanvas(close, sheet, { close: true }),
     walk: drawWalkDiagramCanvas(walk, sheet)
   };
 }

@@ -862,7 +862,6 @@ function renderRecipeSheet(recipe) {
     </header>
     <section class="ts-block ts-specs"><h3>Teknik özellikler</h3>${renderSpecs(sheet)}</section>
     <section class="ts-block ts-main"><h3>Ana halat görünümü</h3>${renderMainRopeSvg(sheet)}</section>
-    <section class="ts-block"><h3>Yakın görünüm</h3>${renderCloseRopeSvg(sheet)}</section>
     <section class="ts-block"><h3>Kesit görünümü</h3>${renderSectionSvg(sheet)}</section>
     <section class="ts-block"><h3>Renk dizilimi</h3>${renderColorSequence(sheet)}</section>
     <section class="ts-block"><h3>Kukla dizilimi</h3>${renderCarrierRingSvg(sheet)}</section>
@@ -1114,10 +1113,6 @@ function mostCommonColor(colors = []) {
 
 function renderMainRopeSvg(sheet) {
   return `<div class="canvas-rope-frame"><canvas data-braid-canvas="main" width="1520" height="148" aria-label="Ana halat görünümü"></canvas><div class="rope-scale"><span>0</span><span>30 cm</span></div></div>`;
-}
-
-function renderCloseRopeSvg(sheet) {
-  return `<canvas class="canvas-detail" data-braid-canvas="close" width="720" height="440" aria-label="Yakın halat görünümü"></canvas>`;
 }
 
 function renderSectionSvg(sheet) {
