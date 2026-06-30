@@ -197,24 +197,17 @@ function drawVectorBraidSurface(ctx, sheet, width, height, close) {
   const carrierCount = Number(sheet.carrier_count || sheet.carrier_layout?.length || 0);
   const carrierLayout = normalizeCarrierLayout(sheet.carrier_layout, sheet.color_sequence, carrierCount);
   const baseColor = mostCommonColor(carrierLayout.map((carrier) => carrier.color)) || "beyaz";
-  const markerCarriers = carrierLayout.filter((carrier) => carrier.color !== baseColor);
-  const rows = close ? 9 : 8;
+  const rows = close ? Math.min(16, carrierCount || 16) : Math.max(1, carrierCount || 16);
   const cols = close ? 22 : 48;
   const cellW = width / cols;
   const cellH = height / rows;
   const overlap = 1;
-  const patternType = String(sheet.pattern_type || "").toLowerCase();
-  const repeatModel = calculatePatternRepeatModel({
-    carrierCount,
-    markerCount: markerCarriers.length,
-    viewLengthMm: close ? 60 : 300,
-    ropeDiameterMm: sheet.diameter_mm || sheet.diameter || 10,
-    braidAngleDeg: sheet.braid_angle_deg || 45,
-    columns: cols,
-    densityScale: close ? 2 : 1
+  const matrix = buildBraidMatrix({
+    carrierLayout,
+    machineProfile: sheet.machineProfile,
+    braidLogic: sheet.braid_walk_type,
+    steps: cols + 2
   });
-  const pitch = repeatModel.markerPitchColumns;
-  const markerLanes = markerLanesForPattern(patternType, markerCarriers, pitch);
 
   ctx.save();
   ctx.rect(0, 0, width, height);
@@ -222,7 +215,8 @@ function drawVectorBraidSurface(ctx, sheet, width, height, close) {
 
   for (let row = -1; row <= rows; row += 1) {
     for (let col = -1; col <= cols; col += 1) {
-      const direction = (row + col) % 2 === 0 ? "clockwise" : "counterClockwise";
+      const cell = visibleMatrixCell(matrix, row, col, rows);
+      const direction = cell?.topCarrier?.direction || cell?.topDirection || "clockwise";
       const x = col * cellW;
       const y = row * cellH;
       drawIllustrationCrown(ctx, {
@@ -230,31 +224,12 @@ function drawVectorBraidSurface(ctx, sheet, width, height, close) {
         y,
         width: cellW * (close ? 1.28 : 1.34) * overlap,
         height: cellH * (close ? 1.16 : 1.22) * overlap,
-        color: baseColor,
+        color: cell?.topCarrier?.color || baseColor,
         direction,
         top: (row + col) % 4 < 2,
         close,
-        marker: false
+        marker: (cell?.topCarrier?.color || baseColor) !== baseColor
       });
-    }
-  }
-
-  for (let row = -1; row <= rows; row += 1) {
-    for (let col = -1; col <= cols; col += 1) {
-      for (const lane of markerLanes) {
-        if (!isMarkerBand({ row, col, direction: lane.direction, pitch, patternType, phase: lane.phase })) continue;
-        drawIllustrationCrown(ctx, {
-          x: col * cellW,
-          y: row * cellH,
-          width: cellW * (close ? 1.08 : 1.16) * overlap,
-          height: cellH * (close ? 1.02 : 1.08) * overlap,
-          color: lane.color,
-          direction: lane.direction,
-          top: true,
-          close,
-          marker: true
-        });
-      }
     }
   }
 
@@ -267,62 +242,15 @@ function drawVectorBraidSurface(ctx, sheet, width, height, close) {
   ctx.restore();
 }
 
-function markerLanesForPattern(patternType, markerCarriers, pitch) {
-  const carriers = markerCarriers.length ? markerCarriers : [];
-  const lanes = carriers.map((carrier, index) => ({
-    carrierNo: Number(carrier.carrier_no || index + 1),
-    color: carrier.color,
-    direction: Number(carrier.carrier_no || index + 1) % 2 === 1 ? "clockwise" : "counterClockwise"
-  }));
-  if (patternType.includes("spiral") || patternType.includes("ladder")) {
-    const directions = uniqueColors(lanes.map((lane) => lane.direction));
-    if (directions.length <= 1) {
-      const dominant = directions[0] || "clockwise";
-      lanes.forEach((lane) => {
-        lane.direction = dominant;
-      });
-    }
-  }
-  const byDirection = new Map();
-  for (const lane of lanes) {
-    const group = byDirection.get(lane.direction) || [];
-    group.push(lane);
-    byDirection.set(lane.direction, group);
-  }
-  for (const group of byDirection.values()) {
-    group.forEach((lane, index) => {
-      lane.phase = index * Math.max(2, Math.floor(pitch / Math.max(group.length, 1)));
-    });
-  }
-  return lanes;
-}
-
-function isMarkerBand({ row, col, direction, pitch, patternType, phase = 0 }) {
-  const visibleOnTop = direction === "clockwise"
-    ? (row + col) % 2 === 0
-    : (row + col) % 2 !== 0;
-  if (!visibleOnTop) return false;
-  const slope = direction === "clockwise" ? col - row * 1.75 : col + row * 1.75;
-  const patternPhase = patternType.includes("chevron")
-    ? (row < 4 ? 0 : pitch / 2)
-    : patternType.includes("herringbone")
-      ? Math.floor(row / 2)
-      : 0;
-  const mod = positiveModulo(Math.round(slope + patternPhase + phase), pitch);
-  if (patternType.includes("ladder")) return mod === 0 || mod === 1;
-  if (patternType.includes("chevron")) return mod === 0 || mod === pitch - 1;
-  return mod === 0;
-}
-
-function uniqueColors(colors) {
-  const result = [];
-  for (const color of colors) {
-    const value = String(color || "").trim();
-    if (value && !result.some((item) => item.toLowerCase() === value.toLowerCase())) {
-      result.push(value);
-    }
-  }
-  return result;
+function visibleMatrixCell(matrix, row, col, visualRows) {
+  if (!matrix?.cells?.length || !matrix.carrierCount) return null;
+  const time = positiveModulo(col, matrix.steps);
+  const normalizedRow = positiveModulo(row, visualRows);
+  const column = Math.min(
+    matrix.carrierCount - 1,
+    Math.floor((normalizedRow / Math.max(visualRows, 1)) * matrix.carrierCount)
+  );
+  return matrix.cells[time]?.[column] || null;
 }
 
 function drawBraidCrowns(ctx, { matrix, width, height, close }) {
