@@ -5,7 +5,7 @@ import {
 } from "../src/state.js";
 import { machineProfiles } from "../src/machineProfiles.js";
 import { buildBraidMatrix, getCarrierDirection } from "../src/utils/braidMatrix.js";
-import { renderTechnicalSheetCanvases, replaceCanvasWithImages } from "../src/utils/braidCanvasRenderer.js";
+import { renderTechnicalSheetCanvases } from "../src/utils/braidCanvasRenderer.js";
 
 const patterns = [
   { id: "diamond", name: "Diamond", carriers: [16, 24], colors: ["siyah", "kırmızı"], material: "polyester", walk: "two-over-two" },
@@ -96,8 +96,6 @@ const analysisProgressItems = [
   "AI reçete adayını doğruluyor",
   "Sonuç kullanıcı seçimlerine aktarılıyor"
 ];
-let latestRecipePngUrl = "";
-
 function cacheKey(imageHash) {
   return `braidstudio:analysis:fingerprint-v1:${imageHash}`;
 }
@@ -821,7 +819,6 @@ function render() {
 }
 
 function clearGeneratedRecipe() {
-  latestRecipePngUrl = "";
   state = {
     ...state,
     generated_recipe: null
@@ -895,81 +892,6 @@ function renderRecipeSheet(recipe) {
     warnings: recipe.preview.warnings
   }, buildMismatchReport({ recipe }).some((item) => item.level === "error") ? "error" : "info");
   updateMismatchReport(buildMismatchReport({ recipe }));
-}
-
-function getRecipeSheetCss() {
-  return Array.from(document.styleSheets)
-    .map((sheet) => {
-      try {
-        return Array.from(sheet.cssRules)
-          .map((rule) => rule.cssText)
-          .filter((text) => !text.includes(":has("))
-          .join("\n");
-      } catch {
-        return "";
-      }
-    })
-    .join("\n");
-}
-
-function buildRecipeSheetSvgMarkup() {
-  const clone = recipeSheet.cloneNode(true);
-  replaceCanvasWithImages(clone, recipeSheet);
-  clone.setAttribute("xmlns", "http://www.w3.org/1999/xhtml");
-  clone.querySelectorAll("svg").forEach((svg) => {
-    svg.setAttribute("xmlns", "http://www.w3.org/2000/svg");
-  });
-  clone.style.width = "1600px";
-  clone.style.minHeight = "1050px";
-  clone.style.overflow = "hidden";
-  const html = `
-    <div xmlns="http://www.w3.org/1999/xhtml">
-      <style>${getRecipeSheetCss()}</style>
-      ${clone.outerHTML}
-    </div>
-  `;
-  return sanitizeSvgXml(`
-    <svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1050" viewBox="0 0 1600 1050">
-      <foreignObject width="1600" height="1050">${html}</foreignObject>
-    </svg>
-  `);
-}
-
-function sanitizeSvgXml(markup) {
-  return String(markup).replace(/&(?!#\d+;|#x[0-9a-fA-F]+;|[a-zA-Z][\w.-]*;)/g, "&amp;");
-}
-
-function renderRecipeSheetToPng() {
-  return new Promise((resolve, reject) => {
-    const svg = buildRecipeSheetSvgMarkup();
-    const image = new Image();
-    const url = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
-    image.onload = () => {
-      const canvas = document.createElement("canvas");
-      canvas.width = 1600;
-      canvas.height = 1050;
-      const context = canvas.getContext("2d");
-      context.fillStyle = "#ffffff";
-      context.fillRect(0, 0, canvas.width, canvas.height);
-      context.drawImage(image, 0, 0);
-      resolve(canvas.toDataURL("image/png"));
-    };
-    image.onerror = () => {
-      reject(new Error("recipe_image_render_failed"));
-    };
-    image.src = url;
-  });
-}
-
-function downloadRecipeSvgFallback() {
-  const svg = buildRecipeSheetSvgMarkup();
-  const blob = new Blob([svg], { type: "image/svg+xml;charset=utf-8" });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.download = "braidstudio-recipe-sheet.svg";
-  link.href = url;
-  link.click();
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
 function renderSpecs(sheet) {
@@ -1325,7 +1247,6 @@ generateButton.addEventListener("click", () => {
     mismatchBeforeGenerate: buildMismatchReport()
   }, buildMismatchReport().some((item) => item.level === "error") ? "error" : "info");
   state = generateRecipe(state);
-  latestRecipePngUrl = "";
   recipeImageOutput.hidden = true;
   recipeImagePreview.hidden = true;
   recipeImagePreview.removeAttribute("src");
@@ -1564,33 +1485,30 @@ toggleUploadButton?.addEventListener("click", () => {
 downloadPngButton.addEventListener("click", async () => {
   if (!state.generated_recipe) return;
   try {
-    logProcess("PNG üretimi", "PNG render butonla başlatıldı", {
+    logProcess("PNG üretimi", "Ana halat görünümü PNG indiriliyor", {
       recipeId: state.generated_recipe.recipe_id,
-      sheetBlocks: recipeSheet.querySelectorAll(".ts-block").length
+      target: "main_rope_canvas"
     });
-    if (!latestRecipePngUrl) {
-      latestRecipePngUrl = await renderRecipeSheetToPng();
+    const mainCanvas = recipeSheet.querySelector("[data-braid-canvas='main']");
+    if (!mainCanvas) {
+      throw new Error("main_rope_canvas_missing");
     }
-    recipeImagePreview.src = latestRecipePngUrl;
-    recipeImageOutput.hidden = false;
-    recipeImagePreview.hidden = false;
+    const pngUrl = mainCanvas.toDataURL("image/png");
     const link = document.createElement("a");
-    link.download = "braidstudio-recipe-sheet.png";
-    link.href = latestRecipePngUrl;
+    link.download = "braidstudio-main-rope-view.png";
+    link.href = pngUrl;
     link.click();
-    logProcess("PNG üretimi", "PNG render tamamlandı ve indirildi", {
-      bytesApprox: latestRecipePngUrl.length
+    logProcess("PNG üretimi", "Ana halat görünümü PNG indirildi", {
+      bytesApprox: pngUrl.length
     });
   } catch (error) {
-    logAnalysis(`PNG üretilemedi, SVG indiriliyor: ${error.message}`);
+    logAnalysis(`Ana halat PNG indirilemedi: ${error.message}`);
     recipeImageOutput.hidden = true;
     recipeImagePreview.hidden = true;
     recipeImagePreview.removeAttribute("src");
-    logProcess("PNG üretimi", "PNG render hata verdi, SVG fallback indiriliyor", {
-      error: error.message,
-      fallback: "SVG fallback indirilecek"
+    logProcess("PNG üretimi", "Ana halat PNG indirme hata verdi", {
+      error: error.message
     }, "error");
-    downloadRecipeSvgFallback();
   }
 });
 
