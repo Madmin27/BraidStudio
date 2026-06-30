@@ -118,6 +118,16 @@ export function calculateCalibratedBraidGrid({ width, height, carrierCount, clos
   };
 }
 
+export function calculateMarkerPitch(carrierCount) {
+  return Math.max(3, Math.round(Number(carrierCount || 0) / 2));
+}
+
+export function expectedMarkerCoverage(carrierCount, markerCount) {
+  const count = Number(carrierCount || 0);
+  if (!count) return 0;
+  return Number(markerCount || 0) / count;
+}
+
 function normalizeCarrierLayout(carrierLayout, colorSequence, carrierCount) {
   const fromSequence = Array.isArray(colorSequence) ? colorSequence : [];
   const fromLayout = Array.isArray(carrierLayout) ? carrierLayout : [];
@@ -155,8 +165,8 @@ function drawVectorBraidSurface(ctx, sheet, width, height, close) {
   const cellW = width / cols;
   const cellH = height / rows;
   const patternType = String(sheet.pattern_type || "").toLowerCase();
-  const markerLanes = markerLanesForPattern(patternType, markerCarriers);
-  const pitch = close ? 10 : 6;
+  const pitch = calculateMarkerPitch(carrierCount);
+  const markerLanes = markerLanesForPattern(patternType, markerCarriers, pitch);
 
   ctx.save();
   ctx.rect(0, 0, width, height);
@@ -211,7 +221,7 @@ function drawVectorBraidSurface(ctx, sheet, width, height, close) {
   ctx.restore();
 }
 
-function markerLanesForPattern(patternType, markerCarriers) {
+function markerLanesForPattern(patternType, markerCarriers, pitch) {
   const carriers = markerCarriers.length ? markerCarriers : [];
   const lanes = carriers.map((carrier, index) => ({
     carrierNo: Number(carrier.carrier_no || index + 1),
@@ -235,7 +245,7 @@ function markerLanesForPattern(patternType, markerCarriers) {
   }
   for (const group of byDirection.values()) {
     group.forEach((lane, index) => {
-      lane.phase = index * Math.max(2, Math.floor(10 / Math.max(group.length, 1)));
+      lane.phase = index * Math.max(2, Math.floor(pitch / Math.max(group.length, 1)));
     });
   }
   return lanes;
