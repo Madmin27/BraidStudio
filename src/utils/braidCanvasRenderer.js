@@ -134,17 +134,19 @@ export function calculatePatternRepeatModel({
   viewLengthMm = 300,
   ropeDiameterMm = 10,
   braidAngleDeg = 45,
-  columns = 58
+  columns = 58,
+  densityScale = 1
 } = {}) {
   const count = Math.max(1, Math.round(Number(carrierCount || 0)));
   const safeColumns = Math.max(1, Math.round(Number(columns || 0)));
+  const safeDensityScale = Math.max(1, Number(densityScale || 1));
   const safeDiameter = Math.max(1, Number(ropeDiameterMm || 10));
   const safeAngle = Math.min(75, Math.max(25, Number(braidAngleDeg || 45)));
   const circumferenceMm = Math.PI * safeDiameter;
   const helixLeadMm = circumferenceMm / Math.tan(degToRad(safeAngle));
   const longitudinalRepeats = Math.max(1, Number(viewLengthMm || 300) / helixLeadMm);
   const geometricPitchColumns = Math.max(1, safeColumns / longitudinalRepeats);
-  const coveragePitchColumns = Math.max(4, count);
+  const coveragePitchColumns = Math.max(4, count * safeDensityScale);
   const markerPitchColumns = Math.round(Math.max(geometricPitchColumns, coveragePitchColumns));
 
   return {
@@ -154,6 +156,7 @@ export function calculatePatternRepeatModel({
     viewLengthMm: Number(viewLengthMm || 300),
     ropeDiameterMm: safeDiameter,
     braidAngleDeg: safeAngle,
+    densityScale: safeDensityScale,
     circumferenceMm,
     helixLeadMm,
     longitudinalRepeats,
@@ -206,7 +209,8 @@ function drawVectorBraidSurface(ctx, sheet, width, height, close) {
     viewLengthMm: close ? 60 : 300,
     ropeDiameterMm: sheet.diameter_mm || sheet.diameter || 10,
     braidAngleDeg: sheet.braid_angle_deg || 45,
-    columns: cols
+    columns: cols,
+    densityScale: close ? 2 : 1
   });
   const pitch = repeatModel.markerPitchColumns;
   const markerLanes = markerLanesForPattern(patternType, markerCarriers, pitch);

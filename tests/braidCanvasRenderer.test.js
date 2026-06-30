@@ -77,3 +77,19 @@ test("pattern repeat model separates physical lead from marker coverage", () => 
   assert.equal(model.coveragePitchColumns, 16);
   assert.equal(model.markerPitchColumns, 16);
 });
+
+test("close view uses a wider marker pitch to avoid over-rendered tracer repeats", () => {
+  const model = calculatePatternRepeatModel({
+    carrierCount: 16,
+    markerCount: 2,
+    viewLengthMm: 60,
+    ropeDiameterMm: 10,
+    braidAngleDeg: 45,
+    columns: 22,
+    densityScale: 2
+  });
+
+  assert.equal(model.expectedMarkerCoverage, 0.125);
+  assert.equal(model.coveragePitchColumns, 32);
+  assert.equal(model.markerPitchColumns, 32);
+});
