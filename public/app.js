@@ -1171,12 +1171,24 @@ function applyPattern(patternId) {
   const pattern = patterns.find((item) => item.id === patternId);
   if (!pattern) return;
 
+  const previousLayout = Array.isArray(state.user_selected_options.carrier_layout)
+    ? state.user_selected_options.carrier_layout
+    : [];
+  const formSelection = collectUserSelection();
+  const preservedColors = colorsFromCarrierLayout(previousLayout, formSelection.colors);
+
   selectedPatternId = pattern.id;
   patternSelect.value = pattern.id;
-  syncSelectionState();
+  state = applyUserSelection(state, {
+    ...formSelection,
+    pattern_type: pattern.id,
+    colors: preservedColors
+  });
+  if (colorsInput) colorsInput.value = preservedColors.join(", ");
   const layout = buildPatternCarrierLayout(state.user_selected_options, pattern.id);
   state = applyUserSelection(state, {
     pattern_type: pattern.id,
+    colors: preservedColors,
     carrier_layout: layout
   });
   clearGeneratedRecipe();
@@ -1337,6 +1349,10 @@ generateButton.addEventListener("click", () => {
 });
 
 selectionForm.addEventListener("change", (event) => {
+  const previousLayout = Array.isArray(state.user_selected_options.carrier_layout)
+    ? state.user_selected_options.carrier_layout
+    : [];
+  const previousColors = colorsFromCarrierLayout(previousLayout, state.user_selected_options.colors);
   selectedPatternId = patternSelect.value;
   if (event.target === carrierSelect) {
     syncMachineProfileToCarrierCount();
@@ -1344,6 +1360,8 @@ selectionForm.addEventListener("change", (event) => {
   const reason = event.target?.name || "selection_change";
   let layoutSync = syncSelectionStateWithLayout(reason);
   if (event.target === patternSelect) {
+    state = applyUserSelection(state, { colors: previousColors });
+    if (colorsInput) colorsInput.value = previousColors.join(", ");
     const layout = buildPatternCarrierLayout(state.user_selected_options, selectedPatternId);
     state = applyUserSelection(state, { carrier_layout: layout });
     layoutSync = { rebuilt: true, layout };
@@ -1593,8 +1611,8 @@ const defaultColors = ["beyaz", "siyah"];
 const baseColor = String(defaultColors[0]).toLowerCase();
 const defaultLayout = Array.from({ length: defaultCount }, (_, index) => ({
   carrier_no: index + 1,
-  color: (index === 0 || index === 1) ? "siyah" : "beyaz",
-  strand_role: (index === 0 || index === 1) ? "sheath_marker" : "sheath"
+  color: (index === 0 || index === 8) ? "siyah" : "beyaz",
+  strand_role: (index === 0 || index === 8) ? "sheath_marker" : "sheath"
 }));
 
 // Set the form defaults
