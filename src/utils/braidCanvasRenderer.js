@@ -194,90 +194,33 @@ function drawRopeBodyBase(ctx, width, height, close) {
 function drawVectorBraidSurface(ctx, sheet, width, height, close, grid) {
   const carrierCount = Number(sheet.carrier_count || sheet.carrier_layout?.length || 0);
   const carrierLayout = normalizeCarrierLayout(sheet.carrier_layout, sheet.color_sequence, carrierCount);
-  const baseColor = mostCommonColor(carrierLayout.map((carrier) => carrier.color)) || "beyaz";
-  const markerCarriers = carrierLayout.filter((carrier) => carrier.color !== baseColor);
   const rows = grid?.rows || Math.max(1, carrierCount);
   const cols = grid?.steps || (close ? Math.max(rows * 2, 32) : Math.max(rows * 3, 48));
   const cellW = grid?.cellWidth || width / cols;
   const cellH = grid?.cellHeight || height / rows;
-  const overlap = 1;
-  const patternKinematics = classifyMarkerCarrierDirections(carrierLayout, sheet.machineProfile, baseColor);
-  const repeatModel = calculatePatternRepeatModel({
-    carrierCount,
-    markerCount: markerCarriers.length,
-    viewLengthMm: close ? 60 : 300,
-    ropeDiameterMm: sheet.diameter_mm || sheet.diameter || 10,
-    braidAngleDeg: sheet.braid_angle_deg || sheet.machineProfile?.kinematics?.defaultBraidAngle || 45,
-    columns: cols,
-    densityScale: close ? 2 : 1
+  const crowns = buildMatrixSurfaceCrowns({
+    carrierLayout,
+    machineProfile: sheet.machineProfile,
+    cols,
+    cellW,
+    cellH,
+    close,
+    braidLogic: sheet.braid_walk_type
   });
-  const markerLanes = markerLanesFromCarriers(markerCarriers, sheet.machineProfile, repeatModel.markerPitchColumns);
-  const parallelTracerCrowns = patternKinematics.hasIntersectingActiveStrands
-    ? []
-    : buildParallelTracerCrowns({
-      carrierLayout,
-      markerCarriers,
-      machineProfile: sheet.machineProfile,
-      cols,
-      cellW,
-      cellH,
-      close,
-      braidLogic: sheet.braid_walk_type
-    });
 
   ctx.save();
   ctx.rect(0, 0, width, height);
   ctx.clip();
 
-  for (const crown of parallelTracerCrowns.filter((item) => !item.top)) {
+  for (const crown of crowns.filter((item) => !item.top)) {
     drawIllustrationCrown(ctx, {
       ...crown,
-      alphaScale: 0.34
+      alphaScale: 0.72
     });
   }
 
-  for (let row = -1; row <= rows; row += 1) {
-    for (let col = -1; col <= cols; col += 1) {
-      const direction = (row + col) % 2 === 0 ? "clockwise" : "counterClockwise";
-      const x = col * cellW;
-      const y = row * cellH;
-      drawIllustrationCrown(ctx, {
-        x,
-        y,
-        width: cellW * (close ? 1.28 : 1.34) * overlap,
-        height: cellH * (close ? 1.16 : 1.22) * overlap,
-        color: baseColor,
-        direction,
-        top: (row + col) % 4 < 2,
-        close,
-        marker: false
-      });
-    }
-  }
-
-  if (patternKinematics.hasIntersectingActiveStrands) {
-    for (let row = -1; row <= rows; row += 1) {
-      for (let col = -1; col <= cols; col += 1) {
-        for (const lane of markerLanes) {
-          if (!isMarkerVisible({ row, col, lane, patternKinematics })) continue;
-          drawIllustrationCrown(ctx, {
-            x: col * cellW,
-            y: row * cellH,
-            width: cellW * (close ? 1.08 : 1.16) * overlap,
-            height: cellH * (close ? 1.02 : 1.08) * overlap,
-            color: lane.color,
-            direction: lane.direction,
-            top: true,
-            close,
-            marker: true
-          });
-        }
-      }
-    }
-  } else {
-    for (const crown of parallelTracerCrowns.filter((item) => item.top)) {
-      drawIllustrationCrown(ctx, crown);
-    }
+  for (const crown of crowns.filter((item) => item.top)) {
+    drawIllustrationCrown(ctx, crown);
   }
 
   const floorShadow = ctx.createLinearGradient(0, height * 0.78, 0, height);
@@ -373,6 +316,44 @@ export function buildParallelTracerCrowns({ carrierLayout, markerCarriers, machi
         top,
         close,
         marker: true
+      });
+    }
+  }
+
+  return crowns;
+}
+
+export function buildMatrixSurfaceCrowns({ carrierLayout, machineProfile, cols, cellW, cellH, close, braidLogic }) {
+  const baseColor = mostCommonColor((carrierLayout || []).map((carrier) => carrier.color)) || "white";
+  const matrix = buildBraidMatrix({
+    carrierLayout,
+    machineProfile,
+    braidLogic,
+    steps: cols + 1
+  });
+  const crowns = [];
+
+  for (const path of matrix.carrierPaths) {
+    for (const point of path.points) {
+      const top = topDirectionAt({
+        time: point.time,
+        column: point.column,
+        braidLogic
+      }) === path.carrier.direction;
+
+      crowns.push({
+        carrier_no: path.carrier.carrier_no,
+        time: point.time,
+        column: point.column,
+        x: point.time * cellW,
+        y: point.column * cellH,
+        width: cellW * (close ? 1.24 : 1.30),
+        height: cellH * (close ? 1.10 : 1.16),
+        color: path.carrier.color,
+        direction: path.carrier.direction,
+        top,
+        close,
+        marker: path.carrier.color !== baseColor
       });
     }
   }

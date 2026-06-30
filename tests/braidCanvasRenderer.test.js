@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
+  buildMatrixSurfaceCrowns,
   buildParallelTracerCrowns,
   calculateCalibratedBraidGrid,
   calculateMarkerPitch,
@@ -180,4 +181,23 @@ test("16 carrier recipe with 1 and 9 black reaches renderer as same-direction ma
   assert.ok(crowns.every((crown) => crown.direction === "clockwise"));
   assert.equal(carrier1[0].top, true);
   assert.equal(carrier1[1].top, false);
+
+  const surfaceCrowns = buildMatrixSurfaceCrowns({
+    carrierLayout: sheet.carrier_layout,
+    machineProfile: sheet.machineProfile,
+    cols: 10,
+    cellW: 10,
+    cellH: 5,
+    close: false,
+    braidLogic: sheet.braid_walk_type
+  });
+  const crownCountByCarrier = new Map();
+  for (const crown of surfaceCrowns) {
+    crownCountByCarrier.set(crown.carrier_no, (crownCountByCarrier.get(crown.carrier_no) || 0) + 1);
+  }
+
+  assert.equal(crownCountByCarrier.size, 16);
+  assert.equal(crownCountByCarrier.get(1), crownCountByCarrier.get(2));
+  assert.equal(crownCountByCarrier.get(9), crownCountByCarrier.get(10));
+  assert.equal(crownCountByCarrier.get(1), 11);
 });
