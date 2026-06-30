@@ -21,3 +21,14 @@ test("invalid carrierColorMap count returns validation error", async () => {
   assert.equal(result.ok, false);
   assert.ok(result.errors.some((error) => error.includes("carrierColorMap_count")));
 });
+
+test("recipe scenario library is loaded for renderer consistency checks", async () => {
+  const library = await loadLibrary(process.cwd());
+  const scenarioA = library.patternScenarios.find((scenario) => scenario.id === "recipe_senaryo_a");
+  const twinDiamond = library.patternScenarios.find((scenario) => scenario.id === "recipe_twin_diamond");
+
+  assert.equal(scenarioA.physicsValidation.expectedPatternType, "spiral");
+  assert.equal(scenarioA.physicsValidation.hasIntersectingActiveStrands, false);
+  assert.equal(twinDiamond.physicsValidation.expectedPatternType, "diamond");
+  assert.equal(twinDiamond.physicsValidation.hasIntersectingActiveStrands, true);
+});

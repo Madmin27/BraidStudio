@@ -4,6 +4,7 @@ import {
   calculateCalibratedBraidGrid,
   calculateMarkerPitch,
   calculatePatternRepeatModel,
+  classifyMarkerCarrierDirections,
   expectedMarkerCoverage
 } from "../src/utils/braidCanvasRenderer.js";
 
@@ -92,4 +93,28 @@ test("close view uses a wider marker pitch to avoid over-rendered tracer repeats
   assert.equal(model.expectedMarkerCoverage, 0.125);
   assert.equal(model.coveragePitchColumns, 32);
   assert.equal(model.markerPitchColumns, 32);
+});
+
+test("marker pattern classification follows machine carrier directions", () => {
+  const machineProfile = {
+    carrierGroups: {
+      clockwise: [1, 3, 5, 7, 9, 11, 13, 15],
+      counterClockwise: [2, 4, 6, 8, 10, 12, 14, 16]
+    }
+  };
+  const layout = Array.from({ length: 16 }, (_, index) => ({
+    carrier_no: index + 1,
+    color: [1, 9].includes(index + 1) ? "siyah" : "beyaz"
+  }));
+  const spiral = classifyMarkerCarrierDirections(layout, machineProfile, "beyaz");
+
+  assert.equal(spiral.expectedPatternType, "spiral");
+  assert.equal(spiral.hasIntersectingActiveStrands, false);
+
+  layout[1].color = "siyah";
+  layout[8].color = "beyaz";
+  const diamond = classifyMarkerCarrierDirections(layout, machineProfile, "beyaz");
+
+  assert.equal(diamond.expectedPatternType, "diamond");
+  assert.equal(diamond.hasIntersectingActiveStrands, true);
 });

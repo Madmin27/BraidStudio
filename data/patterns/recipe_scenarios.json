@@ -1,0 +1,78 @@
+{
+  "version": "1.1.0",
+  "lastUpdated": "2026-06-30",
+  "patternLibrary": [
+    {
+      "id": "recipe_senaryo_a",
+      "name": "Senaryo A - Cift Sarmalli Spiral",
+      "targetMachineId": "mp_16_standard",
+      "interlacingType": "2_over_2",
+      "uiDefaultSelection": "spiral",
+      "carrierSetup": {
+        "activeColors": {
+          "1": "#121212",
+          "9": "#121212"
+        },
+        "defaultColor": "#ffffff",
+        "comment": "1 ve 9 harici tum tasiyicilar beyaz bobindir."
+      },
+      "physicsValidation": {
+        "expectedPatternType": "spiral",
+        "hasIntersectingActiveStrands": false,
+        "description": "1 ve 9 ayni yonlu CW carklarda oldugundan birbirini kesmeyen iki paralel sarmal hat uretir.",
+        "renderConstraints": {
+          "overlapRatio": 1.06,
+          "smoothShadowBlur": 5,
+          "strokeOpacity": 0.22
+        }
+      }
+    },
+    {
+      "id": "recipe_twin_diamond",
+      "name": "Senaryo B - Cift Sarmalli Baklava",
+      "targetMachineId": "mp_16_standard",
+      "interlacingType": "2_over_2",
+      "uiDefaultSelection": "diamond",
+      "carrierSetup": {
+        "activeColors": {
+          "1": "#121212",
+          "2": "#121212",
+          "9": "#121212",
+          "10": "#121212"
+        },
+        "defaultColor": "#ffffff"
+      },
+      "physicsValidation": {
+        "expectedPatternType": "diamond",
+        "hasIntersectingActiveStrands": true,
+        "description": "Zit yonlu carklar dolu oldugu icin kesisen tam baklava kafesi uretir.",
+        "renderConstraints": {
+          "overlapRatio": 1.07,
+          "smoothShadowBlur": 4,
+          "strokeOpacity": 0.3
+        }
+      }
+    },
+    {
+      "id": "recipe_quad_spiral",
+      "name": "Senaryo C - 4 Kollu Paralel Spiral",
+      "targetMachineId": "mp_16_standard",
+      "interlacingType": "2_over_2",
+      "uiDefaultSelection": "spiral",
+      "carrierSetup": {
+        "activeColors": {
+          "1": "#121212",
+          "5": "#121212",
+          "9": "#121212",
+          "13": "#121212"
+        },
+        "defaultColor": "#ffffff"
+      },
+      "physicsValidation": {
+        "expectedPatternType": "spiral",
+        "hasIntersectingActiveStrands": false,
+        "description": "Tum aktif indisler tek sayidir ve ayni CW yonde kesismeyen paralel helis uretir."
+      }
+    }
+  ]
+}

@@ -1,4 +1,4 @@
-import { buildBraidMatrix, topDirectionAt } from "./braidMatrix.js";
+import { buildBraidMatrix, getCarrierDirection, topDirectionAt } from "./braidMatrix.js";
 
 /* app.js'teki colorMap ile birebir uyumlu. Turkish/English renk adlarının
    her ikisi de aynı hex'e çözümlenir, böylece "siyah" FALLBACK_COLORS'ta
@@ -197,17 +197,23 @@ function drawVectorBraidSurface(ctx, sheet, width, height, close) {
   const carrierCount = Number(sheet.carrier_count || sheet.carrier_layout?.length || 0);
   const carrierLayout = normalizeCarrierLayout(sheet.carrier_layout, sheet.color_sequence, carrierCount);
   const baseColor = mostCommonColor(carrierLayout.map((carrier) => carrier.color)) || "beyaz";
-  const rows = close ? Math.min(16, carrierCount || 16) : Math.max(1, carrierCount || 16);
+  const markerCarriers = carrierLayout.filter((carrier) => carrier.color !== baseColor);
+  const rows = close ? 9 : 8;
   const cols = close ? 22 : 48;
   const cellW = width / cols;
   const cellH = height / rows;
   const overlap = 1;
-  const matrix = buildBraidMatrix({
-    carrierLayout,
-    machineProfile: sheet.machineProfile,
-    braidLogic: sheet.braid_walk_type,
-    steps: cols + 2
+  const patternKinematics = classifyMarkerCarrierDirections(carrierLayout, sheet.machineProfile, baseColor);
+  const repeatModel = calculatePatternRepeatModel({
+    carrierCount,
+    markerCount: markerCarriers.length,
+    viewLengthMm: close ? 60 : 300,
+    ropeDiameterMm: sheet.diameter_mm || sheet.diameter || 10,
+    braidAngleDeg: sheet.braid_angle_deg || sheet.machineProfile?.kinematics?.defaultBraidAngle || 45,
+    columns: cols,
+    densityScale: close ? 2 : 1
   });
+  const markerLanes = markerLanesFromCarriers(markerCarriers, sheet.machineProfile, repeatModel.markerPitchColumns);
 
   ctx.save();
   ctx.rect(0, 0, width, height);
@@ -215,8 +221,7 @@ function drawVectorBraidSurface(ctx, sheet, width, height, close) {
 
   for (let row = -1; row <= rows; row += 1) {
     for (let col = -1; col <= cols; col += 1) {
-      const cell = visibleMatrixCell(matrix, row, col, rows);
-      const direction = cell?.topCarrier?.direction || cell?.topDirection || "clockwise";
+      const direction = (row + col) % 2 === 0 ? "clockwise" : "counterClockwise";
       const x = col * cellW;
       const y = row * cellH;
       drawIllustrationCrown(ctx, {
@@ -224,12 +229,31 @@ function drawVectorBraidSurface(ctx, sheet, width, height, close) {
         y,
         width: cellW * (close ? 1.28 : 1.34) * overlap,
         height: cellH * (close ? 1.16 : 1.22) * overlap,
-        color: cell?.topCarrier?.color || baseColor,
+        color: baseColor,
         direction,
         top: (row + col) % 4 < 2,
         close,
-        marker: (cell?.topCarrier?.color || baseColor) !== baseColor
+        marker: false
       });
+    }
+  }
+
+  for (let row = -1; row <= rows; row += 1) {
+    for (let col = -1; col <= cols; col += 1) {
+      for (const lane of markerLanes) {
+        if (!isMarkerVisible({ row, col, lane, patternKinematics })) continue;
+        drawIllustrationCrown(ctx, {
+          x: col * cellW,
+          y: row * cellH,
+          width: cellW * (close ? 1.08 : 1.16) * overlap,
+          height: cellH * (close ? 1.02 : 1.08) * overlap,
+          color: lane.color,
+          direction: lane.direction,
+          top: true,
+          close,
+          marker: true
+        });
+      }
     }
   }
 
@@ -242,15 +266,53 @@ function drawVectorBraidSurface(ctx, sheet, width, height, close) {
   ctx.restore();
 }
 
-function visibleMatrixCell(matrix, row, col, visualRows) {
-  if (!matrix?.cells?.length || !matrix.carrierCount) return null;
-  const time = positiveModulo(col, matrix.steps);
-  const normalizedRow = positiveModulo(row, visualRows);
-  const column = Math.min(
-    matrix.carrierCount - 1,
-    Math.floor((normalizedRow / Math.max(visualRows, 1)) * matrix.carrierCount)
-  );
-  return matrix.cells[time]?.[column] || null;
+export function classifyMarkerCarrierDirections(carrierLayout = [], machineProfile = null, baseColor = "white") {
+  const markerCarriers = carrierLayout.filter((carrier) => carrier.color !== baseColor);
+  const directions = markerCarriers.map((carrier) => getCarrierDirection(Number(carrier.carrier_no), machineProfile));
+  const hasClockwise = directions.includes("clockwise");
+  const hasCounterClockwise = directions.includes("counterClockwise");
+  return {
+    markerCount: markerCarriers.length,
+    directions: Array.from(new Set(directions)),
+    hasClockwise,
+    hasCounterClockwise,
+    expectedPatternType: hasClockwise && hasCounterClockwise ? "diamond" : "spiral",
+    hasIntersectingActiveStrands: hasClockwise && hasCounterClockwise
+  };
+}
+
+function markerLanesFromCarriers(markerCarriers, machineProfile, pitch) {
+  const byDirection = new Map();
+  const lanes = markerCarriers.map((carrier) => ({
+    carrierNo: Number(carrier.carrier_no),
+    color: carrier.color,
+    direction: getCarrierDirection(Number(carrier.carrier_no), machineProfile),
+    pitch
+  }));
+  for (const lane of lanes) {
+    const group = byDirection.get(lane.direction) || [];
+    group.push(lane);
+    byDirection.set(lane.direction, group);
+  }
+  for (const group of byDirection.values()) {
+    group.forEach((lane, index) => {
+      lane.phase = index * Math.max(2, Math.floor(pitch / Math.max(group.length, 1)));
+    });
+  }
+  return lanes;
+}
+
+function isMarkerVisible({ row, col, lane, patternKinematics }) {
+  const direction = lane.direction;
+  const visibleOnTop = direction === "clockwise"
+    ? (row + col) % 2 === 0
+    : (row + col) % 2 !== 0;
+  if (!visibleOnTop) return false;
+  const slope = direction === "clockwise" ? col - row * 1.75 : col + row * 1.75;
+  const phase = patternKinematics.hasIntersectingActiveStrands
+    ? lane.phase
+    : lane.phase + (direction === "clockwise" ? 0 : lane.pitch / 2);
+  return positiveModulo(Math.round(slope + phase), lane.pitch) === 0;
 }
 
 function drawBraidCrowns(ctx, { matrix, width, height, close }) {

@@ -3,16 +3,18 @@ import { join } from "node:path";
 
 export async function loadLibrary(rootDir = process.cwd()) {
   const dataDir = join(rootDir, "data");
-  const [machines, recipes, patternCatalog] = await Promise.all([
+  const [machines, recipes, patternCatalog, recipeScenarios] = await Promise.all([
     loadJsonDirectory(join(dataDir, "machines")),
     loadJsonDirectory(join(dataDir, "recipes")),
-    loadJsonFile(join(dataDir, "patterns", "signature_catalog.json"), {})
+    loadJsonFile(join(dataDir, "patterns", "signature_catalog.json"), {}),
+    loadJsonFile(join(dataDir, "patterns", "recipe_scenarios.json"), {})
   ]);
 
   return {
     machines,
     recipes,
-    patternSignatures: patternCatalog.patternSignatures || {}
+    patternSignatures: patternCatalog.patternSignatures || {},
+    patternScenarios: recipeScenarios.patternLibrary || []
   };
 }
 

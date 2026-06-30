@@ -27,7 +27,8 @@ Teknik sheet'ten `Makara görünümü`, `Desen şeması` ve `Yakın görünüm` 
 Ana halat görünümü ve kukla yürüyüş diyagramı için Canvas renderer çekirdeği eklendi. PNG export artık yalnızca ana halat canvas bitmap'ini indirir.
 Ana halat görünümü referans formata yaklaştırıldı: hacimli beyaz tekstil örgüsü + segmentli tracer bandı olarak Canvas'ta çizilir.
 Ana halat canvas iplik dokusu siyah/beyaz için ortak 5-stop gradyan, %6 crown overlap ve 0.6px dış kontur ile dengelendi.
-Ana halat renderer artık marker overlay mantığı kullanmaz; görünen her iplik hücresi `buildBraidMatrix` üzerinden carrier no, machineProfile yönü, kukla sayısı ve yürüyüş tipine göre seçilir.
+Ana halat renderer temiz tekstil yüzeyini korur; marker katmanı carrier no + `machineProfile` yönünden türetilir. Aynı yön markerları spiral, zıt yön markerları diamond olarak sınıflandırılır.
+Makine profillerine kinematik carrier direction mapping ve desen senaryo kütüphanesi eklendi; 1-9 spiral, 1-2 diamond doğrulaması testlenir.
 Canvas halat renderer çizgi/tracer-band modelinden hücre tabanlı tekstil modeline geçirildi; her matrix hücresinde 2-over-2 üstte kalan carrier'ın rengi gradyanlı oval dilim olarak çizilir.
 Kukla sayısı/renk/desen değişince carrier layout AI çağırmadan deterministic olarak yeniden kurulur; reçete motoru mismatch layout gelirse carrier_count'a göre layout'u yeniden üretir.
 Canvas grid tam silindir açılımına geçirildi: rows=`carrierCount`; CW/CCW aktif carrier indeksi doğrudan `yGrid +/- time` ile hesaplanır. Böylece 16 kuklada 2 marker görsel oranı matematiksel olarak 2/16 düzeyine iner.
