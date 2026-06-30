@@ -38,3 +38,4 @@ Ana halat görünümünde yatay matrix adımı 40 ile sınırlandı; `cellWidth=
 `spiral_tracer` marker kümeleri aynı pariteye yerleştirilir (`1,3,5` gibi); renkli iplikler tek yönde kalır, `dual_counter_spiral` haricinde CW/CCW karışmaz.
 Canvas halat görünümü hücre boyama yerine carrier başına sürekli strand path katmanları çizer; base iplikler altta, marker iplikler fazlı/kesikli üst katmanda render edilir.
 Aynı yön grubundaki marker carrier'lar (örn. 1 ve 9) artık üstüne çizilmiş ayrı stroke değil, beyaz iplikle aynı kalınlıkta crown parçaları olarak render edilir; seçilen `1_over_1` / `two-over-two` üst-alt takvimi marker parçalarını görünür/gömülü yapar.
+Ana halat renderer grid'i artık dekoratif 8 satıra düşmez; `carrier_count` neyse yüzey satırı da odur. Renk dizilimi, kukla dizilimi ve desen aynı carrierCount ile hesaplanır.

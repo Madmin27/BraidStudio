@@ -97,18 +97,16 @@ function drawMatrixTextileCells(ctx, sheet, width, height, options) {
   ctx.fillStyle = options.background;
   ctx.fillRect(0, 0, width, height);
   drawRopeBodyBase(ctx, width, height, options.close);
-  drawVectorBraidSurface(ctx, sheet, width, height, options.close);
+  drawVectorBraidSurface(ctx, sheet, width, height, options.close, grid);
   return grid;
 }
 
 export function calculateCalibratedBraidGrid({ width, height, carrierCount, close = false }) {
   const rows = Math.max(1, Math.ceil(Number(carrierCount || 0)));
-  const cellHeight = height / rows;
-  const targetCellWidth = close ? cellHeight * 0.82 : cellHeight * 1.22;
-  const naturalSteps = Math.max(rows * 2, Math.ceil(width / Math.max(targetCellWidth, 1)));
   const steps = close
-    ? Math.max(rows + 8, Math.min(48, naturalSteps))
-    : Math.max(rows * 4, Math.min(150, naturalSteps));
+    ? Math.max(rows * 2, 32)
+    : Math.max(rows * 3, 48);
+  const cellHeight = height / rows;
   const cellWidth = width / Math.max(steps, 1);
   return {
     rows,
@@ -193,15 +191,15 @@ function drawRopeBodyBase(ctx, width, height, close) {
   ctx.restore();
 }
 
-function drawVectorBraidSurface(ctx, sheet, width, height, close) {
+function drawVectorBraidSurface(ctx, sheet, width, height, close, grid) {
   const carrierCount = Number(sheet.carrier_count || sheet.carrier_layout?.length || 0);
   const carrierLayout = normalizeCarrierLayout(sheet.carrier_layout, sheet.color_sequence, carrierCount);
   const baseColor = mostCommonColor(carrierLayout.map((carrier) => carrier.color)) || "beyaz";
   const markerCarriers = carrierLayout.filter((carrier) => carrier.color !== baseColor);
-  const rows = close ? 9 : 8;
-  const cols = close ? 22 : 48;
-  const cellW = width / cols;
-  const cellH = height / rows;
+  const rows = grid?.rows || Math.max(1, carrierCount);
+  const cols = grid?.steps || (close ? Math.max(rows * 2, 32) : Math.max(rows * 3, 48));
+  const cellW = grid?.cellWidth || width / cols;
+  const cellH = grid?.cellHeight || height / rows;
   const overlap = 1;
   const patternKinematics = classifyMarkerCarrierDirections(carrierLayout, sheet.machineProfile, baseColor);
   const repeatModel = calculatePatternRepeatModel({

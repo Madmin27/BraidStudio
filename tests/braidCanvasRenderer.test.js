@@ -16,7 +16,7 @@ test("calibrated braid grid uses full carrier count as cylinder rows", () => {
   });
 
   assert.equal(grid.rows, 16);
-  assert.equal(grid.steps, 135);
+  assert.equal(grid.steps, 48);
   assert.ok(grid.cellWidth > grid.cellHeight);
   assert.equal(grid.cellHeight, 148 / 16);
 });
@@ -29,7 +29,7 @@ test("24 carrier grid keeps technical view clean and readable", () => {
   });
 
   assert.equal(grid.rows, 24);
-  assert.equal(grid.steps, 96);
+  assert.equal(grid.steps, 72);
   assert.ok(grid.cellWidth < grid.cellHeight);
   assert.equal(grid.cellHeight, 440 / 24);
 });
@@ -43,7 +43,7 @@ test("close grid shows multiple carrier cycles without tiling", () => {
   });
 
   assert.equal(grid.rows, 16);
-  assert.equal(grid.steps, 48);
+  assert.equal(grid.steps, 32);
   assert.ok(grid.cellWidth > grid.cellHeight);
 });
 
