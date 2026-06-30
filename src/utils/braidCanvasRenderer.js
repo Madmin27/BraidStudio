@@ -51,13 +51,16 @@ export function drawMainRopeCanvas(canvas, sheet, options = {}) {
   const width = logicalW;
   const height = logicalH;
   const close = Boolean(options.close);
+  const renderStyle = options.renderStyle || "soft3d";
 
   ctx.clearRect(0, 0, width, height);
   ctx.save();
   roundedClip(ctx, 0, 0, width, height, close ? 0 : 4);
   const grid = close
     ? drawCloseTextileView(ctx, sheet, width, height)
-    : drawTechnicalRopeView(ctx, sheet, width, height);
+    : renderStyle === "soft3d"
+      ? drawSoft3DRopeView(ctx, sheet, width, height)
+      : drawTechnicalRopeView(ctx, sheet, width, height);
   if (close) {
     const shadow = ctx.createLinearGradient(0, height * 0.78, 0, height);
     shadow.addColorStop(0, "rgba(0,0,0,0)");
@@ -90,14 +93,23 @@ function drawCloseTextileView(ctx, sheet, width, height) {
   });
 }
 
+function drawSoft3DRopeView(ctx, sheet, width, height) {
+  return drawMatrixTextileCells(ctx, sheet, width, height, {
+    close: false,
+    renderStyle: "soft3d",
+    background: "#b5afa8"
+  });
+}
+
 function drawMatrixTextileCells(ctx, sheet, width, height, options) {
   const carrierCount = Number(sheet.carrier_count || sheet.carrier_layout?.length || 0);
   const grid = calculateCalibratedBraidGrid({ width, height, carrierCount, close: options.close });
+  const renderStyle = options.renderStyle || "technical";
 
   ctx.fillStyle = options.background;
   ctx.fillRect(0, 0, width, height);
-  drawRopeBodyBase(ctx, width, height, options.close);
-  drawVectorBraidSurface(ctx, sheet, width, height, options.close, grid);
+  drawRopeBodyBase(ctx, width, height, options.close, renderStyle);
+  drawVectorBraidSurface(ctx, sheet, width, height, options.close, grid, renderStyle);
   return grid;
 }
 
@@ -178,7 +190,25 @@ function normalizeCarrierLayout(carrierLayout, colorSequence, carrierCount) {
   });
 }
 
-function drawRopeBodyBase(ctx, width, height, close) {
+function drawRopeBodyBase(ctx, width, height, close, renderStyle) {
+  if (renderStyle === "soft3d") {
+    // Soft3d: belirgin silindirik tonlama — beyaz iplikler görünsün
+    const gradient = ctx.createLinearGradient(0, 0, 0, height);
+    gradient.addColorStop(0, "#736d66");
+    gradient.addColorStop(0.06, "#88827b");
+    gradient.addColorStop(0.15, "#9f9992");
+    gradient.addColorStop(0.35, "#aea8a1");
+    gradient.addColorStop(0.5, "#b5afa8");
+    gradient.addColorStop(0.65, "#aea8a1");
+    gradient.addColorStop(0.85, "#9f9992");
+    gradient.addColorStop(0.94, "#88827b");
+    gradient.addColorStop(1, "#736d66");
+    ctx.save();
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, width, height);
+    ctx.restore();
+    return;
+  }
   // Silindirik halat gövdesi: üst/alt kenarlarda belirgin kararma, merkezde parlama
   // close modunda daha dramatik gölge geçişi
   const gradient = ctx.createLinearGradient(0, 0, 0, height);
@@ -197,7 +227,7 @@ function drawRopeBodyBase(ctx, width, height, close) {
   ctx.restore();
 }
 
-function drawVectorBraidSurface(ctx, sheet, width, height, close, grid) {
+function drawVectorBraidSurface(ctx, sheet, width, height, close, grid, renderStyle) {
   const carrierCount = Number(sheet.carrier_count || sheet.carrier_layout?.length || 0);
   const carrierLayout = normalizeCarrierLayout(sheet.carrier_layout, sheet.color_sequence, carrierCount);
   const rows = grid?.rows || Math.max(1, carrierCount);
@@ -218,6 +248,53 @@ function drawVectorBraidSurface(ctx, sheet, width, height, close, grid) {
   ctx.rect(0, 0, width, height);
   ctx.clip();
 
+  if (renderStyle === "soft3d") {
+    // Soft3D: kapsül bantlar
+    const sw = height / (carrierCount / 2 + 2);
+
+    // under-crowns (önce bunlar)
+    for (const crown of crowns.filter((item) => !item.top)) {
+      drawSoft3DCrown(ctx, {
+        ...crown,
+        alphaScale: 0.72,
+        strandWidth: sw
+      });
+    }
+
+    // top crowns
+    for (const crown of crowns.filter((item) => item.top)) {
+      drawSoft3DCrown(ctx, {
+        ...crown,
+        strandWidth: sw
+      });
+    }
+
+    // Silindir gölgelemesi — belirgin
+    const softShadow = ctx.createLinearGradient(0, height * 0.55, 0, height);
+    softShadow.addColorStop(0, "rgba(0,0,0,0)");
+    softShadow.addColorStop(0.25, "rgba(40,32,24,0.06)");
+    softShadow.addColorStop(0.50, "rgba(40,30,22,0.16)");
+    softShadow.addColorStop(0.80, "rgba(30,20,14,0.28)");
+    softShadow.addColorStop(1, "rgba(20,14,10,0.40)");
+    ctx.fillStyle = softShadow;
+    ctx.fillRect(0, height * 0.68, width, height * 0.32);
+
+    // Üst/alt kenarlarda karartma (silindirik hacim)
+    const tubeSoft = ctx.createLinearGradient(0, 0, 0, height);
+    tubeSoft.addColorStop(0, "rgba(0,0,0,0.30)");
+    tubeSoft.addColorStop(0.06, "rgba(0,0,0,0.12)");
+    tubeSoft.addColorStop(0.18, "rgba(0,0,0,0.02)");
+    tubeSoft.addColorStop(0.82, "rgba(0,0,0,0.02)");
+    tubeSoft.addColorStop(0.94, "rgba(0,0,0,0.12)");
+    tubeSoft.addColorStop(1, "rgba(0,0,0,0.32)");
+    ctx.fillStyle = tubeSoft;
+    ctx.fillRect(0, 0, width, height);
+
+    ctx.restore();
+    return;
+  }
+
+  // Technical stil: mevcut drawIllustrationCrown
   for (const crown of crowns.filter((item) => !item.top)) {
     drawIllustrationCrown(ctx, {
       ...crown,
@@ -371,7 +448,12 @@ export function buildMatrixSurfaceCrowns({ carrierLayout, machineProfile, cols, 
         direction: cell.topCarrier.direction,
         top: true,
         close,
-        marker: cell.topCarrier.color !== baseColor
+        marker: cell.topCarrier.color !== baseColor,
+        underCarrier: cell.underCarrier ? {
+          carrier_no: cell.underCarrier.carrier_no,
+          color: cell.underCarrier.color,
+          direction: cell.underCarrier.direction
+        } : null
       });
     }
   }
@@ -620,6 +702,111 @@ function drawIllustrationCrown(ctx, { x, y, width, height, color, direction, top
       );
       ctx.stroke();
     }
+    ctx.restore();
+  }
+}
+
+function drawSoft3DCrown(ctx, { x, y, width, height, color, direction, top, close, marker, alphaScale = 1, underCarrier = null, strandWidth = 12 }) {
+  const p1 = {
+    x: x - width * 0.06,
+    y: direction === "clockwise" ? y + height * 0.94 : y + height * 0.06
+  };
+  const p2 = {
+    x: x + width * 1.06,
+    y: direction === "clockwise" ? y + height * 0.06 : y + height * 0.94
+  };
+  const dx = p2.x - p1.x;
+  const dy = p2.y - p1.y;
+  const length = Math.hypot(dx, dy) || 1;
+  const nx = -dy / length;
+  const ny = dx / length;
+
+  const hex = colorToHex(color);
+  const bVal = brightness(hex);
+  const isBlack = isBlackColor(color, hex);
+
+  // Minimal kavis — karemsi blok görünüm
+  const curveMag = 0.04;
+  const cp = {
+    x: (p1.x + p2.x) / 2 + nx * strandWidth * curveMag,
+    y: (p1.y + p2.y) / 2 + ny * strandWidth * curveMag
+  };
+
+  // Renk: alttaki crown'lar daha soluk/koyu, üstteki parlak
+  let bandColor = hex;
+  if (!top) {
+    bandColor = shadeHex(hex, bVal > 120 ? -14 : 10);
+  }
+
+  // 1️⃣ Gölge katmanı — crown'lar altında gölge bırakır
+  ctx.save();
+  ctx.globalAlpha = (top ? 0.35 : 0.14) * alphaScale;
+  ctx.shadowColor = "rgba(0,0,0,0.5)";
+  ctx.shadowBlur = strandWidth * 0.5;
+  ctx.shadowOffsetX = top ? 1.5 : 0.4;
+  ctx.shadowOffsetY = top ? 2.5 : 0.8;
+  ctx.lineCap = "round";
+  ctx.lineWidth = strandWidth;
+  ctx.strokeStyle = "rgba(0,0,0,0.3)";
+  ctx.beginPath();
+  ctx.moveTo(p1.x, p1.y);
+  ctx.quadraticCurveTo(cp.x, cp.y, p2.x, p2.y);
+  ctx.stroke();
+  ctx.restore();
+
+  // 1b️⃣ Belirgin kontur — karemsi blok ayrım
+  ctx.save();
+  const outlineAlpha = top ? 0.50 : 0.25;
+  ctx.globalAlpha = outlineAlpha * alphaScale;
+  ctx.lineCap = "butt";
+  ctx.lineWidth = strandWidth + 3.5;
+  ctx.strokeStyle = bVal > 160 ? "rgba(70,55,40,0.55)" : "rgba(0,0,0,0.18)";
+  ctx.beginPath();
+  ctx.moveTo(p1.x, p1.y);
+  ctx.quadraticCurveTo(cp.x, cp.y, p2.x, p2.y);
+  ctx.stroke();
+  ctx.restore();
+
+  // 2️⃣ Ana renkli blok bant
+  ctx.save();
+  ctx.globalAlpha = (top ? 1 : 0.80) * alphaScale;
+  ctx.lineCap = "butt";
+  ctx.lineWidth = strandWidth - 0.5;
+  ctx.strokeStyle = bandColor;
+  ctx.beginPath();
+  ctx.moveTo(p1.x, p1.y);
+  ctx.quadraticCurveTo(cp.x, cp.y, p2.x, p2.y);
+  ctx.stroke();
+  ctx.restore();
+
+  // 3️⃣ Üst kenarda ince speküler vurgu
+  if (top && !isBlack) {
+    ctx.save();
+    const hlAlpha = bVal > 180 ? 0.25 : 0.15;
+    ctx.globalAlpha = hlAlpha * alphaScale;
+    ctx.lineCap = "butt";
+    ctx.lineWidth = Math.max(1.0, strandWidth * 0.10);
+    ctx.strokeStyle = "#ffffff";
+    const hlOff = -ny * strandWidth * 0.35;
+    ctx.beginPath();
+    ctx.moveTo(p1.x + hlOff, p1.y + hlOff);
+    ctx.quadraticCurveTo(cp.x + hlOff, cp.y + hlOff, p2.x + hlOff, p2.y + hlOff);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  // Siyah ipliklerde gri vurgu
+  if (top && isBlack) {
+    ctx.save();
+    ctx.globalAlpha = 0.10 * alphaScale;
+    ctx.lineCap = "butt";
+    ctx.lineWidth = Math.max(0.8, strandWidth * 0.06);
+    ctx.strokeStyle = "#999";
+    const hlOff = -ny * strandWidth * 0.25;
+    ctx.beginPath();
+    ctx.moveTo(p1.x + hlOff, p1.y + hlOff);
+    ctx.quadraticCurveTo(cp.x + hlOff, cp.y + hlOff, p2.x + hlOff, p2.y + hlOff);
+    ctx.stroke();
     ctx.restore();
   }
 }
