@@ -202,6 +202,7 @@ function drawVectorBraidSurface(ctx, sheet, width, height, close) {
   const cols = close ? 22 : 48;
   const cellW = width / cols;
   const cellH = height / rows;
+  const overlap = 1.07;
   const patternType = String(sheet.pattern_type || "").toLowerCase();
   const repeatModel = calculatePatternRepeatModel({
     carrierCount,
@@ -227,8 +228,8 @@ function drawVectorBraidSurface(ctx, sheet, width, height, close) {
       drawIllustrationCrown(ctx, {
         x,
         y,
-        width: cellW * (close ? 1.28 : 1.34),
-        height: cellH * (close ? 1.16 : 1.22),
+        width: cellW * (close ? 1.28 : 1.34) * overlap,
+        height: cellH * (close ? 1.16 : 1.22) * overlap,
         color: baseColor,
         direction,
         top: (row + col) % 4 < 2,
@@ -245,8 +246,8 @@ function drawVectorBraidSurface(ctx, sheet, width, height, close) {
         drawIllustrationCrown(ctx, {
           x: col * cellW,
           y: row * cellH,
-          width: cellW * (close ? 1.08 : 1.16),
-          height: cellH * (close ? 1.02 : 1.08),
+          width: cellW * (close ? 1.08 : 1.16) * overlap,
+          height: cellH * (close ? 1.02 : 1.08) * overlap,
           color: lane.color,
           direction: lane.direction,
           top: true,
@@ -477,17 +478,17 @@ function drawIllustrationCrown(ctx, { x, y, width, height, color, direction, top
 
   ctx.save();
   ctx.globalAlpha = top ? 1 : 0.88;
-  ctx.shadowColor = top ? "rgba(0,0,0,0.22)" : "rgba(0,0,0,0.08)";
-  ctx.shadowBlur = top ? (close ? 5 : 3.2) : (close ? 1.2 : 0.8);
-  ctx.shadowOffsetX = top ? (close ? 1.1 : 0.7) : 0;
-  ctx.shadowOffsetY = top ? (close ? 2.4 : 1.5) : 0.4;
+  ctx.shadowColor = top ? "rgba(0,0,0,0.18)" : "rgba(0,0,0,0.06)";
+  ctx.shadowBlur = top ? (close ? 5 : 3.8) : (close ? 1.2 : 0.9);
+  ctx.shadowOffsetX = top ? (close ? 1.1 : 0.55) : 0;
+  ctx.shadowOffsetY = top ? (close ? 2.4 : 1.25) : 0.35;
   ctx.fillStyle = gradient;
   roundedCrownPath(ctx, points);
   ctx.fill();
 
   ctx.shadowColor = "transparent";
-  ctx.strokeStyle = marker ? "rgba(0,0,0,0.30)" : "rgba(88,88,88,0.20)";
-  ctx.lineWidth = close ? 0.55 : 0.42;
+  ctx.strokeStyle = marker ? "rgba(0,0,0,0.24)" : "rgba(0,0,0,0.18)";
+  ctx.lineWidth = close ? 0.5 : 0.5;
   ctx.stroke();
 
   if (close || !marker) {
@@ -509,15 +510,17 @@ function drawIllustrationCrown(ctx, { x, y, width, height, color, direction, top
 function createCleanStrandGradient(ctx, hex, p1, p2) {
   const gradient = ctx.createLinearGradient(p1.x, p1.y, p2.x, p2.y);
   if (brightness(hex) > 180) {
-    gradient.addColorStop(0, "#dddddd");
-    gradient.addColorStop(0.34, "#ffffff");
-    gradient.addColorStop(0.58, "#ffffff");
-    gradient.addColorStop(1, "#d2d2d2");
+    gradient.addColorStop(0, "#e2e3e1");
+    gradient.addColorStop(0.22, "#f4f5f3");
+    gradient.addColorStop(0.50, "#ffffff");
+    gradient.addColorStop(0.78, "#f0f1ef");
+    gradient.addColorStop(1, "#d8d9d7");
   } else {
-    gradient.addColorStop(0, shadeHex(hex, -28));
-    gradient.addColorStop(0.42, shadeHex(hex, 34));
-    gradient.addColorStop(0.62, shadeHex(hex, 12));
-    gradient.addColorStop(1, shadeHex(hex, -24));
+    gradient.addColorStop(0, shadeHex(hex, -18));
+    gradient.addColorStop(0.28, shadeHex(hex, 8));
+    gradient.addColorStop(0.52, shadeHex(hex, 24));
+    gradient.addColorStop(0.78, shadeHex(hex, 4));
+    gradient.addColorStop(1, shadeHex(hex, -18));
   }
   return gradient;
 }
