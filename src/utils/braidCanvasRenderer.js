@@ -214,10 +214,28 @@ function drawVectorBraidSurface(ctx, sheet, width, height, close) {
     densityScale: close ? 2 : 1
   });
   const markerLanes = markerLanesFromCarriers(markerCarriers, sheet.machineProfile, repeatModel.markerPitchColumns);
+  const parallelTracerCrowns = patternKinematics.hasIntersectingActiveStrands
+    ? []
+    : buildParallelTracerCrowns({
+      lanes: markerLanes,
+      rows,
+      cols,
+      cellW,
+      cellH,
+      close,
+      braidLogic: sheet.braid_walk_type
+    });
 
   ctx.save();
   ctx.rect(0, 0, width, height);
   ctx.clip();
+
+  for (const crown of parallelTracerCrowns.filter((item) => !item.top)) {
+    drawIllustrationCrown(ctx, {
+      ...crown,
+      alphaScale: 0.34
+    });
+  }
 
   for (let row = -1; row <= rows; row += 1) {
     for (let col = -1; col <= cols; col += 1) {
@@ -258,16 +276,9 @@ function drawVectorBraidSurface(ctx, sheet, width, height, close) {
       }
     }
   } else {
-    drawParallelTracerStrands(ctx, {
-      lanes: markerLanes,
-      width,
-      height,
-      rows,
-      cols,
-      cellW,
-      cellH,
-      close
-    });
+    for (const crown of parallelTracerCrowns.filter((item) => item.top)) {
+      drawIllustrationCrown(ctx, crown);
+    }
   }
 
   const floorShadow = ctx.createLinearGradient(0, height * 0.78, 0, height);
@@ -328,9 +339,9 @@ function isMarkerVisible({ row, col, lane, patternKinematics }) {
   return positiveModulo(Math.round(slope + phase), lane.pitch) === 0;
 }
 
-function drawParallelTracerStrands(ctx, { lanes, width, height, rows, cols, cellW, cellH, close }) {
-  if (!lanes.length) return;
-  const strandWidth = Math.max(cellH * (close ? 0.30 : 0.24), close ? 8 : 5);
+function buildParallelTracerCrowns({ lanes, rows, cols, cellW, cellH, close, braidLogic }) {
+  if (!lanes.length) return [];
+  const crowns = [];
 
   for (const lane of lanes) {
     const pitch = Math.max(1, lane.pitch);
@@ -339,65 +350,35 @@ function drawParallelTracerStrands(ctx, { lanes, width, height, rows, cols, cell
     const endRepeat = Math.ceil((cols + pitch) / pitch);
 
     for (let repeat = startRepeat; repeat <= endRepeat; repeat += 1) {
-      const points = [];
-      for (let row = -1.5; row <= rows + 1.5; row += 0.35) {
+      for (let row = -1; row <= rows; row += 1) {
         const col = lane.direction === "clockwise"
           ? row * 1.75 - phase + repeat * pitch
           : -row * 1.75 - phase + repeat * pitch;
-        points.push({
+        const roundedCol = Math.round(col);
+        if (roundedCol < -1 || roundedCol > cols + 1) continue;
+
+        const top = topDirectionAt({
+          time: Math.max(0, roundedCol),
+          column: Math.max(0, row),
+          braidLogic
+        }) === lane.direction;
+
+        crowns.push({
           x: col * cellW,
-          y: row * cellH
+          y: row * cellH,
+          width: cellW * (close ? 1.24 : 1.30),
+          height: cellH * (close ? 1.10 : 1.16),
+          color: lane.color,
+          direction: lane.direction,
+          top,
+          close,
+          marker: true
         });
       }
-
-      if (!points.some((point) => point.x >= -cellW * 2 && point.x <= width + cellW * 2)) continue;
-      drawTracerPath(ctx, points, lane.color, strandWidth);
     }
   }
-}
 
-function drawTracerPath(ctx, points, color, width) {
-  if (points.length < 2) return;
-  const hex = colorToHex(color);
-  const gradient = ctx.createLinearGradient(0, 0, 0, Math.max(...points.map((point) => point.y), 1));
-  if (isBlackColor(color, hex)) {
-    gradient.addColorStop(0, "#111111");
-    gradient.addColorStop(0.45, "#3c3c3c");
-    gradient.addColorStop(1, "#0d0d0d");
-  } else {
-    gradient.addColorStop(0, shadeHex(hex, -18));
-    gradient.addColorStop(0.5, shadeHex(hex, 26));
-    gradient.addColorStop(1, shadeHex(hex, -18));
-  }
-
-  ctx.save();
-  ctx.shadowColor = "rgba(0,0,0,0.22)";
-  ctx.shadowBlur = 3.5;
-  ctx.shadowOffsetY = 1.4;
-  ctx.lineCap = "round";
-  ctx.lineJoin = "round";
-  ctx.strokeStyle = gradient;
-  ctx.lineWidth = width;
-  ctx.beginPath();
-  ctx.moveTo(points[0].x, points[0].y);
-  for (let index = 1; index < points.length; index += 1) {
-    const previous = points[index - 1];
-    const current = points[index];
-    ctx.quadraticCurveTo(
-      previous.x,
-      previous.y,
-      (previous.x + current.x) / 2,
-      (previous.y + current.y) / 2
-    );
-  }
-  const last = points[points.length - 1];
-  ctx.lineTo(last.x, last.y);
-  ctx.stroke();
-  ctx.shadowColor = "transparent";
-  ctx.strokeStyle = "rgba(0,0,0,0.28)";
-  ctx.lineWidth = Math.max(0.6, width * 0.12);
-  ctx.stroke();
-  ctx.restore();
+  return crowns;
 }
 
 function drawBraidCrowns(ctx, { matrix, width, height, close }) {
@@ -521,7 +502,7 @@ function drawBraidCrown(ctx, { x, y, width, height, color, direction, top, close
   ctx.restore();
 }
 
-function drawIllustrationCrown(ctx, { x, y, width, height, color, direction, top, close, marker }) {
+function drawIllustrationCrown(ctx, { x, y, width, height, color, direction, top, close, marker, alphaScale = 1 }) {
   const p1 = {
     x: x - width * 0.08,
     y: direction === "clockwise" ? y + height * 0.92 : y + height * 0.08
@@ -557,7 +538,7 @@ function drawIllustrationCrown(ctx, { x, y, width, height, color, direction, top
   }, color);
 
   ctx.save();
-  ctx.globalAlpha = top ? 1 : 0.88;
+  ctx.globalAlpha = (top ? 1 : 0.88) * alphaScale;
   ctx.shadowColor = top ? "rgba(0,0,0,0.18)" : "rgba(0,0,0,0.06)";
   ctx.shadowBlur = top ? (close ? 5 : 3.8) : (close ? 1.2 : 0.9);
   ctx.shadowOffsetX = top ? (close ? 1.1 : 0.55) : 0;
@@ -572,7 +553,7 @@ function drawIllustrationCrown(ctx, { x, y, width, height, color, direction, top
   ctx.stroke();
 
   if (close || !marker) {
-    ctx.globalAlpha = marker ? 0.10 : (close ? 0.10 : 0.07);
+    ctx.globalAlpha = (marker ? 0.10 : (close ? 0.10 : 0.07)) * alphaScale;
     ctx.strokeStyle = shadeHex(hex, brightness(hex) > 120 ? -12 : 18);
     ctx.lineWidth = close ? 0.45 : 0.38;
     const fiberCount = close ? 3 : 2;
