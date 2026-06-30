@@ -41,3 +41,4 @@ Aynı yön grubundaki marker carrier'lar (örn. 1 ve 9) artık üstüne çizilmi
 Ana halat renderer grid'i artık dekoratif 8 satıra düşmez; `carrier_count` neyse yüzey satırı da odur. Renk dizilimi, kukla dizilimi ve desen aynı carrierCount ile hesaplanır.
 16 kukla 1/9 siyah senaryosu testlendi: reçete siyahları 1 ve 9'da tutar, renderer marker crown'larını dekoratif fazdan değil `buildBraidMatrix` carrier path'lerinden üretir.
 Ana yüzey çizimi artık beyaz arka doku + siyah overlay değildir; bütün carrier'lar aynı `buildMatrixSurfaceCrowns` çıktısından çizilir. Test, siyah 1/9 carrier'ların beyaz carrier'larla aynı sayıda crown ürettiğini doğrular.
+`buildMatrixSurfaceCrowns` artık tüm carrier path'lerini üst üste çizmez; her matrix hücresinde yalnız `topCarrier` yüzeye basılır. 16 kukla 1/9 siyah testinde 11 adımda her carrier 11 görünür top crown üretir, siyah toplam 22 parçada kalır.

@@ -333,27 +333,22 @@ export function buildMatrixSurfaceCrowns({ carrierLayout, machineProfile, cols, 
   });
   const crowns = [];
 
-  for (const path of matrix.carrierPaths) {
-    for (const point of path.points) {
-      const top = topDirectionAt({
-        time: point.time,
-        column: point.column,
-        braidLogic
-      }) === path.carrier.direction;
-
+  for (const row of matrix.cells) {
+    for (const cell of row) {
+      if (!cell.topCarrier) continue;
       crowns.push({
-        carrier_no: path.carrier.carrier_no,
-        time: point.time,
-        column: point.column,
-        x: point.time * cellW,
-        y: point.column * cellH,
+        carrier_no: cell.topCarrier.carrier_no,
+        time: cell.time,
+        column: cell.column,
+        x: cell.time * cellW,
+        y: cell.column * cellH,
         width: cellW * (close ? 1.24 : 1.30),
         height: cellH * (close ? 1.10 : 1.16),
-        color: path.carrier.color,
-        direction: path.carrier.direction,
-        top,
+        color: cell.topCarrier.color,
+        direction: cell.topCarrier.direction,
+        top: true,
         close,
-        marker: path.carrier.color !== baseColor
+        marker: cell.topCarrier.color !== baseColor
       });
     }
   }

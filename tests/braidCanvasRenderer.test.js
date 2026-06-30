@@ -200,4 +200,7 @@ test("16 carrier recipe with 1 and 9 black reaches renderer as same-direction ma
   assert.equal(crownCountByCarrier.get(1), crownCountByCarrier.get(2));
   assert.equal(crownCountByCarrier.get(9), crownCountByCarrier.get(10));
   assert.equal(crownCountByCarrier.get(1), 11);
+  assert.equal(surfaceCrowns.length, 16 * 11);
+  assert.ok(surfaceCrowns.every((crown) => crown.top === true));
+  assert.equal(surfaceCrowns.filter((crown) => crown.color === "siyah").length, 22);
 });
