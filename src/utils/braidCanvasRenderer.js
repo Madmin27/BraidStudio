@@ -150,14 +150,13 @@ function drawVectorBraidSurface(ctx, sheet, width, height, close) {
   const carrierLayout = normalizeCarrierLayout(sheet.carrier_layout, sheet.color_sequence, carrierCount);
   const baseColor = mostCommonColor(carrierLayout.map((carrier) => carrier.color)) || "beyaz";
   const markerCarriers = carrierLayout.filter((carrier) => carrier.color !== baseColor);
-  const markerColors = uniqueColors(markerCarriers.map((carrier) => carrier.color));
   const rows = close ? 9 : 6;
   const cols = close ? 22 : 58;
   const cellW = width / cols;
   const cellH = height / rows;
   const patternType = String(sheet.pattern_type || "").toLowerCase();
-  const markerDirections = markerDirectionsForPattern(patternType, markerCarriers);
-  const pitch = close ? 6 : 9;
+  const markerLanes = markerLanesForPattern(patternType, markerCarriers);
+  const pitch = close ? 10 : 6;
 
   ctx.save();
   ctx.rect(0, 0, width, height);
@@ -184,16 +183,15 @@ function drawVectorBraidSurface(ctx, sheet, width, height, close) {
 
   for (let row = -1; row <= rows; row += 1) {
     for (let col = -1; col <= cols; col += 1) {
-      for (const direction of markerDirections) {
-        if (!isMarkerBand({ row, col, direction, pitch, patternType })) continue;
-        const markerColor = markerColors[positiveModulo(row + col, markerColors.length)] || markerColors[0];
+      for (const lane of markerLanes) {
+        if (!isMarkerBand({ row, col, direction: lane.direction, pitch, patternType, phase: lane.phase })) continue;
         drawIllustrationCrown(ctx, {
           x: col * cellW,
           y: row * cellH,
           width: cellW * (close ? 1.30 : 1.18),
           height: cellH * (close ? 1.18 : 1.04),
-          color: markerColor,
-          direction,
+          color: lane.color,
+          direction: lane.direction,
           top: true,
           close,
           marker: true
@@ -213,27 +211,48 @@ function drawVectorBraidSurface(ctx, sheet, width, height, close) {
   ctx.restore();
 }
 
-function markerDirectionsForPattern(patternType, markerCarriers) {
+function markerLanesForPattern(patternType, markerCarriers) {
+  const carriers = markerCarriers.length ? markerCarriers : [];
+  const lanes = carriers.map((carrier, index) => ({
+    carrierNo: Number(carrier.carrier_no || index + 1),
+    color: carrier.color,
+    direction: Number(carrier.carrier_no || index + 1) % 2 === 1 ? "clockwise" : "counterClockwise"
+  }));
   if (patternType.includes("spiral") || patternType.includes("ladder")) {
-    return ["clockwise"];
+    const directions = uniqueColors(lanes.map((lane) => lane.direction));
+    if (directions.length <= 1) {
+      const dominant = directions[0] || "clockwise";
+      lanes.forEach((lane) => {
+        lane.direction = dominant;
+      });
+    }
   }
-  if (patternType.includes("diamond") || patternType.includes("herringbone") || patternType.includes("chevron")) {
-    return ["clockwise", "counterClockwise"];
+  const byDirection = new Map();
+  for (const lane of lanes) {
+    const group = byDirection.get(lane.direction) || [];
+    group.push(lane);
+    byDirection.set(lane.direction, group);
   }
-  const directions = uniqueColors(markerCarriers.map((carrier) => (
-    Number(carrier.carrier_no) % 2 === 1 ? "clockwise" : "counterClockwise"
-  )));
-  return directions.length ? directions : ["clockwise"];
+  for (const group of byDirection.values()) {
+    group.forEach((lane, index) => {
+      lane.phase = index * Math.max(2, Math.floor(10 / Math.max(group.length, 1)));
+    });
+  }
+  return lanes;
 }
 
-function isMarkerBand({ row, col, direction, pitch, patternType }) {
+function isMarkerBand({ row, col, direction, pitch, patternType, phase = 0 }) {
+  const visibleOnTop = direction === "clockwise"
+    ? (row + col) % 2 === 0
+    : (row + col) % 2 !== 0;
+  if (!visibleOnTop) return false;
   const slope = direction === "clockwise" ? col - row * 1.75 : col + row * 1.75;
-  const phase = patternType.includes("chevron")
+  const patternPhase = patternType.includes("chevron")
     ? (row < 4 ? 0 : pitch / 2)
     : patternType.includes("herringbone")
       ? Math.floor(row / 2)
       : 0;
-  const mod = positiveModulo(Math.round(slope + phase), pitch);
+  const mod = positiveModulo(Math.round(slope + patternPhase + phase), pitch);
   if (patternType.includes("ladder")) return mod === 0 || mod === 1;
   if (patternType.includes("chevron")) return mod === 0 || mod === pitch - 1;
   return mod === 0;
