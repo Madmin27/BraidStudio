@@ -1,5 +1,6 @@
 {
   "machineProfileId": "mp_12_mid",
+  "status": "generic_candidate",
   "machineFamily": "maypole_circular",
   "carrierCount": 12,
   "trackModel": "sinusoidal_12",
@@ -7,6 +8,21 @@
   "defaultWalk": "1_over_1",
   "physicalSpecs": {
     "hornGearCount": 6,
+    "slotsPerGear": 4,
     "maxRpm": 180
-  }
+  },
+  "kinematics": {
+    "trackWaveFrequency": 6,
+    "defaultBraidAngle": 45,
+    "carrierDirections": {
+      "mapping": [1, -1, 1, -1, 1, -1, 1, -1, 1, -1, 1, -1]
+    }
+  },
+  "supportedInterlacing": ["1_over_1", "2_over_2"],
+  "carrierGroups": {
+    "clockwise": [1, 3, 5, 7, 9, 11],
+    "counterClockwise": [2, 4, 6, 8, 10, 12]
+  },
+  "validationRequired": true,
+  "shopMeasured": false
 }

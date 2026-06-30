@@ -8,6 +8,7 @@ import { loadLibrary } from "./server/lib/libraryLoader.js";
 import { validateLibrary } from "./server/lib/libraryValidator.js";
 import { solvePattern } from "./server/lib/patternSolver.js";
 import { predictVisualSignature } from "./src/utils/braidPredictor.js";
+import { simulateBraidSurface } from "./src/engine/braidSurfaceSimulator.js";
 
 const __dirname = fileURLToPath(new URL(".", import.meta.url));
 const publicDir = join(__dirname, "public");
@@ -931,6 +932,47 @@ async function handlePatternPredict(req, res) {
   }
 }
 
+async function handlePatternSimulate(req, res) {
+  try {
+    const body = await readRequestJson(req, 256 * 1024);
+    const library = await loadLibrary(__dirname);
+    const recipe = body.recipeId
+      ? library.recipes.find((item) => item.recipeId === body.recipeId)
+      : body.recipe;
+
+    if (!recipe) {
+      jsonResponse(res, 404, { error: "recipe_not_found" });
+      return;
+    }
+
+    const machineProfile = body.machineProfileId
+      ? library.machines.find((machine) => machine.machineProfileId === body.machineProfileId)
+      : library.machines.find((machine) => machine.machineProfileId === recipe.machineProfileId);
+
+    if (!machineProfile) {
+      jsonResponse(res, 404, { error: "machine_profile_not_found" });
+      return;
+    }
+
+    const simulation = simulateBraidSurface({
+      recipe,
+      machineProfile,
+      steps: body.steps || 48
+    });
+
+    jsonResponse(res, 200, {
+      recipeId: recipe.recipeId || body.recipeId || null,
+      expectedVisualSignature: simulation.expectedVisualSignature,
+      confidence: simulation.confidence,
+      warnings: simulation.warnings,
+      surfaceGrid: simulation.surfaceGrid,
+      analysis: simulation.analysis
+    });
+  } catch (error) {
+    jsonResponse(res, error.statusCode || 500, { error: error.message || "pattern_simulate_failed" });
+  }
+}
+
 const server = createServer(async (req, res) => {
   if (req.url === "/api/library" && req.method === "GET") {
     await handleLibrary(req, res);
@@ -959,6 +1001,11 @@ const server = createServer(async (req, res) => {
 
   if (req.url === "/api/pattern/predict" && req.method === "POST") {
     await handlePatternPredict(req, res);
+    return;
+  }
+
+  if (req.url === "/api/pattern/simulate" && req.method === "POST") {
+    await handlePatternSimulate(req, res);
     return;
   }
 

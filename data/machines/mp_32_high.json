@@ -1,5 +1,6 @@
 {
   "machineProfileId": "mp_32_high",
+  "status": "generic_candidate",
   "machineFamily": "maypole_circular",
   "carrierCount": 32,
   "trackModel": "sinusoidal_32",
@@ -7,6 +8,21 @@
   "defaultWalk": "2_over_2",
   "physicalSpecs": {
     "hornGearCount": 16,
+    "slotsPerGear": 4,
     "maxRpm": 120
-  }
+  },
+  "kinematics": {
+    "trackWaveFrequency": 16,
+    "defaultBraidAngle": 42,
+    "carrierDirections": {
+      "mapping": [1, -1, 1, -1, 1, -1, 1, -1, 1, -1, 1, -1, 1, -1, 1, -1, 1, -1, 1, -1, 1, -1, 1, -1, 1, -1, 1, -1, 1, -1, 1, -1]
+    }
+  },
+  "supportedInterlacing": ["2_over_2", "3_over_3"],
+  "carrierGroups": {
+    "clockwise": [1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25, 27, 29, 31],
+    "counterClockwise": [2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32]
+  },
+  "validationRequired": true,
+  "shopMeasured": false
 }

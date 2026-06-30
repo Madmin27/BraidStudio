@@ -10,4 +10,4 @@
 | [006-generic-machine-profiles](tasks/006-generic-machine-profiles.md) | done | codex | 2026-06-28 |
 | [007-library-solver](tasks/007-library-solver.md) | done | codex | 2026-06-28 |
 | [008-ai-fingerprint-contract](tasks/008-ai-fingerprint-contract.md) | done | codex | 2026-06-28 |
-| [009-braid-predictor-reliability](tasks/009-braid-predictor-reliability.md) | done | codex | 2026-06-28 |
+| [009-braid-predictor-reliability](tasks/009-braid-predictor-reliability.md) | done | codex | 2026-06-30 |
