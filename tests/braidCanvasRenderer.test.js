@@ -46,10 +46,10 @@ test("close grid shows multiple carrier cycles without tiling", () => {
 });
 
 test("marker pitch scales with carrier count instead of using a fixed repeat", () => {
-  assert.equal(calculateMarkerPitch(8), 4);
-  assert.equal(calculateMarkerPitch(16), 8);
-  assert.equal(calculateMarkerPitch(24), 12);
-  assert.equal(calculateMarkerPitch(32), 16);
+  assert.equal(calculateMarkerPitch(8), 8);
+  assert.equal(calculateMarkerPitch(16), 16);
+  assert.equal(calculateMarkerPitch(24), 24);
+  assert.equal(calculateMarkerPitch(32), 32);
 });
 
 test("expected marker coverage follows marker carrier ratio", () => {

@@ -119,7 +119,7 @@ export function calculateCalibratedBraidGrid({ width, height, carrierCount, clos
 }
 
 export function calculateMarkerPitch(carrierCount) {
-  return Math.max(3, Math.round(Number(carrierCount || 0) / 2));
+  return Math.max(4, Math.round(Number(carrierCount || 0)));
 }
 
 export function expectedMarkerCoverage(carrierCount, markerCount) {
@@ -198,8 +198,8 @@ function drawVectorBraidSurface(ctx, sheet, width, height, close) {
         drawIllustrationCrown(ctx, {
           x: col * cellW,
           y: row * cellH,
-          width: cellW * (close ? 1.30 : 1.18),
-          height: cellH * (close ? 1.18 : 1.04),
+          width: cellW * (close ? 1.08 : 0.98),
+          height: cellH * (close ? 1.02 : 0.90),
           color: lane.color,
           direction: lane.direction,
           top: true,
