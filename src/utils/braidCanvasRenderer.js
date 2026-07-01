@@ -385,15 +385,12 @@ export function buildMatrixSurfaceCrowns({ carrierLayout, machineProfile, cols, 
       if (!cell.topCarrier) continue;
       if (cell.column >= visibleRows) continue;
       const isMarker = cell.topCarrier.color !== baseColor;
-      const markerProjection = isMarker && cell.topCarrier.direction === "clockwise"
-        ? { x: cellW * 0.42, y: -cellH * 0.34 }
-        : { x: 0, y: 0 };
       crowns.push({
         carrier_no: cell.topCarrier.carrier_no,
         time: cell.time,
         column: cell.column,
-        x: cell.time * cellW + markerProjection.x,
-        y: cell.column * cellH + markerProjection.y,
+        x: cell.time * cellW,
+        y: cell.column * cellH,
         width: cellW * (close ? 1.24 : 1.30),
         height: cellH * (close ? 1.10 : 1.16),
         color: cell.topCarrier.color,
@@ -514,7 +511,7 @@ function drawBraidCrown(ctx, { x, y, width, height, color, direction, top, close
 
   ctx.shadowColor = "transparent";
   ctx.globalAlpha = top ? 1 : 0.64;
-  ctx.strokeStyle = marker ? "rgba(0,0,0,0.28)" : "rgba(60,60,60,0.18)";
+  ctx.strokeStyle = "rgba(60,60,60,0.18)";
   ctx.lineWidth = close ? 0.55 : 0.35;
   ctx.stroke();
 
@@ -536,12 +533,12 @@ function drawBraidCrown(ctx, { x, y, width, height, color, direction, top, close
 
 function drawIllustrationCrown(ctx, { x, y, width, height, color, direction, top, close, marker, alphaScale = 1 }) {
   const p1 = {
-    x: x + width * 0.14,
-    y: direction === "clockwise" ? y + height * 0.82 : y + height * 0.18
+    x: x + width * 0.06,
+    y: direction === "clockwise" ? y + height * 0.88 : y + height * 0.12
   };
   const p2 = {
-    x: x + width * 0.86,
-    y: direction === "clockwise" ? y + height * 0.18 : y + height * 0.82
+    x: x + width * 0.94,
+    y: direction === "clockwise" ? y + height * 0.12 : y + height * 0.88
   };
   const dx = p2.x - p1.x;
   const dy = p2.y - p1.y;
@@ -550,7 +547,7 @@ function drawIllustrationCrown(ctx, { x, y, width, height, color, direction, top
   const ny = dx / length;
   const lightNx = Math.abs(nx);
   const lightNy = -Math.abs(ny);
-  const half = Math.min(width, height) * (close ? 0.42 : 0.38);
+  const half = Math.min(width, height) * (close ? 0.48 : 0.44);
   const hex = colorToHex(color);
   const bVal = brightness(hex);
   const isBlack = isBlackColor(color, hex);
@@ -562,7 +559,7 @@ function drawIllustrationCrown(ctx, { x, y, width, height, color, direction, top
     y: (p1.y + p2.y) / 2 + ny * half * curveMag
   };
 
-  const strandWidth = half * 2 * 1.18;
+  const strandWidth = half * 2 * 1.26;
   const centerX = (p1.x + p2.x) / 2;
   const centerY = (p1.y + p2.y) / 2;
   const isWhite = bVal > 180;
@@ -612,9 +609,9 @@ function drawIllustrationCrown(ctx, { x, y, width, height, color, direction, top
   ctx.restore();
 
   // --- Merkez parlama: her renk aynı geometriyle ışık alsın ---
-  if (top && !isBlack) {
+  if (top) {
     ctx.save();
-    ctx.globalAlpha = (isWhite ? 0.24 : 0.12) * alphaScale;
+    ctx.globalAlpha = (isWhite ? 0.24 : isBlack ? 0.08 : 0.12) * alphaScale;
     ctx.lineCap = "round";
     ctx.lineWidth = Math.max(0.6, strandWidth * 0.08);
     ctx.strokeStyle = "#ffffff";
@@ -626,27 +623,25 @@ function drawIllustrationCrown(ctx, { x, y, width, height, color, direction, top
   }
 
   // --- LİF DOKUSU ÇİZGİLERİ ---
-  if (close || !marker) {
-    ctx.save();
-    ctx.globalAlpha = (marker ? 0.12 : (close ? 0.15 : 0.09)) * alphaScale;
-    ctx.strokeStyle = shadeHex(hex, bVal > 120 ? -18 : 24);
-    ctx.lineWidth = close ? 0.55 : 0.4;
-    ctx.lineCap = "butt";
-    const fiberCount = close ? 4 : 2;
-    for (let index = 1; index <= fiberCount; index += 1) {
-      const offset = (index / (fiberCount + 1) - 0.5) * half * 0.72;
-      ctx.beginPath();
-      ctx.moveTo(p1.x + nx * offset, p1.y + ny * offset);
-      ctx.quadraticCurveTo(
-        cp.x + nx * offset,
-        cp.y + ny * offset,
-        p2.x + nx * offset,
-        p2.y + ny * offset
-      );
-      ctx.stroke();
-    }
-    ctx.restore();
+  ctx.save();
+  ctx.globalAlpha = (close ? 0.15 : 0.09) * alphaScale;
+  ctx.strokeStyle = shadeHex(hex, bVal > 120 ? -18 : 24);
+  ctx.lineWidth = close ? 0.55 : 0.4;
+  ctx.lineCap = "butt";
+  const fiberCount = close ? 4 : 2;
+  for (let index = 1; index <= fiberCount; index += 1) {
+    const offset = (index / (fiberCount + 1) - 0.5) * half * 0.72;
+    ctx.beginPath();
+    ctx.moveTo(p1.x + nx * offset, p1.y + ny * offset);
+    ctx.quadraticCurveTo(
+      cp.x + nx * offset,
+      cp.y + ny * offset,
+      p2.x + nx * offset,
+      p2.y + ny * offset
+    );
+    ctx.stroke();
   }
+  ctx.restore();
 }
 
 function drawSoft3DCrown(ctx, { x, y, width, height, color, direction, top, close, marker, alphaScale = 1, underCarrier = null, strandWidth = 12 }) {
