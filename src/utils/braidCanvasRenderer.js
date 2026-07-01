@@ -28,31 +28,50 @@ const FALLBACK_COLORS = {
   pink: "#d45087"
 };
 
+/* ------------------------------------------------------------------ */
+/* Debug log — her desen üretiminde temizlenir, console'dan izlenir    */
+/* ------------------------------------------------------------------ */
+window.__braidDebugLogs = [];
+function braidLog(...args) {
+  window.__braidDebugLogs.push(args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' '));
+}
+function braidLogClear() { window.__braidDebugLogs = []; }
+function braidLogDump() {
+  if (window.__braidDebugLogs.length) {
+    console.log('=== BRAID DEBUG ===');
+    window.__braidDebugLogs.forEach(l => console.log(l));
+    console.log('=== END ===');
+  }
+}
+/* ------------------------------------------------------------------ */
+
 export function drawMainRopeCanvas(canvas, sheet, options = {}) {
   const ctx = canvas?.getContext?.("2d");
   if (!ctx) return null;
 
-  // HiDPI / Retina: CSS mantıksal boyutunu al, buffer'ı dpr katı yap
-  const rect = canvas.getBoundingClientRect();
-  const logicalW = rect.width;
-  const logicalH = rect.height;
+  // HTML attribute'leri (width="1520" height="280") sabit referans boyutudur.
+  // CSS width:100% viewport'a göre değişir — kullanma, aynı desen her browser'da
+  // aynı çıksın. Sadece devicePixelRatio için buffer'ı scale et.
+  const attrW = canvas.getAttribute("width");
+  const attrH = canvas.getAttribute("height");
+  const logicalW = attrW ? Number(attrW) : canvas.width;
+  const logicalH = attrH ? Number(attrH) : canvas.height;
   const dpr = window.devicePixelRatio || 1;
   if (dpr > 1) {
     canvas.width = logicalW * dpr;
     canvas.height = logicalH * dpr;
-    canvas.style.width = logicalW + 'px';
-    canvas.style.height = logicalH + 'px';
     ctx.scale(dpr, dpr);
-  } else {
-    // dpr=1 için de HTML attribute'unu CSS boyutuna sıfırla
-    canvas.width = logicalW;
-    canvas.height = logicalH;
   }
+  // canvas attributelarını CSS boyutuna sıfırlama — CSS width:100% zaten doğru görüntüleme sağlar
 
   const width = logicalW;
   const height = logicalH;
   const close = Boolean(options.close);
   const renderStyle = options.renderStyle || "soft3d";
+
+  braidLogClear();
+  braidLog(`[drawMainRopeCanvas] logicalW=${logicalW} logicalH=${logicalH} dpr=${dpr} renderStyle=${renderStyle} close=${close}`);
+  braidLog(`[drawMainRopeCanvas] carrierCount=${sheet.carrier_count} walk=${sheet.braid_walk_type} colors=${JSON.stringify(sheet.color_sequence)}`);
 
   ctx.clearRect(0, 0, width, height);
   ctx.save();
@@ -70,6 +89,10 @@ export function drawMainRopeCanvas(canvas, sheet, options = {}) {
     ctx.fillRect(0, height * 0.72, width, height * 0.28);
   }
   ctx.restore();
+
+  braidLog(`[drawMainRopeCanvas] grid: steps=${grid.steps} rows=${grid.rows} cellW=${grid.cellWidth?.toFixed(1)} cellH=${grid.cellHeight?.toFixed(1)}`);
+  braidLogDump();
+
   return {
     steps: grid.steps,
     carrierCount: Number(sheet.carrier_count || sheet.carrier_layout?.length || 0),
@@ -106,6 +129,9 @@ function drawMatrixTextileCells(ctx, sheet, width, height, options) {
   const carrierCount = Number(sheet.carrier_count || sheet.carrier_layout?.length || 0);
   const grid = calculateCalibratedBraidGrid({ width, height, carrierCount, close: options.close });
   const renderStyle = options.renderStyle || "technical";
+
+  // Base: tüm alanı silindirik halat gövdesiyle doldur — boş hücreler siyah değil beyaz/açık görünür
+  drawRopeBodyBase(ctx, width, height, options.close, renderStyle);
 
   drawVectorBraidSurface(ctx, sheet, width, height, options.close, grid, renderStyle);
   return grid;
@@ -192,15 +218,15 @@ function drawRopeBodyBase(ctx, width, height, close, renderStyle) {
   if (renderStyle === "soft3d") {
     // Soft3d: belirgin silindirik tonlama — beyaz iplikler görünsün
     const gradient = ctx.createLinearGradient(0, 0, 0, height);
-    gradient.addColorStop(0, "#736d66");
-    gradient.addColorStop(0.06, "#88827b");
-    gradient.addColorStop(0.15, "#9f9992");
-    gradient.addColorStop(0.35, "#aea8a1");
-    gradient.addColorStop(0.5, "#b5afa8");
-    gradient.addColorStop(0.65, "#aea8a1");
-    gradient.addColorStop(0.85, "#9f9992");
-    gradient.addColorStop(0.94, "#88827b");
-    gradient.addColorStop(1, "#736d66");
+    gradient.addColorStop(0, "#8a847d");
+    gradient.addColorStop(0.06, "#9e9891");
+    gradient.addColorStop(0.15, "#b0aaa3");
+    gradient.addColorStop(0.35, "#bab4ad");
+    gradient.addColorStop(0.5, "#c0bab3");
+    gradient.addColorStop(0.65, "#bab4ad");
+    gradient.addColorStop(0.85, "#b0aaa3");
+    gradient.addColorStop(0.94, "#9e9891");
+    gradient.addColorStop(1, "#8a847d");
     ctx.save();
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, width, height);
@@ -232,6 +258,9 @@ function drawVectorBraidSurface(ctx, sheet, width, height, close, grid, renderSt
   const cols = grid?.steps || (close ? Math.max(rows * 2, 32) : Math.max(rows * 3, 48));
   const cellW = grid?.cellWidth || width / cols;
   const cellH = grid?.cellHeight || height / rows;
+
+  const renderDebugCellOwners = Boolean(sheet.renderDebugCellOwners);
+
   const crowns = buildMatrixSurfaceCrowns({
     carrierLayout,
     machineProfile: sheet.machineProfile,
@@ -242,12 +271,70 @@ function drawVectorBraidSurface(ctx, sheet, width, height, close, grid, renderSt
     braidLogic: sheet.braid_walk_type
   });
 
+  const drawFn = renderStyle === "soft3d" ? drawSoft3DCrown : drawIllustrationCrown;
+
+  // Main canvas clip
   ctx.save();
   ctx.rect(0, 0, width, height);
   ctx.clip();
 
+  // PASS 1: Draw topCarrier crowns — each cell gets its own clip mask
   for (const crown of crowns) {
-    drawIllustrationCrown(ctx, crown);
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(crown.col * cellW, crown.row * cellH, cellW, cellH);
+    ctx.clip();
+
+    drawFn(ctx, crown);
+
+    ctx.restore();
+  }
+
+  // PASS 2: UnderCarrier contact shadows (alpha 0.04-0.06) — no color, only shadow
+  for (const crown of crowns) {
+    if (!crown.underCarrier) continue;
+
+    const underDir = crown.underCarrier.direction;
+    const ux1 = crown.col * cellW;
+    const uy1 = underDir === "clockwise"
+      ? crown.row * cellH + cellH * 0.88
+      : crown.row * cellH + cellH * 0.12;
+    const ux2 = (crown.col + 1) * cellW;
+    const uy2 = underDir === "clockwise"
+      ? crown.row * cellH + cellH * 0.12
+      : crown.row * cellH + cellH * 0.88;
+
+    ctx.save();
+    ctx.globalAlpha = 0.02;
+    ctx.shadowColor = "rgba(0,0,0,0.08)";
+    ctx.shadowBlur = cellW * 0.06;
+    ctx.shadowOffsetY = 0.10;
+    ctx.lineCap = "round";
+    ctx.lineWidth = cellH * 0.05;
+    ctx.strokeStyle = "rgba(0,0,0,0.03)";
+    ctx.beginPath();
+    ctx.moveTo(ux1, uy1);
+    ctx.lineTo(ux2, uy2);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  // Debug: show topCarrierNo in each cell
+  if (renderDebugCellOwners) {
+    ctx.save();
+    const fontSize = Math.max(7, Math.min(14, cellH * 0.16));
+    ctx.font = `${fontSize}px monospace`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    for (const crown of crowns) {
+      const cx = crown.col * cellW + cellW / 2;
+      const cy = crown.row * cellH + cellH / 2;
+      ctx.fillStyle = "rgba(0,0,0,0.7)";
+      ctx.fillText(String(crown.topCarrierNo), cx + 0.5, cy + 0.5);
+      ctx.fillStyle = "rgba(255,255,255,0.85)";
+      ctx.fillText(String(crown.topCarrierNo), cx, cy);
+    }
+    ctx.restore();
   }
 
   ctx.restore();
@@ -378,14 +465,18 @@ export function buildMatrixSurfaceCrowns({ carrierLayout, machineProfile, cols, 
     steps: cols + 1
   });
   const crowns = [];
-  const visibleRows = Math.max(1, Math.ceil(matrix.carrierCount / 2));
 
   for (const row of matrix.cells) {
     for (const cell of row) {
       if (!cell.topCarrier) continue;
-      if (cell.column >= visibleRows) continue;
       const isMarker = cell.topCarrier.color !== baseColor;
       crowns.push({
+        row: cell.column,
+        col: cell.time,
+        topCarrierNo: cell.topCarrier.carrier_no,
+        topColor: cell.topCarrier.color,
+        underCarrierNo: cell.underCarrier ? cell.underCarrier.carrier_no : null,
+        underColor: cell.underCarrier ? cell.underCarrier.color : null,
         carrier_no: cell.topCarrier.carrier_no,
         time: cell.time,
         column: cell.column,
@@ -404,6 +495,13 @@ export function buildMatrixSurfaceCrowns({ carrierLayout, machineProfile, cols, 
           direction: cell.underCarrier.direction
         } : null
       });
+    }
+  }
+
+  // Assertion: every crown must have top=true (one cell => one visible crown)
+  for (const crown of crowns) {
+    if (crown.top !== true) {
+      console.warn(`[buildMatrixSurfaceCrowns] ASSERT FAIL: crown at (${crown.col},${crown.row}) has top=${crown.top} — expected true`);
     }
   }
 
@@ -553,8 +651,8 @@ function drawIllustrationCrown(ctx, { x, y, width, height, color, direction, top
   const bVal = brightness(hex);
   const isBlack = isBlackColor(color, hex);
 
-  // Bezier kontrol noktası — helisel sarılımdan kaynaklanan doğal kavis
-  const curveMag = 0.20;
+  // Bezier kontrol noktası — helisel sarılımdan kaynaklanan doğal kavis (artırıldı)
+  const curveMag = 0.22;
   const cp = {
     x: (p1.x + p2.x) / 2 + nx * half * curveMag,
     y: (p1.y + p2.y) / 2 + ny * half * curveMag
@@ -565,7 +663,7 @@ function drawIllustrationCrown(ctx, { x, y, width, height, color, direction, top
   const centerY = (p1.y + p2.y) / 2;
   const isWhite = bVal > 180;
 
-  // Yuvarlak kesitli iplik gradienti (simetrik: koyu kenar → parlak merkez → koyu kenar)
+  // Yuvarlak kesitli iplik gradienti — yumuşak, ipliksi geçiş
   const grad = ctx.createLinearGradient(
     centerX - lightNx * half * 1.10,
     centerY - lightNy * half * 1.10,
@@ -580,27 +678,27 @@ function drawIllustrationCrown(ctx, { x, y, width, height, color, direction, top
     grad.addColorStop(0.82, "#222222");
     grad.addColorStop(1, "#0e0e0e");
   } else if (isWhite) {
-    grad.addColorStop(0, "#cbcbcb");
-    grad.addColorStop(0.22, "#ececec");
+    grad.addColorStop(0, "#d6d6d6");
+    grad.addColorStop(0.22, "#eeeeee");
     grad.addColorStop(0.50, "#ffffff");
-    grad.addColorStop(0.74, "#efefef");
-    grad.addColorStop(1, "#d0d0d0");
+    grad.addColorStop(0.74, "#eeeeee");
+    grad.addColorStop(1, "#d6d6d6");
   } else {
-    // Renkli ipler: yüksek kontrastlı gradient — kenarlar belirgin koyu, merkez canlı
-    grad.addColorStop(0, shadeHex(hex, -32));
-    grad.addColorStop(0.28, shadeHex(hex, -4));
-    grad.addColorStop(0.50, shadeHex(hex, 42));
-    grad.addColorStop(0.72, shadeHex(hex, 2));
-    grad.addColorStop(1, shadeHex(hex, -28));
+    // Renkli ipler: daha yumuşak gradient
+    grad.addColorStop(0, shadeHex(hex, -22));
+    grad.addColorStop(0.28, shadeHex(hex, -2));
+    grad.addColorStop(0.50, shadeHex(hex, 28));
+    grad.addColorStop(0.72, shadeHex(hex, -2));
+    grad.addColorStop(1, shadeHex(hex, -22));
   }
 
-  // --- İPLİK GÖVDESİ: her hücrede kısa, yuvarlak uçlu örgü tacı ---
+  // --- İPLİK GÖVDESİ: yuvarlak kesitli, yumuşak gölgeli ---
   ctx.save();
-  ctx.globalAlpha = (top ? 1 : 0.84) * alphaScale;
-  ctx.shadowColor = top ? "rgba(0,0,0,0.12)" : "rgba(0,0,0,0.035)";
-  ctx.shadowBlur = top ? (close ? 2.0 : 1.0) : (close ? 0.7 : 0.35);
-  ctx.shadowOffsetX = top ? 0.12 : 0;
-  ctx.shadowOffsetY = top ? (close ? 0.7 : 0.35) : 0.12;
+  ctx.globalAlpha = (top ? 1 : 0.86) * alphaScale;
+  ctx.shadowColor = top ? "rgba(0,0,0,0.08)" : "rgba(0,0,0,0.02)";
+  ctx.shadowBlur = top ? (close ? 1.2 : 0.6) : (close ? 0.4 : 0.2);
+  ctx.shadowOffsetX = top ? 0.08 : 0;
+  ctx.shadowOffsetY = top ? (close ? 0.4 : 0.2) : 0.08;
   ctx.lineCap = "round";
   ctx.lineWidth = strandWidth;
   ctx.strokeStyle = grad;
@@ -610,12 +708,12 @@ function drawIllustrationCrown(ctx, { x, y, width, height, color, direction, top
   ctx.stroke();
   ctx.restore();
 
-  // --- Merkez parlama: her renk aynı geometriyle ışık alsın ---
+  // --- Merkez parlama: ince, yumuşak ---
   if (top) {
     ctx.save();
-    ctx.globalAlpha = (isWhite ? 0.24 : isBlack ? 0.08 : 0.22) * alphaScale;
+    ctx.globalAlpha = (isWhite ? 0.14 : isBlack ? 0.05 : 0.12) * alphaScale;
     ctx.lineCap = "round";
-    ctx.lineWidth = Math.max(0.6, strandWidth * 0.08);
+    ctx.lineWidth = Math.max(0.4, strandWidth * 0.06);
     ctx.strokeStyle = "#ffffff";
     ctx.beginPath();
     ctx.moveTo(p1.x, p1.y);
@@ -624,13 +722,13 @@ function drawIllustrationCrown(ctx, { x, y, width, height, color, direction, top
     ctx.restore();
   }
 
-  // --- LİF DOKUSU ÇİZGİLERİ ---
+  // --- LİF DOKUSU ÇİZGİLERİ (azaltıldı) ---
   ctx.save();
-  ctx.globalAlpha = (close ? 0.15 : 0.09) * alphaScale;
-  ctx.strokeStyle = shadeHex(hex, bVal > 120 ? -18 : 24);
-  ctx.lineWidth = close ? 0.55 : 0.4;
+  ctx.globalAlpha = (close ? 0.08 : 0.04) * alphaScale;
+  ctx.strokeStyle = shadeHex(hex, bVal > 120 ? -12 : 16);
+  ctx.lineWidth = close ? 0.4 : 0.3;
   ctx.lineCap = "butt";
-  const fiberCount = close ? 4 : 2;
+  const fiberCount = close ? 2 : 1;
   for (let index = 1; index <= fiberCount; index += 1) {
     const offset = (index / (fiberCount + 1) - 0.5) * half * 0.72;
     ctx.beginPath();
@@ -646,7 +744,10 @@ function drawIllustrationCrown(ctx, { x, y, width, height, color, direction, top
   ctx.restore();
 }
 
-function drawSoft3DCrown(ctx, { x, y, width, height, color, direction, top, close, marker, alphaScale = 1, underCarrier = null, strandWidth = 12 }) {
+function drawSoft3DCrown(ctx, { x, y, width, height, color, direction, top, close, marker, alphaScale = 1, underCarrier = null }) {
+  // İplik kalınlığı hücre boyutundan hesaplanır — strandWidth default 12 kullanma
+  const sw = Math.min(width, height) * 0.44;
+
   const p1 = {
     x: x - width * 0.06,
     y: direction === "clockwise" ? y + height * 0.94 : y + height * 0.06
@@ -664,70 +765,95 @@ function drawSoft3DCrown(ctx, { x, y, width, height, color, direction, top, clos
   const hex = colorToHex(color);
   const bVal = brightness(hex);
   const isBlack = isBlackColor(color, hex);
+  const isWhite = bVal > 180;
 
-  // Minimal kavis — karemsi blok görünüm
-  const curveMag = 0.04;
+  // Yumuşak kavis — sert blok/kiremit hissini azaltır, daha yuvarlak iplik
+  const curveMag = 0.15;
   const cp = {
-    x: (p1.x + p2.x) / 2 + nx * strandWidth * curveMag,
-    y: (p1.y + p2.y) / 2 + ny * strandWidth * curveMag
+    x: (p1.x + p2.x) / 2 + nx * sw * curveMag,
+    y: (p1.y + p2.y) / 2 + ny * sw * curveMag
   };
 
-  // Renk: alttaki crown'lar daha soluk/koyu, üstteki parlak
-  let bandColor = hex;
-  if (!top) {
-    bandColor = shadeHex(hex, bVal > 120 ? -14 : 10);
+  const centerX = (p1.x + p2.x) / 2;
+  const centerY = (p1.y + p2.y) / 2;
+
+  // İplik kesiti boyunca gradient (dik eksende) — lokal ışık/hacim
+  const grad = ctx.createLinearGradient(
+    centerX - nx * sw * 0.55, centerY - ny * sw * 0.55,
+    centerX + nx * sw * 0.55, centerY + ny * sw * 0.55
+  );
+  if (isWhite) {
+    grad.addColorStop(0, "#d6d6d6");
+    grad.addColorStop(0.25, "#eeeeee");
+    grad.addColorStop(0.5, "#ffffff");
+    grad.addColorStop(0.75, "#eeeeee");
+    grad.addColorStop(1, "#d6d6d6");
+  } else if (isBlack) {
+    grad.addColorStop(0, "#111111");
+    grad.addColorStop(0.3, "#2a2a2a");
+    grad.addColorStop(0.5, "#4a4a4a");
+    grad.addColorStop(0.7, "#2a2a2a");
+    grad.addColorStop(1, "#111111");
+  } else {
+    grad.addColorStop(0, shadeHex(hex, -22));
+    grad.addColorStop(0.3, shadeHex(hex, -2));
+    grad.addColorStop(0.5, shadeHex(hex, 28));
+    grad.addColorStop(0.7, shadeHex(hex, -2));
+    grad.addColorStop(1, shadeHex(hex, -22));
   }
 
-  // 1️⃣ Gölge katmanı — crown'lar altında gölge bırakır
+  // 1️⃣ Gölge katmanı — alt crown'lara düşen yumuşak gölge (azaltıldı)
   ctx.save();
-  ctx.globalAlpha = (top ? 0.35 : 0.14) * alphaScale;
-  ctx.shadowColor = "rgba(0,0,0,0.5)";
-  ctx.shadowBlur = strandWidth * 0.5;
-  ctx.shadowOffsetX = top ? 1.5 : 0.4;
-  ctx.shadowOffsetY = top ? 2.5 : 0.8;
+  ctx.globalAlpha = (top ? 0.15 : 0.06) * alphaScale;
+  ctx.shadowColor = "rgba(0,0,0,0.25)";
+  ctx.shadowBlur = sw * 0.25;
+  ctx.shadowOffsetX = top ? 0.6 : 0.2;
+  ctx.shadowOffsetY = top ? 1.2 : 0.4;
   ctx.lineCap = "round";
-  ctx.lineWidth = strandWidth;
-  ctx.strokeStyle = "rgba(0,0,0,0.3)";
+  ctx.lineWidth = sw;
+  ctx.strokeStyle = "rgba(0,0,0,0.15)";
   ctx.beginPath();
   ctx.moveTo(p1.x, p1.y);
   ctx.quadraticCurveTo(cp.x, cp.y, p2.x, p2.y);
   ctx.stroke();
   ctx.restore();
 
-  // 1b️⃣ Belirgin kontur — karemsi blok ayrım
+  // 1b️⃣ İnce kontur — crown ayrımını çok hafif hissettir
   ctx.save();
-  const outlineAlpha = top ? 0.50 : 0.25;
+  const outlineAlpha = top
+    ? (isWhite ? 0.02 : marker ? 0.05 : 0.08)
+    : 0.02;
   ctx.globalAlpha = outlineAlpha * alphaScale;
-  ctx.lineCap = "butt";
-  ctx.lineWidth = strandWidth + 3.5;
-  ctx.strokeStyle = bVal > 160 ? "rgba(70,55,40,0.55)" : "rgba(0,0,0,0.18)";
+  ctx.lineCap = "round";
+  ctx.lineWidth = sw + 2.0;
+  ctx.strokeStyle = bVal > 160 ? "rgba(60,45,35,0.10)" : "rgba(0,0,0,0.06)";
   ctx.beginPath();
   ctx.moveTo(p1.x, p1.y);
   ctx.quadraticCurveTo(cp.x, cp.y, p2.x, p2.y);
   ctx.stroke();
   ctx.restore();
 
-  // 2️⃣ Ana renkli blok bant
+  // 2️⃣ Ana iplik — gradient dolgulu, yuvarlak kesitli
   ctx.save();
-  ctx.globalAlpha = (top ? 1 : 0.80) * alphaScale;
-  ctx.lineCap = "butt";
-  ctx.lineWidth = strandWidth - 0.5;
-  ctx.strokeStyle = bandColor;
+  ctx.globalAlpha = (top ? 1 : 0.86) * alphaScale;
+  ctx.lineCap = "round";
+  ctx.lineWidth = sw;
+  ctx.strokeStyle = grad;
   ctx.beginPath();
   ctx.moveTo(p1.x, p1.y);
   ctx.quadraticCurveTo(cp.x, cp.y, p2.x, p2.y);
   ctx.stroke();
   ctx.restore();
 
-  // 3️⃣ Üst kenarda ince speküler vurgu
-  if (top && !isBlack) {
+  // 3️⃣ Speküler vurgu — ince, yumuşak parlaklık
+  if (top) {
     ctx.save();
-    const hlAlpha = bVal > 180 ? 0.25 : 0.15;
+    const hlAlpha = isWhite ? 0.18 : isBlack ? 0.04 : 0.12;
     ctx.globalAlpha = hlAlpha * alphaScale;
-    ctx.lineCap = "butt";
-    ctx.lineWidth = Math.max(1.0, strandWidth * 0.10);
+    ctx.lineCap = "round";
+    ctx.lineWidth = Math.max(0.6, sw * 0.06);
     ctx.strokeStyle = "#ffffff";
-    const hlOff = -ny * strandWidth * 0.35;
+    const hlOff = -ny * sw * 0.25;
     ctx.beginPath();
     ctx.moveTo(p1.x + hlOff, p1.y + hlOff);
     ctx.quadraticCurveTo(cp.x + hlOff, cp.y + hlOff, p2.x + hlOff, p2.y + hlOff);
@@ -735,20 +861,21 @@ function drawSoft3DCrown(ctx, { x, y, width, height, color, direction, top, clos
     ctx.restore();
   }
 
-  // Siyah ipliklerde gri vurgu
-  if (top && isBlack) {
-    ctx.save();
-    ctx.globalAlpha = 0.10 * alphaScale;
-    ctx.lineCap = "butt";
-    ctx.lineWidth = Math.max(0.8, strandWidth * 0.06);
-    ctx.strokeStyle = "#999";
-    const hlOff = -ny * strandWidth * 0.25;
+  // 4️⃣ Lif dokusu — iplik yüzeyinde ince çizgiler (azaltıldı)
+  ctx.save();
+  ctx.globalAlpha = (close ? 0.06 : 0.03) * alphaScale;
+  ctx.strokeStyle = shadeHex(hex, bVal > 120 ? -12 : 16);
+  ctx.lineWidth = close ? 0.4 : 0.3;
+  ctx.lineCap = "butt";
+  const fiberCount = close ? 2 : 1;
+  for (let idx = 1; idx <= fiberCount; idx += 1) {
+    const off = (idx / (fiberCount + 1) - 0.5) * sw * 0.40;
     ctx.beginPath();
-    ctx.moveTo(p1.x + hlOff, p1.y + hlOff);
-    ctx.quadraticCurveTo(cp.x + hlOff, cp.y + hlOff, p2.x + hlOff, p2.y + hlOff);
+    ctx.moveTo(p1.x + nx * off, p1.y + ny * off);
+    ctx.quadraticCurveTo(cp.x + nx * off, cp.y + ny * off, p2.x + nx * off, p2.y + ny * off);
     ctx.stroke();
-    ctx.restore();
   }
+  ctx.restore();
 }
 
 function setupTextileGradient(ctx, p1, p2, color) {

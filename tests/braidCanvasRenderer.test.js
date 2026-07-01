@@ -204,3 +204,62 @@ test("16 carrier recipe with 1 and 9 black reaches renderer as same-direction ma
   assert.ok(surfaceCrowns.every((crown) => crown.top === true));
   assert.equal(surfaceCrowns.filter((crown) => crown.color === "siyah").length, 22);
 });
+
+test("crowns have topCarrierNo/underCarrierNo/underColor fields and assertion holds", () => {
+  const carrierLayout = Array.from({ length: 16 }, (_, index) => ({
+    carrier_no: index + 1,
+    color: index < 4 ? "blue" : "white",
+    strand_role: index < 4 ? "sheath_marker" : "sheath"
+  }));
+  const machineProfile = {
+    carrierGroups: {
+      clockwise: [1, 3, 5, 7, 9, 11, 13, 15],
+      counterClockwise: [2, 4, 6, 8, 10, 12, 14, 16]
+    }
+  };
+  const surfaceCrowns = buildMatrixSurfaceCrowns({
+    carrierLayout,
+    machineProfile,
+    cols: 12,
+    cellW: 10,
+    cellH: 5,
+    close: false,
+    braidLogic: "1_over_1"
+  });
+
+  // (a) eğer blue topCarrier ise → cell'de blue crown vardır (top=true, crown.color blue)
+  // (b) eğer blue underCarrier ise → cell'de blue crown yoktur (hiçbir crown'da bu cell'de blue color yok)
+  // (c) hiçbir cell'de iki visible crown yok (top her zaman true)
+
+  for (const crown of surfaceCrowns) {
+    // (c) assertion: one cell => one visible crown
+    assert.equal(crown.top, true, `crown at (${crown.col},${crown.row}) must be top`);
+
+    // row, col, topCarrierNo, underCarrierNo, topColor, underColor mevcut
+    assert.ok(crown.row !== undefined, `crown must have row`);
+    assert.ok(crown.col !== undefined, `crown must have col`);
+    assert.ok(crown.topCarrierNo !== undefined, `crown must have topCarrierNo`);
+    assert.ok(crown.topColor !== undefined, `crown must have topColor`);
+
+    // (a) blue topCarrier → crown rengi blue olmalı
+    if (crown.topCarrierNo <= 4) {
+      assert.equal(crown.topColor, "blue", `crown at (${crown.col},${crown.row}) topCarrier=${crown.topCarrierNo} should be blue`);
+    }
+
+    // (b) blue underCarrier → bu cell'de blue crown yok (çünkü sadece topCarrier çizilir)
+    // Bu assertion: crown'un kendi rengi asla underCarrier'ın rengi değildir
+    if (crown.underCarrier && crown.underCarrier.carrier_no <= 4) {
+      assert.notEqual(crown.color, "blue",
+        `crown at (${crown.col},${crown.row}) has topCarrier=${crown.topCarrierNo} (${crown.topColor}) ` +
+        `but color is blue which is underCarrier's color — underCarrier should NOT produce a visible crown`);
+    }
+  }
+
+  // Tüm crown'lar için: underCarrier varsa underCarrierNo ve underColor dolu
+  for (const crown of surfaceCrowns) {
+    if (crown.underCarrier) {
+      assert.equal(crown.underCarrierNo, crown.underCarrier.carrier_no);
+      assert.equal(crown.underColor, crown.underCarrier.color);
+    }
+  }
+});

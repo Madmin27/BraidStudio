@@ -1525,11 +1525,10 @@ const defaultColors = ["beyaz", "siyah", "kırmızı", "mavi"];
 const baseColor = String(defaultColors[0]).toLowerCase();
 const defaultColorByCarrier = new Map([
   [1, "siyah"],
-  [9, "siyah"],
   [3, "kırmızı"],
   [5, "kırmızı"],
   [10, "mavi"],
-  [13, "mavi"]
+  [12, "mavi"]
 ]);
 const defaultLayout = Array.from({ length: defaultCount }, (_, index) => ({
   carrier_no: index + 1,
