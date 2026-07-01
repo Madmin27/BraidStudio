@@ -545,8 +545,9 @@ function drawIllustrationCrown(ctx, { x, y, width, height, color, direction, top
   const length = Math.hypot(dx, dy) || 1;
   const nx = -dy / length;
   const ny = dx / length;
-  const lightNx = Math.abs(nx);
-  const lightNy = -Math.abs(ny);
+  // Gradient iplik kesitine dik eksende ilerlesin (her iki yön için)
+  const lightNx = nx;
+  const lightNy = ny;
   const half = Math.min(width, height) * (close ? 0.48 : 0.44);
   const hex = colorToHex(color);
   const bVal = brightness(hex);
@@ -559,7 +560,7 @@ function drawIllustrationCrown(ctx, { x, y, width, height, color, direction, top
     y: (p1.y + p2.y) / 2 + ny * half * curveMag
   };
 
-  const strandWidth = half * 2 * 1.26;
+  const strandWidth = half * 2 * 0.96;
   const centerX = (p1.x + p2.x) / 2;
   const centerY = (p1.y + p2.y) / 2;
   const isWhite = bVal > 180;
@@ -573,23 +574,24 @@ function drawIllustrationCrown(ctx, { x, y, width, height, color, direction, top
   );
 
   if (isBlack) {
-    grad.addColorStop(0, "#151515");
-    grad.addColorStop(0.22, "#282828");
-    grad.addColorStop(0.50, "#4a4a4a");
-    grad.addColorStop(0.74, "#272727");
-    grad.addColorStop(1, "#141414");
+    grad.addColorStop(0, "#111111");
+    grad.addColorStop(0.18, "#202020");
+    grad.addColorStop(0.50, "#484848");
+    grad.addColorStop(0.82, "#222222");
+    grad.addColorStop(1, "#0e0e0e");
   } else if (isWhite) {
-    grad.addColorStop(0, "#d8d8d8");
-    grad.addColorStop(0.22, "#f0f0f0");
+    grad.addColorStop(0, "#cbcbcb");
+    grad.addColorStop(0.22, "#ececec");
     grad.addColorStop(0.50, "#ffffff");
-    grad.addColorStop(0.74, "#f2f2f2");
-    grad.addColorStop(1, "#dddddd");
+    grad.addColorStop(0.74, "#efefef");
+    grad.addColorStop(1, "#d0d0d0");
   } else {
-    grad.addColorStop(0, shadeHex(hex, -14));
-    grad.addColorStop(0.22, shadeHex(hex, 4));
-    grad.addColorStop(0.50, shadeHex(hex, 34));
-    grad.addColorStop(0.74, shadeHex(hex, 8));
-    grad.addColorStop(1, shadeHex(hex, -14));
+    // Renkli ipler: yüksek kontrastlı gradient — kenarlar belirgin koyu, merkez canlı
+    grad.addColorStop(0, shadeHex(hex, -32));
+    grad.addColorStop(0.28, shadeHex(hex, -4));
+    grad.addColorStop(0.50, shadeHex(hex, 42));
+    grad.addColorStop(0.72, shadeHex(hex, 2));
+    grad.addColorStop(1, shadeHex(hex, -28));
   }
 
   // --- İPLİK GÖVDESİ: her hücrede kısa, yuvarlak uçlu örgü tacı ---
@@ -611,7 +613,7 @@ function drawIllustrationCrown(ctx, { x, y, width, height, color, direction, top
   // --- Merkez parlama: her renk aynı geometriyle ışık alsın ---
   if (top) {
     ctx.save();
-    ctx.globalAlpha = (isWhite ? 0.24 : isBlack ? 0.08 : 0.12) * alphaScale;
+    ctx.globalAlpha = (isWhite ? 0.24 : isBlack ? 0.08 : 0.22) * alphaScale;
     ctx.lineCap = "round";
     ctx.lineWidth = Math.max(0.6, strandWidth * 0.08);
     ctx.strokeStyle = "#ffffff";
