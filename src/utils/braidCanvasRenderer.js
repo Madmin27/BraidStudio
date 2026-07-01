@@ -138,10 +138,10 @@ function drawMatrixTextileCells(ctx, sheet, width, height, options) {
 }
 
 export function calculateCalibratedBraidGrid({ width, height, carrierCount, close = false }) {
-  const rows = Math.max(1, Math.ceil(Number(carrierCount || 0) / 2));
+  const rows = Math.max(1, Math.round(Number(carrierCount || 0)));
   const steps = close
-    ? Math.max(rows * 3, 32)
-    : Math.max(rows * 6, 48);
+    ? Math.max(rows * 2, 32)
+    : Math.max(rows * 3, 48);
   const cellHeight = height / rows;
   const cellWidth = width / Math.max(steps, 1);
   return {

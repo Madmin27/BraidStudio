@@ -6,6 +6,7 @@ import {
 import { machineProfiles } from "../src/machineProfiles.js";
 import { buildBraidMatrix, getCarrierDirection } from "../src/utils/braidMatrix.js";
 import { renderTechnicalSheetCanvases } from "../src/utils/braidCanvasRenderer.js";
+import { mountThreeBraidPreview } from "../src/renderers/geometryPreview/threeBraidRenderer.js";
 
 const patterns = [
   { id: "diamond", name: "Diamond", carriers: [16, 24], colors: ["siyah", "kırmızı"], material: "polyester", walk: "two-over-two" },
@@ -872,6 +873,7 @@ function renderRecipeSheet(recipe) {
     <section class="ts-block"><h3>Kullanım alanları</h3><div class="usage-icons"><span>Yelken</span><span>Marina</span><span>Endüstriyel</span><span>Mooring</span></div></section>
   `;
   const canvasRender = renderTechnicalSheetCanvases(recipeSheet, sheet);
+  const geometryRender = renderGeometryPreview(recipeSheet, sheet);
   logProcess("Renderer girdisi", "Teknik sheet DOM üretildi", {
     recipeId: recipe.recipe_id,
     patternType: sheet.pattern_type,
@@ -889,6 +891,7 @@ function renderRecipeSheet(recipe) {
       braidLogic: renderMatrix.braidLogic
     },
     canvasRender,
+    geometryRender,
     previewConfidence: recipe.preview.previewConfidence,
     warnings: recipe.preview.warnings
   }, buildMismatchReport({ recipe }).some((item) => item.level === "error") ? "error" : "info");
@@ -1035,7 +1038,50 @@ function mostCommonColor(colors = []) {
 }
 
 function renderMainRopeSvg(sheet) {
-  return `<div class="canvas-rope-frame"><canvas data-braid-canvas="main" width="1520" height="280" aria-label="Ana halat görünümü"></canvas><div class="rope-scale"><span>0</span><span>30 cm</span></div></div>`;
+  return `<div class="canvas-rope-frame"><div class="geometry-rope-preview" data-geometry-preview="main"></div><canvas data-braid-canvas="main" width="1520" height="280" aria-label="Ana halat görünümü"></canvas><div class="rope-scale"><span>0</span><span>30 cm</span></div></div>`;
+}
+
+function renderGeometryPreview(root, sheet) {
+  const container = root.querySelector("[data-geometry-preview='main']");
+  const fallbackCanvas = root.querySelector("[data-braid-canvas='main']");
+  if (!container) return null;
+
+  try {
+    const preview = mountThreeBraidPreview({
+      container,
+      recipe: { technical_sheet: sheet },
+      machineProfile: sheet.machineProfile,
+      options: {
+        showCore: false,
+        length: 300,
+        ropeRadius: 5,
+        yarnRadius: 0.36,
+        steps: 72,
+        samplesPerStep: 3,
+        tubularSegments: 96,
+        radialSegments: 14,
+        cameraY: -34,
+        cameraZ: 18,
+        fov: 32
+      }
+    });
+    container.hidden = false;
+    if (fallbackCanvas) fallbackCanvas.hidden = true;
+    return {
+      renderer: "three-geometry-preview",
+      carrierPathCount: preview.yarnModel.carrierPaths.length,
+      meshCount: preview.yarnMeshes.length,
+      braidLogic: preview.yarnModel.braidLogic
+    };
+  } catch (error) {
+    container.hidden = true;
+    if (fallbackCanvas) fallbackCanvas.hidden = false;
+    console.warn("Geometry preview failed; canvas fallback shown.", error);
+    return {
+      renderer: "canvas-fallback",
+      error: error.message
+    };
+  }
 }
 
 function renderSectionSvg(sheet) {

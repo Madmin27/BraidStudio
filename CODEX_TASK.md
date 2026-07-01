@@ -34,6 +34,8 @@ AI tahmini kullanıcı seçimini ezemez. Nihai reçete her zaman `user_selected_
 - OpenRouter API key `/root/sunucu/BraidStudio/.env` içindeki `OPENROUTER_API_KEY` alanına yazılır. Görsel model `OPENROUTER_MODEL`, matematik/reçete modeli `OPENROUTER_MODEL2` ile seçilir.
 - TechnicalSheetRenderer sabit şablon kullanır; ana halat, yakın görünüm, kesit, makara, desen, renk dizilimi, kukla dizilimi ve yürüyüş diyagramı SVG/HTML ile hesaplanır.
 - Carrier color map ve kukla yürüyüşü AI tarafından çizilmez; Recipe Engine finalSelection üzerinden deterministik üretir.
+- Canvas renderer gerçekçi halat hedefi için kullanılmaz; teknik şema, carrier preview, top-surface matrix ve yürüyüş diyagramı için kalır.
+- Gerçekçi görünüm `src/renderers/geometryPreview/` altında Three.js yarn geometry ile üretilecektir.
 - Generic machine profiles `generic_candidate` statüsündedir. Aynı profile/direction/walkType aynı walkMap üretir.
 - Production-ready için machine profile `shop_measured`, recipe `shop_validated` olmalıdır.
 - Tek fotoğraf carrierColorMap veya walkMap'i kesin belirleyemez; AI yalnızca structured suggestion üretir, Recipe Engine generic/shop profile ile candidate çözüm üretir.

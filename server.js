@@ -13,6 +13,7 @@ import { simulateBraidSurface } from "./src/engine/braidSurfaceSimulator.js";
 const __dirname = fileURLToPath(new URL(".", import.meta.url));
 const publicDir = join(__dirname, "public");
 const srcDir = join(__dirname, "src");
+const nodeModulesDir = join(__dirname, "node_modules");
 const dataDir = join(__dirname, "data");
 const analysisCacheFile = join(dataDir, "analysis-cache.json");
 const analysisPromptVersion = "hybrid-v1";
@@ -64,6 +65,9 @@ function getRuntimeConfig() {
 
 function assetPath(urlPath) {
   const cleanPath = normalize(decodeURIComponent(urlPath.split("?")[0])).replace(/^(\.\.[/\\])+/, "");
+  if (cleanPath.startsWith("/node_modules/three/build/") && cleanPath.endsWith(".js")) {
+    return join(nodeModulesDir, cleanPath.slice("/node_modules/".length));
+  }
   if (cleanPath.startsWith("/src/")) {
     return join(srcDir, cleanPath.slice("/src/".length));
   }

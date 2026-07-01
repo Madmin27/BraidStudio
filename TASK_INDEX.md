@@ -11,3 +11,4 @@
 | [007-library-solver](tasks/007-library-solver.md) | done | codex | 2026-06-28 |
 | [008-ai-fingerprint-contract](tasks/008-ai-fingerprint-contract.md) | done | codex | 2026-06-28 |
 | [009-braid-predictor-reliability](tasks/009-braid-predictor-reliability.md) | done | codex | 2026-06-30 |
+| [010-geometry-preview-renderer](tasks/010-geometry-preview-renderer.md) | doing | codex | 2026-07-01 |

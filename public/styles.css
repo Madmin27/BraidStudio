@@ -824,6 +824,20 @@ dd {
   background: #f3f5f1;
 }
 
+.geometry-rope-preview {
+  width: 100%;
+  height: 220px;
+  border: 1px solid #111;
+  background: #fff;
+  overflow: hidden;
+}
+
+.geometry-rope-preview canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
 .rope-scale {
   display: flex;
   justify-content: space-between;

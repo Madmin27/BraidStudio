@@ -1,6 +1,9 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {
+
+globalThis.window = globalThis.window || {};
+
+const {
   buildMatrixSurfaceCrowns,
   buildParallelTracerCrowns,
   calculateCalibratedBraidGrid,
@@ -8,8 +11,8 @@ import {
   calculatePatternRepeatModel,
   classifyMarkerCarrierDirections,
   expectedMarkerCoverage
-} from "../src/utils/braidCanvasRenderer.js";
-import { applyUserSelection, generateRecipe, initialRecipeState } from "../src/state.js";
+} = await import("../src/utils/braidCanvasRenderer.js");
+const { applyUserSelection, generateRecipe, initialRecipeState } = await import("../src/state.js");
 
 test("calibrated braid grid uses full carrier count as cylinder rows", () => {
   const grid = calculateCalibratedBraidGrid({
