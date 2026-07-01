@@ -9,6 +9,7 @@ const FALLBACK_COLORS = {
   kırmızı: "#bd2f2b",
   red: "#bd2f2b",
   lacivert: "#1f3d70",
+  mavi: "#1f3d70",
   blue: "#1f3d70",
   beyaz: "#f8faf9",
   white: "#f8faf9",
@@ -106,18 +107,15 @@ function drawMatrixTextileCells(ctx, sheet, width, height, options) {
   const grid = calculateCalibratedBraidGrid({ width, height, carrierCount, close: options.close });
   const renderStyle = options.renderStyle || "technical";
 
-  ctx.fillStyle = options.background;
-  ctx.fillRect(0, 0, width, height);
-  drawRopeBodyBase(ctx, width, height, options.close, renderStyle);
   drawVectorBraidSurface(ctx, sheet, width, height, options.close, grid, renderStyle);
   return grid;
 }
 
 export function calculateCalibratedBraidGrid({ width, height, carrierCount, close = false }) {
-  const rows = Math.max(1, Math.ceil(Number(carrierCount || 0)));
+  const rows = Math.max(1, Math.ceil(Number(carrierCount || 0) / 2));
   const steps = close
-    ? Math.max(rows * 2, 32)
-    : Math.max(rows * 3, 48);
+    ? Math.max(rows * 3, 32)
+    : Math.max(rows * 6, 48);
   const cellHeight = height / rows;
   const cellWidth = width / Math.max(steps, 1);
   return {
@@ -248,88 +246,36 @@ function drawVectorBraidSurface(ctx, sheet, width, height, close, grid, renderSt
   ctx.rect(0, 0, width, height);
   ctx.clip();
 
-  if (renderStyle === "soft3d") {
-    // Soft3D: kapsül bantlar
-    const sw = height / (carrierCount / 2 + 2);
-
-    // under-crowns (önce bunlar)
-    for (const crown of crowns.filter((item) => !item.top)) {
-      drawSoft3DCrown(ctx, {
-        ...crown,
-        alphaScale: 0.72,
-        strandWidth: sw
-      });
-    }
-
-    // top crowns
-    for (const crown of crowns.filter((item) => item.top)) {
-      drawSoft3DCrown(ctx, {
-        ...crown,
-        strandWidth: sw
-      });
-    }
-
-    // Silindir gölgelemesi — belirgin
-    const softShadow = ctx.createLinearGradient(0, height * 0.55, 0, height);
-    softShadow.addColorStop(0, "rgba(0,0,0,0)");
-    softShadow.addColorStop(0.25, "rgba(40,32,24,0.06)");
-    softShadow.addColorStop(0.50, "rgba(40,30,22,0.16)");
-    softShadow.addColorStop(0.80, "rgba(30,20,14,0.28)");
-    softShadow.addColorStop(1, "rgba(20,14,10,0.40)");
-    ctx.fillStyle = softShadow;
-    ctx.fillRect(0, height * 0.68, width, height * 0.32);
-
-    // Üst/alt kenarlarda karartma (silindirik hacim)
-    const tubeSoft = ctx.createLinearGradient(0, 0, 0, height);
-    tubeSoft.addColorStop(0, "rgba(0,0,0,0.30)");
-    tubeSoft.addColorStop(0.06, "rgba(0,0,0,0.12)");
-    tubeSoft.addColorStop(0.18, "rgba(0,0,0,0.02)");
-    tubeSoft.addColorStop(0.82, "rgba(0,0,0,0.02)");
-    tubeSoft.addColorStop(0.94, "rgba(0,0,0,0.12)");
-    tubeSoft.addColorStop(1, "rgba(0,0,0,0.32)");
-    ctx.fillStyle = tubeSoft;
-    ctx.fillRect(0, 0, width, height);
-
-    ctx.restore();
-    return;
-  }
-
-  // Technical stil: mevcut drawIllustrationCrown
-  for (const crown of crowns.filter((item) => !item.top)) {
-    drawIllustrationCrown(ctx, {
-      ...crown,
-      alphaScale: 0.72
-    });
-  }
-
-  for (const crown of crowns.filter((item) => item.top)) {
+  for (const crown of crowns) {
     drawIllustrationCrown(ctx, crown);
   }
 
+  ctx.restore();
+}
+
+function drawRopeShading(ctx, width, height, close) {
   // Zemin gölgesi (alt kenarda) — daha geniş alana yayılan yoğun gölge
   const floorShadow = ctx.createLinearGradient(0, height * 0.70, 0, height);
   floorShadow.addColorStop(0, "rgba(255,255,255,0)");
-  floorShadow.addColorStop(0.40, close ? "rgba(70,55,42,0.12)" : "rgba(70,55,42,0.06)");
-  floorShadow.addColorStop(0.70, close ? "rgba(48,36,28,0.24)" : "rgba(48,36,28,0.15)");
-  floorShadow.addColorStop(1, close ? "rgba(28,20,16,0.42)" : "rgba(28,20,16,0.30)");
+  floorShadow.addColorStop(0.55, close ? "rgba(70,55,42,0.06)" : "rgba(70,55,42,0.03)");
+  floorShadow.addColorStop(0.82, close ? "rgba(48,36,28,0.14)" : "rgba(48,36,28,0.08)");
+  floorShadow.addColorStop(1, close ? "rgba(28,20,16,0.24)" : "rgba(28,20,16,0.16)");
   ctx.fillStyle = floorShadow;
   ctx.fillRect(0, height * 0.68, width, height * 0.32);
 
   // 3B tüp gölgelemesi: üst/alt kenarlarda kararma ile silindirik hacim hissi
   // close modunda daha belirgin gölge katmanı
   const tubeShading = ctx.createLinearGradient(0, 0, 0, height);
-  tubeShading.addColorStop(0, close ? "rgba(36,28,22,0.28)" : "rgba(0,0,0,0.20)");
-  tubeShading.addColorStop(0.05, close ? "rgba(36,28,22,0.12)" : "rgba(0,0,0,0.08)");
+  tubeShading.addColorStop(0, close ? "rgba(36,28,22,0.16)" : "rgba(0,0,0,0.10)");
+  tubeShading.addColorStop(0.05, close ? "rgba(36,28,22,0.07)" : "rgba(0,0,0,0.04)");
   tubeShading.addColorStop(0.15, close ? "rgba(36,28,22,0.03)" : "rgba(0,0,0,0.02)");
   tubeShading.addColorStop(0.30, "rgba(0,0,0,0)");
   tubeShading.addColorStop(0.70, "rgba(0,0,0,0)");
   tubeShading.addColorStop(0.85, close ? "rgba(36,28,22,0.03)" : "rgba(0,0,0,0.02)");
-  tubeShading.addColorStop(0.95, close ? "rgba(36,28,22,0.12)" : "rgba(0,0,0,0.08)");
-  tubeShading.addColorStop(1, close ? "rgba(36,28,22,0.28)" : "rgba(0,0,0,0.22)");
+  tubeShading.addColorStop(0.95, close ? "rgba(36,28,22,0.07)" : "rgba(0,0,0,0.04)");
+  tubeShading.addColorStop(1, close ? "rgba(36,28,22,0.16)" : "rgba(0,0,0,0.12)");
   ctx.fillStyle = tubeShading;
   ctx.fillRect(0, 0, width, height);
-
-  ctx.restore();
 }
 
 export function classifyMarkerCarrierDirections(carrierLayout = [], machineProfile = null, baseColor = "white") {
@@ -432,23 +378,29 @@ export function buildMatrixSurfaceCrowns({ carrierLayout, machineProfile, cols, 
     steps: cols + 1
   });
   const crowns = [];
+  const visibleRows = Math.max(1, Math.ceil(matrix.carrierCount / 2));
 
   for (const row of matrix.cells) {
     for (const cell of row) {
       if (!cell.topCarrier) continue;
+      if (cell.column >= visibleRows) continue;
+      const isMarker = cell.topCarrier.color !== baseColor;
+      const markerProjection = isMarker && cell.topCarrier.direction === "clockwise"
+        ? { x: cellW * 0.42, y: -cellH * 0.34 }
+        : { x: 0, y: 0 };
       crowns.push({
         carrier_no: cell.topCarrier.carrier_no,
         time: cell.time,
         column: cell.column,
-        x: cell.time * cellW,
-        y: cell.column * cellH,
+        x: cell.time * cellW + markerProjection.x,
+        y: cell.column * cellH + markerProjection.y,
         width: cellW * (close ? 1.24 : 1.30),
         height: cellH * (close ? 1.10 : 1.16),
         color: cell.topCarrier.color,
         direction: cell.topCarrier.direction,
         top: true,
         close,
-        marker: cell.topCarrier.color !== baseColor,
+        marker: isMarker,
         underCarrier: cell.underCarrier ? {
           carrier_no: cell.underCarrier.carrier_no,
           color: cell.underCarrier.color,
@@ -584,75 +536,72 @@ function drawBraidCrown(ctx, { x, y, width, height, color, direction, top, close
 
 function drawIllustrationCrown(ctx, { x, y, width, height, color, direction, top, close, marker, alphaScale = 1 }) {
   const p1 = {
-    x: x - width * 0.08,
-    y: direction === "clockwise" ? y + height * 0.92 : y + height * 0.08
+    x: x + width * 0.14,
+    y: direction === "clockwise" ? y + height * 0.82 : y + height * 0.18
   };
   const p2 = {
-    x: x + width * 1.08,
-    y: direction === "clockwise" ? y + height * 0.08 : y + height * 0.92
+    x: x + width * 0.86,
+    y: direction === "clockwise" ? y + height * 0.18 : y + height * 0.82
   };
   const dx = p2.x - p1.x;
   const dy = p2.y - p1.y;
   const length = Math.hypot(dx, dy) || 1;
   const nx = -dy / length;
   const ny = dx / length;
-  const half = Math.min(width, height) * (close ? 0.44 : 0.42);
+  const lightNx = Math.abs(nx);
+  const lightNy = -Math.abs(ny);
+  const half = Math.min(width, height) * (close ? 0.42 : 0.38);
   const hex = colorToHex(color);
   const bVal = brightness(hex);
   const isBlack = isBlackColor(color, hex);
 
   // Bezier kontrol noktası — helisel sarılımdan kaynaklanan doğal kavis
-  const curveMag = 0.36;
+  const curveMag = 0.20;
   const cp = {
     x: (p1.x + p2.x) / 2 + nx * half * curveMag,
     y: (p1.y + p2.y) / 2 + ny * half * curveMag
   };
 
-  const strandWidth = half * 2 * 1.10;
+  const strandWidth = half * 2 * 1.18;
   const centerX = (p1.x + p2.x) / 2;
   const centerY = (p1.y + p2.y) / 2;
+  const isWhite = bVal > 180;
 
   // Yuvarlak kesitli iplik gradienti (simetrik: koyu kenar → parlak merkez → koyu kenar)
   const grad = ctx.createLinearGradient(
-    centerX - nx * half * 1.10,
-    centerY - ny * half * 1.10,
-    centerX + nx * half * 1.10,
-    centerY + ny * half * 1.10
+    centerX - lightNx * half * 1.10,
+    centerY - lightNy * half * 1.10,
+    centerX + lightNx * half * 1.10,
+    centerY + lightNy * half * 1.10
   );
 
   if (isBlack) {
-    grad.addColorStop(0, "#060606");
-    grad.addColorStop(0.10, "#101010");
-    grad.addColorStop(0.30, "#282828");
-    grad.addColorStop(0.5, "#505050");
-    grad.addColorStop(0.70, "#282828");
-    grad.addColorStop(0.90, "#101010");
-    grad.addColorStop(1, "#040404");
-  } else if (bVal > 180) {
-    grad.addColorStop(0, "#a0a0a0");
-    grad.addColorStop(0.10, "#c4c4c4");
-    grad.addColorStop(0.28, "#ececec");
-    grad.addColorStop(0.5, "#ffffff");
-    grad.addColorStop(0.72, "#ececec");
-    grad.addColorStop(0.90, "#c4c4c4");
-    grad.addColorStop(1, "#a0a0a0");
+    grad.addColorStop(0, "#151515");
+    grad.addColorStop(0.22, "#282828");
+    grad.addColorStop(0.50, "#4a4a4a");
+    grad.addColorStop(0.74, "#272727");
+    grad.addColorStop(1, "#141414");
+  } else if (isWhite) {
+    grad.addColorStop(0, "#d8d8d8");
+    grad.addColorStop(0.22, "#f0f0f0");
+    grad.addColorStop(0.50, "#ffffff");
+    grad.addColorStop(0.74, "#f2f2f2");
+    grad.addColorStop(1, "#dddddd");
   } else {
-    grad.addColorStop(0, shadeHex(hex, -34));
-    grad.addColorStop(0.10, shadeHex(hex, -16));
-    grad.addColorStop(0.28, shadeHex(hex, 4));
-    grad.addColorStop(0.5, shadeHex(hex, 38));
-    grad.addColorStop(0.72, shadeHex(hex, 4));
-    grad.addColorStop(0.90, shadeHex(hex, -16));
-    grad.addColorStop(1, shadeHex(hex, -34));
+    grad.addColorStop(0, shadeHex(hex, -14));
+    grad.addColorStop(0.22, shadeHex(hex, 4));
+    grad.addColorStop(0.50, shadeHex(hex, 34));
+    grad.addColorStop(0.74, shadeHex(hex, 8));
+    grad.addColorStop(1, shadeHex(hex, -14));
   }
 
-  // --- İPLİK GÖVDESİ (yuvarlak uçlu kalın bezier eğrisi) ---
+  // --- İPLİK GÖVDESİ: her hücrede kısa, yuvarlak uçlu örgü tacı ---
   ctx.save();
   ctx.globalAlpha = (top ? 1 : 0.84) * alphaScale;
-  ctx.shadowColor = top ? "rgba(0,0,0,0.26)" : "rgba(0,0,0,0.08)";
-  ctx.shadowBlur = top ? (close ? 9 : 6) : (close ? 2.5 : 1.5);
-  ctx.shadowOffsetX = top ? (close ? 2.0 : 1.0) : 0;
-  ctx.shadowOffsetY = top ? (close ? 4.0 : 2.8) : 0.8;
+  ctx.shadowColor = top ? "rgba(0,0,0,0.12)" : "rgba(0,0,0,0.035)";
+  ctx.shadowBlur = top ? (close ? 2.0 : 1.0) : (close ? 0.7 : 0.35);
+  ctx.shadowOffsetX = top ? 0.12 : 0;
+  ctx.shadowOffsetY = top ? (close ? 0.7 : 0.35) : 0.12;
   ctx.lineCap = "round";
   ctx.lineWidth = strandWidth;
   ctx.strokeStyle = grad;
@@ -662,22 +611,16 @@ function drawIllustrationCrown(ctx, { x, y, width, height, color, direction, top
   ctx.stroke();
   ctx.restore();
 
-  // --- SPEKÜLER VURGU (iplik boyunca merkeze yakın parlak çizgi — 3B parlaklık) ---
-  if (top) {
+  // --- Merkez parlama: her renk aynı geometriyle ışık alsın ---
+  if (top && !isBlack) {
     ctx.save();
-    ctx.globalAlpha = (isBlack ? 0.24 : (bVal > 180 ? 0.55 : 0.32)) * alphaScale;
+    ctx.globalAlpha = (isWhite ? 0.24 : 0.12) * alphaScale;
     ctx.lineCap = "round";
-    ctx.lineWidth = Math.max(1.2, strandWidth * 0.18);
+    ctx.lineWidth = Math.max(0.6, strandWidth * 0.08);
     ctx.strokeStyle = "#ffffff";
-    const hlOffset = nx * half * 0.24;
     ctx.beginPath();
-    ctx.moveTo(p1.x + hlOffset, p1.y + ny * half * 0.24);
-    ctx.quadraticCurveTo(
-      cp.x + hlOffset,
-      cp.y + ny * half * 0.24,
-      p2.x + hlOffset,
-      p2.y + ny * half * 0.24
-    );
+    ctx.moveTo(p1.x, p1.y);
+    ctx.quadraticCurveTo(cp.x, cp.y, p2.x, p2.y);
     ctx.stroke();
     ctx.restore();
   }
@@ -691,7 +634,7 @@ function drawIllustrationCrown(ctx, { x, y, width, height, color, direction, top
     ctx.lineCap = "butt";
     const fiberCount = close ? 4 : 2;
     for (let index = 1; index <= fiberCount; index += 1) {
-      const offset = (index / (fiberCount + 1) - 0.5) * half * 0.88;
+      const offset = (index / (fiberCount + 1) - 0.5) * half * 0.72;
       ctx.beginPath();
       ctx.moveTo(p1.x + nx * offset, p1.y + ny * offset);
       ctx.quadraticCurveTo(

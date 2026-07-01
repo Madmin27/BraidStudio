@@ -20,6 +20,7 @@ const colorMap = {
   siyah: "#1b1f1d",
   kırmızı: "#bd2f2b",
   lacivert: "#1f3d70",
+  mavi: "#1f3d70",
   beyaz: "#f8faf9",
   white: "#f8faf9",
   blue: "#1f3d70",
@@ -1520,12 +1521,20 @@ renderMachineProfiles();
 
 /* ── Initialize with default 16-carrier simulation ── */
 const defaultCount = 16;
-const defaultColors = ["beyaz", "siyah"];
+const defaultColors = ["beyaz", "siyah", "kırmızı", "mavi"];
 const baseColor = String(defaultColors[0]).toLowerCase();
+const defaultColorByCarrier = new Map([
+  [1, "siyah"],
+  [9, "siyah"],
+  [3, "kırmızı"],
+  [5, "kırmızı"],
+  [10, "mavi"],
+  [13, "mavi"]
+]);
 const defaultLayout = Array.from({ length: defaultCount }, (_, index) => ({
   carrier_no: index + 1,
-  color: (index === 0 || index === 8) ? "siyah" : "beyaz",
-  strand_role: (index === 0 || index === 8) ? "sheath_marker" : "sheath"
+  color: defaultColorByCarrier.get(index + 1) || "beyaz",
+  strand_role: defaultColorByCarrier.has(index + 1) ? "sheath_marker" : "sheath"
 }));
 
 // Set the form defaults
