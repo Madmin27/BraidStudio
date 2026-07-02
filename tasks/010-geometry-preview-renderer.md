@@ -15,6 +15,8 @@ Three.js tabanlı yarn geometry preview iskeleti eklendi:
 - unwrapped braid surface üretir
 - crossing schedule yüzey katmanında hesaplanır
 - surface point cylindrical rope sheath koordinatına map edilir
+- açık tubular braid path önceliklidir; kapalı/dolu halat hedefi sonraki aşamadır
+- carrier theta formülü: `phase + direction * step * angularStep`
 - carrier path -> CatmullRomCurve3
 - curve -> TubeGeometry
 - color -> carrierColorMap

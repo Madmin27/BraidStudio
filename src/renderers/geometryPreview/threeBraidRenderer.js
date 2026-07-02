@@ -39,7 +39,8 @@ export function createBraidGeometryPreview({
     steps: options.steps || 96,
     length: options.length || 300,
     ropeRadius: options.ropeRadius || 5,
-    yarnRadius: options.yarnRadius || 0.42,
+    yarnRadius: options.yarnRadius ?? null,
+    angularStep: options.angularStep ?? null,
     overOffset: options.overOffset,
     underOffset: options.underOffset,
     samplesPerStep: options.samplesPerStep || 3
@@ -89,6 +90,7 @@ export function mountThreeBraidPreview({
   const { scene, camera } = createScene({
     aspect: width / Math.max(height, 1),
     background: options.background ?? 0xffffff,
+    cameraX: options.cameraX,
     cameraY: options.cameraY,
     cameraZ: options.cameraZ,
     fov: options.fov
@@ -126,7 +128,7 @@ export function createYarnMesh(carrierPath, yarnModel, options = {}) {
   const geometry = new THREE.TubeGeometry(
     curve,
     options.tubularSegments || Math.max(24, carrierPath.points.length * 2),
-    options.yarnRadius || yarnModel.yarnRadius || 0.42,
+    options.yarnRadius || yarnModel.yarnRadius,
     options.radialSegments || 14,
     false
   );

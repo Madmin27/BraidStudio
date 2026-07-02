@@ -1,4 +1,4 @@
-import { buildBraidMatrix, topDirectionAt } from "../../utils/braidMatrix.js";
+import { getCarrierDirection, topDirectionAt } from "../../utils/braidMatrix.js";
 
 export function buildYarnPaths({
   recipe = {},
@@ -7,9 +7,10 @@ export function buildYarnPaths({
   steps = 96,
   length = 300,
   ropeRadius = 5,
-  yarnRadius = 0.42,
-  overOffset = 0.34,
-  underOffset = -0.16,
+  yarnRadius = null,
+  angularStep = null,
+  overOffset = null,
+  underOffset = null,
   samplesPerStep = 3
 } = {}) {
   const carrierLayout = normalizeCarrierLayout(recipe, machineProfile);
@@ -30,6 +31,7 @@ export function buildYarnPaths({
   }
 
   const pathSteps = clampStepCount(simulatorOutput?.analysis?.steps || steps);
+  const resolvedYarnRadius = resolveYarnRadius({ yarnRadius, ropeRadius });
   const surface = buildUnwrappedBraidSurface({
     carrierLayout,
     machineProfile,
@@ -37,7 +39,8 @@ export function buildYarnPaths({
     steps: pathSteps,
     length,
     ropeRadius,
-    yarnRadius,
+    yarnRadius: resolvedYarnRadius,
+    angularStep,
     overOffset,
     underOffset
   });
@@ -53,7 +56,7 @@ export function buildYarnPaths({
     braidLogic,
     length,
     ropeRadius,
-    yarnRadius,
+    yarnRadius: resolvedYarnRadius,
     surface,
     carrierPaths,
     visibleSegments: carrierPaths.flatMap((path) => path.visibleSegments),
@@ -68,35 +71,60 @@ export function buildUnwrappedBraidSurface({
   steps = 96,
   length = 300,
   ropeRadius = 5,
-  yarnRadius = 0.42,
-  overOffset = 0.34,
-  underOffset = -0.16
+  yarnRadius = null,
+  angularStep = null,
+  overOffset = null,
+  underOffset = null
 } = {}) {
-  const matrix = buildBraidMatrix({
-    carrierLayout,
-    machineProfile,
-    braidLogic,
-    steps
-  });
-  const carrierCount = matrix.carrierCount;
+  const carriers = carrierLayout
+    .filter((carrier) => Number.isFinite(Number(carrier.carrier_no)))
+    .map((carrier) => ({
+      carrier_no: Number(carrier.carrier_no),
+      color: carrier.color || "white",
+      strand_role: carrier.strand_role || "sheath",
+      direction: getCarrierDirection(Number(carrier.carrier_no), machineProfile)
+    }))
+    .sort((a, b) => a.carrier_no - b.carrier_no);
+  const carrierCount = carriers.length;
+  const normalizedSteps = clampStepCount(steps);
+  const resolvedYarnRadius = resolveYarnRadius({ yarnRadius, ropeRadius });
+  const resolvedAngularStep = Number.isFinite(Number(angularStep))
+    ? Number(angularStep)
+    : (Math.PI * 2) / Math.max(carrierCount, 1);
+  const resolvedOverOffset = Number.isFinite(Number(overOffset))
+    ? Number(overOffset)
+    : resolvedYarnRadius * 0.35;
+  const resolvedUnderOffset = Number.isFinite(Number(underOffset))
+    ? Number(underOffset)
+    : -resolvedYarnRadius * 0.15;
   const circumference = Math.PI * 2 * ropeRadius;
-  const stepLength = length / Math.max(matrix.steps - 1, 1);
+  const stepLength = length / Math.max(normalizedSteps - 1, 1);
   const columnWidth = carrierCount ? circumference / carrierCount : 0;
-  const crossingSchedule = buildCrossingSchedule({ braidLogic, steps: matrix.steps, carrierCount });
+  const crossingSchedule = buildCrossingSchedule({ braidLogic, steps: normalizedSteps, carrierCount });
+  const carrierPaths = carriers.map((carrier) => buildHelicalCarrierPath({
+    carrier,
+    carrierCount,
+    steps: normalizedSteps,
+    angularStep: resolvedAngularStep
+  }));
 
   return {
     carrierCount,
     braidLogic,
     length,
     ropeRadius,
-    yarnRadius,
-    overOffset,
-    underOffset,
+    yarnRadius: resolvedYarnRadius,
+    yarnCrossSection: {
+      type: "circular",
+      radius: resolvedYarnRadius
+    },
+    angularStep: resolvedAngularStep,
+    overOffset: resolvedOverOffset,
+    underOffset: resolvedUnderOffset,
     circumference,
     stepLength,
     columnWidth,
-    matrix,
-    carrierPaths: matrix.carrierPaths,
+    carrierPaths,
     crossingSchedule
   };
 }
@@ -170,10 +198,12 @@ function projectCarrierPathOnSurface({
       const mix = samples === 1 ? 0 : sample / samples;
       const time = lerp(point.time, next?.time ?? point.time, mix);
       const column = interpolateColumn(point.column, next?.column ?? point.column, surface.carrierCount, mix);
+      const theta = interpolateAngle(point.theta, next?.theta ?? point.theta, mix);
       const surfacePoint = buildSurfacePoint({
         carrier: path.carrier,
         time,
         column,
+        theta,
         lastTime,
         surface
       });
@@ -209,6 +239,7 @@ function buildSurfacePoint({
   carrier,
   time,
   column,
+  theta,
   lastTime,
   surface
 }) {
@@ -225,9 +256,10 @@ function buildSurfacePoint({
     direction: carrier.direction,
     time,
     column: wrappedColumn,
+    theta,
     top,
     u: (time / lastTime) * surface.length,
-    v: wrappedColumn * surface.columnWidth,
+    v: positiveModulo(theta, Math.PI * 2) / (Math.PI * 2) * surface.circumference,
     radialOffset: top ? surface.overOffset : surface.underOffset
   };
 }
@@ -255,12 +287,49 @@ export function buildCrossingSchedule({ braidLogic = "1_over_1", steps = 0, carr
   ));
 }
 
+function buildHelicalCarrierPath({ carrier, carrierCount, steps, angularStep }) {
+  const directionSign = carrier.direction === "clockwise" ? 1 : -1;
+  const phase = ((carrier.carrier_no - 1) / Math.max(carrierCount, 1)) * Math.PI * 2;
+  const points = Array.from({ length: Math.max(0, steps) }, (_, time) => {
+    const theta = phase + directionSign * time * angularStep;
+    return {
+      time,
+      theta,
+      phase,
+      directionSign,
+      column: positiveModulo((carrier.carrier_no - 1) + directionSign * time, carrierCount)
+    };
+  });
+
+  return {
+    carrier,
+    phase,
+    directionSign,
+    angularStep,
+    points
+  };
+}
+
 function interpolateColumn(current, next, carrierCount, mix) {
   const half = carrierCount / 2;
   let adjustedNext = next;
   if (next - current > half) adjustedNext = next - carrierCount;
   if (next - current < -half) adjustedNext = next + carrierCount;
   return lerp(current, adjustedNext, mix);
+}
+
+function interpolateAngle(current, next, mix) {
+  let adjustedNext = next;
+  const full = Math.PI * 2;
+  if (next - current > Math.PI) adjustedNext = next - full;
+  if (next - current < -Math.PI) adjustedNext = next + full;
+  return lerp(current, adjustedNext, mix);
+}
+
+function resolveYarnRadius({ yarnRadius, ropeRadius }) {
+  const explicit = Number(yarnRadius);
+  if (Number.isFinite(explicit) && explicit > 0) return explicit;
+  return Math.max(0.02, Number(ropeRadius || 5) * 0.065);
 }
 
 function clampStepCount(value) {

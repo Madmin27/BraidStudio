@@ -1054,15 +1054,17 @@ function renderGeometryPreview(root, sheet) {
       options: {
         showCore: false,
         length: 300,
-        ropeRadius: 5,
-        yarnRadius: 0.36,
-        steps: 72,
-        samplesPerStep: 3,
-        tubularSegments: 96,
-        radialSegments: 14,
-        cameraY: -34,
-        cameraZ: 18,
-        fov: 32
+        ropeRadius: 32,
+        yarnRadius: 2.2,
+        angularStep: Math.PI / 9,
+        steps: 96,
+        samplesPerStep: 4,
+        tubularSegments: 160,
+        radialSegments: 18,
+        cameraX: 0,
+        cameraY: -205,
+        cameraZ: 78,
+        fov: 30
       }
     });
     container.hidden = false;

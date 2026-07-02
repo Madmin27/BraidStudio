@@ -74,6 +74,28 @@ test("opposite-direction markers keep opposite helical movement", () => {
   assert.deepEqual(carrier8.points.map((point) => point.column), [7, 6, 5, 4, 3]);
 });
 
+test("carrier yarn path follows phase plus direction times angular step", () => {
+  const angularStep = Math.PI / 8;
+  const model = buildYarnPaths({
+    recipe: recipeWithMarkers({ 1: "black", 8: "blue" }),
+    machineProfile: mp16,
+    steps: 4,
+    length: 160,
+    ropeRadius: 5,
+    yarnRadius: 0.3,
+    angularStep,
+    samplesPerStep: 1
+  });
+  const carrier1 = model.carrierPaths.find((path) => path.carrier.carrier_no === 1);
+  const carrier8 = model.carrierPaths.find((path) => path.carrier.carrier_no === 8);
+  const carrier8Phase = ((8 - 1) / 16) * Math.PI * 2;
+
+  assert.equal(carrier1.points[0].theta, 0);
+  assert.equal(carrier1.points[3].theta, angularStep * 3);
+  assert.equal(Number(carrier8.points[0].theta.toFixed(6)), Number(carrier8Phase.toFixed(6)));
+  assert.equal(Number(carrier8.points[3].theta.toFixed(6)), Number((carrier8Phase - angularStep * 3).toFixed(6)));
+});
+
 test("unwrapped surface exposes crossing schedule before cylindrical mapping", () => {
   const surface = buildUnwrappedBraidSurface({
     carrierLayout: normalizeCarrierLayout(recipeWithMarkers({ 1: "black" }), mp16),
@@ -93,6 +115,19 @@ test("unwrapped surface exposes crossing schedule before cylindrical mapping", (
   assert.equal(surface.crossingSchedule[0][2].topDirection, "counterClockwise");
   assert.ok(surface.circumference > 31);
   assert.ok(surface.columnWidth > 1.9);
+});
+
+test("default yarn radius follows rope radius percentage range", () => {
+  const model = buildYarnPaths({
+    recipe: recipeWithMarkers({ 1: "black" }),
+    machineProfile: mp16,
+    ropeRadius: 10,
+    steps: 4
+  });
+
+  assert.equal(model.yarnRadius, 0.65);
+  assert.ok(model.yarnRadius >= 10 * 0.05);
+  assert.ok(model.yarnRadius <= 10 * 0.09);
 });
 
 test("cylindrical mapping keeps unwrapped u and wraps v around rope radius", () => {
