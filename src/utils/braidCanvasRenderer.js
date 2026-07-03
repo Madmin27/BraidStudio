@@ -130,9 +130,7 @@ function drawMatrixTextileCells(ctx, sheet, width, height, options) {
   const grid = calculateCalibratedBraidGrid({ width, height, carrierCount, close: options.close });
   const renderStyle = options.renderStyle || "technical";
 
-  // Base: tüm alanı silindirik halat gövdesiyle doldur — boş hücreler siyah değil beyaz/açık görünür
-  drawRopeBodyBase(ctx, width, height, options.close, renderStyle);
-
+  // Base: silindirik halat gövdesi yok — her hücre PASS 0'da kendi owner rengiyle doldurulur
   drawVectorBraidSurface(ctx, sheet, width, height, options.close, grid, renderStyle);
   return grid;
 }
@@ -277,6 +275,79 @@ function drawVectorBraidSurface(ctx, sheet, width, height, close, grid, renderSt
   ctx.save();
   ctx.rect(0, 0, width, height);
   ctx.clip();
+
+  // PASS 0: Gap/valley fill — her hücreyi o hücrenin sahibi (topCarrier) rengiyle doldur.
+  // Boşluklar arka plan rengi değil, o hücrenin ip renginin gölgeli uzantısı olur.
+  // "mainSurface -> topColor açık tonu, gapSurface -> topColor koyu tonu"
+  for (const crown of crowns) {
+    const fillHex = colorToHex(crown.topColor);
+    const bVal = brightness(fillHex);
+    const isWhite = bVal > 180;
+    const isBlack = bVal < 30;
+
+    ctx.save();
+
+    const cx = crown.col * cellW;
+    const cy = crown.row * cellH;
+
+    // Merkezden yayılan gradient: ortada biraz açık (main yüzeye hazırlık),
+    // kenarlarda koyu (gap/çukur alan)
+    const gapGrad = ctx.createRadialGradient(
+      cx + cellW * 0.35, cy + cellH * 0.35, 0,
+      cx + cellW * 0.5, cy + cellH * 0.5, Math.max(cellW, cellH) * 0.85
+    );
+
+    if (isWhite) {
+      gapGrad.addColorStop(0, "#ececec");
+      gapGrad.addColorStop(0.5, "#d8d8d8");
+      gapGrad.addColorStop(1, "#b8b8b8");
+    } else if (isBlack) {
+      gapGrad.addColorStop(0, "#303030");
+      gapGrad.addColorStop(0.5, "#1c1c1c");
+      gapGrad.addColorStop(1, "#080808");
+    } else {
+      gapGrad.addColorStop(0, shadeHex(fillHex, -6));
+      gapGrad.addColorStop(0.5, shadeHex(fillHex, -18));
+      gapGrad.addColorStop(1, shadeHex(fillHex, -34));
+    }
+
+    ctx.fillStyle = gapGrad;
+    ctx.fillRect(cx, cy, cellW, cellH);
+
+    ctx.restore();
+  }
+
+  // PASS 0.5: Edge shadow — her hücrenin diyagonal yönü boyunca, topColor'ın en koyu tonuyla
+  // ince bir gölge çizgisi. Bu, ipliğin çukura gömüldüğü yeri belirtir.
+  for (const crown of crowns) {
+    const fillHex = colorToHex(crown.topColor);
+    const bVal = brightness(fillHex);
+    const isWhite = bVal > 180;
+
+    ctx.save();
+    ctx.globalAlpha = 0.20;
+
+    const cx = crown.col * cellW;
+    const cy = crown.row * cellH;
+    const dir = crown.direction === "clockwise" ? 1 : -1;
+
+    // Diagonal hat: cell'in köşegenine yakın
+    const sx = cx + (dir > 0 ? cellW * 0.04 : cellW * 0.56);
+    const sy = cy + cellH * 0.10;
+    const ex = cx + (dir > 0 ? cellW * 0.56 : cellW * 0.04);
+    const ey = cy + cellH * 0.90;
+
+    const edgeColor = isWhite ? "#9a9a9a" : shadeHex(fillHex, -40);
+    ctx.strokeStyle = edgeColor;
+    ctx.lineWidth = cellW * 0.05;
+    ctx.lineCap = "round";
+    ctx.beginPath();
+    ctx.moveTo(sx, sy);
+    ctx.lineTo(ex, ey);
+    ctx.stroke();
+
+    ctx.restore();
+  }
 
   // PASS 1: Draw topCarrier crowns — each cell gets its own clip mask
   for (const crown of crowns) {
