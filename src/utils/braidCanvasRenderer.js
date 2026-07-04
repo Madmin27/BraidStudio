@@ -307,11 +307,14 @@ function drawVectorBraidSurface(ctx, sheet, width, height, close, grid, renderSt
     const isWhite = bVal > 180;
     const cx = crown.col * cellW;
     const cy = crown.row * cellH;
-    // PASS 0 patch overlap: hücre boyutunu küçülterek örgü geçişlerinde bindirme efekti (debug override için window.__CROWN_WIDTH_MULT__ / __CROWN_HEIGHT_MULT__)
-    const _pass0wMult = (typeof window !== "undefined" && window.__CROWN_WIDTH_MULT__) ? window.__CROWN_WIDTH_MULT__ : 1.08;
-    const _pass0hMult = (typeof window !== "undefined" && window.__CROWN_HEIGHT_MULT__) ? window.__CROWN_HEIGHT_MULT__ : 1.04;
-    const cw = cellW * _pass0wMult;
-    const ch = cellH * _pass0hMult;
+    // PASS 0 patch overlap: colored cells 1.12×1.08, white/black 1.08×1.04
+    // Debug override için window.__CROWN_WIDTH_MULT__ / __CROWN_HEIGHT_MULT__
+    const _baseW = (typeof window !== "undefined" && window.__CROWN_WIDTH_MULT__) ? window.__CROWN_WIDTH_MULT__ : 1.08;
+    const _baseH = (typeof window !== "undefined" && window.__CROWN_HEIGHT_MULT__) ? window.__CROWN_HEIGHT_MULT__ : 1.04;
+    const _wMult = (!isWhite && !isBlack) ? 1.12 : _baseW;
+    const _hMult = (!isWhite && !isBlack) ? 1.08 : _baseH;
+    const cw = cellW * _wMult;
+    const ch = cellH * _hMult;
     const rx = cx + (cellW - cw) / 2;
     const ry = cy + (cellH - ch) / 2;
 
