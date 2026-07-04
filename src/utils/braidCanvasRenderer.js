@@ -280,10 +280,27 @@ function drawVectorBraidSurface(ctx, sheet, width, height, close, grid, renderSt
   // Arkaplan — halat gövdesi tonu (kare mozaik yerine doku)
   drawRopeBodyBase(ctx, width, height, close, renderStyle);
 
-  // PASS 0: Tile zemin — carrier yönüne göre giriş/çıkış kenarlarına gölge
+  // PASS 0: Tile zemin — draw order testi (__PAINT_ORDER_MODE__: "current" | "colored-first" | "white-first")
+  // TEMPORARY: B (colored-first) seçildi çünkü beyaz ana yüzey hissini koruyor, renkler altta akıyor.
+  // Gerçek çözüm: painted-face / visible-cell seçimini hücre bazında düzeltmek.
+  let _orderedCrowns = crowns;
+  const _orderMode = (typeof window !== "undefined" && window.__PAINT_ORDER_MODE__) || "colored-first";
+  if (_orderMode === "colored-first") {
+    _orderedCrowns = [...crowns].sort((a, b) => {
+      const aW = brightness(colorToHex(a.topColor)) > 160;
+      const bW = brightness(colorToHex(b.topColor)) > 160;
+      return aW - bW;
+    });
+  } else if (_orderMode === "white-first") {
+    _orderedCrowns = [...crowns].sort((a, b) => {
+      const aW = brightness(colorToHex(a.topColor)) > 160;
+      const bW = brightness(colorToHex(b.topColor)) > 160;
+      return bW - aW;
+    });
+  }
   // Clockwise: iplik sol-alt → sağ-üst → giriş=ALT, çıkış=ÜST
   // Counter-clockwise: iplik sol-üst → sağ-alt → giriş=ÜST, çıkış=ALT
-  for (const crown of crowns) {
+  for (const crown of _orderedCrowns) {
     const fillHex = colorToHex(crown.topColor);
     const bVal = brightness(fillHex);
     const isBlack = bVal < 30;
