@@ -290,8 +290,13 @@ function drawVectorBraidSurface(ctx, sheet, width, height, close, grid, renderSt
     const isWhite = bVal > 180;
     const cx = crown.col * cellW;
     const cy = crown.row * cellH;
-    const cw = cellW;
-    const ch = cellH;
+    // PASS 0 patch overlap: hücre boyutunu küçülterek örgü geçişlerinde bindirme efekti (debug override için window.__CROWN_WIDTH_MULT__ / __CROWN_HEIGHT_MULT__)
+    const _pass0wMult = (typeof window !== "undefined" && window.__CROWN_WIDTH_MULT__) ? window.__CROWN_WIDTH_MULT__ : 1.08;
+    const _pass0hMult = (typeof window !== "undefined" && window.__CROWN_HEIGHT_MULT__) ? window.__CROWN_HEIGHT_MULT__ : 1.04;
+    const cw = cellW * _pass0wMult;
+    const ch = cellH * _pass0hMult;
+    const rx = cx + (cellW - cw) / 2;
+    const ry = cy + (cellH - ch) / 2;
 
     // Temel renk — hücrenin tamamı
     let baseColor;
@@ -299,9 +304,10 @@ function drawVectorBraidSurface(ctx, sheet, width, height, close, grid, renderSt
     else if (isWhite) baseColor = shadeHex(fillHex, -2);
     else baseColor = shadeHex(fillHex, 14);
     ctx.fillStyle = baseColor;
-    ctx.fillRect(cx, cy, cw, ch);
+    ctx.fillRect(rx, ry, cw, ch);
 
-    // Tüm 4 kenara eşit iç gölge (radial gradient: merkez temiz → kenarlar koyu)
+    // RADIAL GRADIENT TEST-DISABLED (overlap isolation test)
+    /*
     ctx.save();
     ctx.beginPath();
     ctx.rect(cx, cy, cw, ch);
@@ -320,6 +326,7 @@ function drawVectorBraidSurface(ctx, sheet, width, height, close, grid, renderSt
     ctx.fillRect(cx, cy, cw, ch);
 
     ctx.restore();
+    */
   }
 
   // PASS 1: Draw topCarrier crowns — each cell gets its own rounded clip mask
@@ -492,6 +499,9 @@ export function buildParallelTracerCrowns({ carrierLayout, markerCarriers, machi
 }
 
 export function buildMatrixSurfaceCrowns({ carrierLayout, machineProfile, cols, cellW, cellH, close, braidLogic }) {
+  // PASS 1/2 crown boyutlandırma (şu an HARD-DISABLED, ileride aktifleşirse kullanılacak)
+  const _cwMult = close ? 1.24 : 1.30;
+  const _chMult = close ? 1.10 : 1.16;
   const baseColor = mostCommonColor((carrierLayout || []).map((carrier) => carrier.color)) || "white";
   const matrix = buildBraidMatrix({
     carrierLayout,
@@ -517,8 +527,8 @@ export function buildMatrixSurfaceCrowns({ carrierLayout, machineProfile, cols, 
         column: cell.column,
         x: cell.time * cellW,
         y: cell.column * cellH,
-        width: cellW * (close ? 1.24 : 1.30),
-        height: cellH * (close ? 1.10 : 1.16),
+        width: cellW * _cwMult,
+        height: cellH * _chMult,
         color: cell.topCarrier.color,
         direction: cell.topCarrier.direction,
         top: true,
