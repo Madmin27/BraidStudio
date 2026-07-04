@@ -277,10 +277,10 @@ function drawVectorBraidSurface(ctx, sheet, width, height, close, grid, renderSt
   ctx.rect(0, 0, width, height);
   ctx.clip();
 
-  // PASS 0: Gap fill — yön bilinçli, 3 adım
-  // a) koyu zemin: tüm cell alanı current rengin koyu tonu — siyah boşluk kalmasın
-  // b) diyagonal ribbon: iplik yönünde gradient bandı (hafif içe çekik)
-  // c) kenar gölgesi: cell'in alt/sağ kenarında soft derinlik
+  // Arkaplan — halat gövdesi tonu (kare mozaik yerine doku)
+  drawRopeBodyBase(ctx, width, height, close, renderStyle);
+
+  // PASS 0: Diagonal ribbon yüzeyi — yassı örgü izi, mozaik değil
   for (const crown of crowns) {
     const fillHex = colorToHex(crown.topColor);
     const bVal = brightness(fillHex);
@@ -290,72 +290,81 @@ function drawVectorBraidSurface(ctx, sheet, width, height, close, grid, renderSt
     const cy = crown.row * cellH;
     const cw = cellW;
     const ch = cellH;
+    const isCW = crown.direction === "clockwise";
 
-    // a) Tüm cell alanını current rengin koyu tonu ile doldur
-    ctx.save();
-    const bgShade = isBlack
-      ? shadeHex(fillHex, -4)
-      : isWhite
-        ? shadeHex(fillHex, -18)
-        : shadeHex(fillHex, -28);
-    ctx.fillStyle = bgShade;
-    ctx.fillRect(cx, cy, cw, ch);
-    ctx.restore();
-
-    // b) Diyagonal ribbon — iplik yönünü takip eden gradient bandı
-    ctx.save();
-    const inset = 0.06;
-    const rx = cx + cw * inset;
-    const ry = cy + ch * inset;
-    const rw = cw * (1 - 2 * inset);
-    const rh = ch * (1 - 2 * inset);
-
-    let ribGrad;
-    if (crown.direction === "clockwise") {
-      // \ yönü: üst-sol açık → alt-sağ koyu
-      ribGrad = ctx.createLinearGradient(rx, ry, rx + rw, ry + rh);
-    } else {
-      // / yönü: üst-sağ açık → alt-sol koyu
-      ribGrad = ctx.createLinearGradient(rx + rw, ry, rx, ry + rh);
-    }
-
+    // a) Hücre zemin — hafif ton, clip yok (hücre kenarlarında boşluk/çizgi oluşmaz)
     if (isBlack) {
-      ribGrad.addColorStop(0, shadeHex(fillHex, 16));
-      ribGrad.addColorStop(0.5, shadeHex(fillHex, 2));
-      ribGrad.addColorStop(1, shadeHex(fillHex, -8));
+      ctx.fillStyle = shadeHex(fillHex, 30);
+    } else if (isWhite) {
+      ctx.fillStyle = shadeHex(fillHex, -4);
     } else {
-      ribGrad.addColorStop(0, shadeHex(fillHex, isWhite ? 4 : 14));
-      ribGrad.addColorStop(0.5, fillHex);
-      ribGrad.addColorStop(1, shadeHex(fillHex, isWhite ? -8 : -18));
+      ctx.fillStyle = shadeHex(fillHex, 10);
     }
-    ctx.fillStyle = ribGrad;
-    ctx.fillRect(rx, ry, rw, rh);
-    ctx.restore();
+    ctx.fillRect(cx, cy, cw, ch);
 
-    // c) Yumuşak kenar gölgesi — cell'in alt/sağ kenarında derinlik
+    // b) Diagonal ribbon — ana yüzey, %20 güçlü gradient (+%15 beyaz)
     ctx.save();
-    ctx.globalAlpha = 0.14;
-    const edgeShd = shadeHex(fillHex, -46);
-    ctx.strokeStyle = edgeShd;
-    ctx.lineWidth = Math.min(cw, ch) * 0.04;
+    const half = Math.min(cw, ch) * 0.20;
+
+    // İplik uç noktaları
+    const margin = 0.15;
+    const p1x = isCW ? cx + cw * margin : cx + cw * (1 - margin);
+    const p1y = cy + ch * margin;
+    const p2x = isCW ? cx + cw * (1 - margin) : cx + cw * margin;
+    const p2y = cy + ch * (1 - margin);
+
+    // Gradient: %20 artırılmış ton geçişi, beyaza ek %15
+    const grad = ctx.createLinearGradient(p1x, p1y, p2x, p2y);
+    if (isBlack) {
+      grad.addColorStop(0, shadeHex(fillHex, 10));
+      grad.addColorStop(0.5, shadeHex(fillHex, 1));
+      grad.addColorStop(1, shadeHex(fillHex, -2));
+    } else if (isWhite) {
+      grad.addColorStop(0, shadeHex(fillHex, 6));
+      grad.addColorStop(0.4, shadeHex(fillHex, 0));
+      grad.addColorStop(1, shadeHex(fillHex, -3));
+    } else {
+      grad.addColorStop(0, shadeHex(fillHex, 10));
+      grad.addColorStop(0.4, shadeHex(fillHex, 2));
+      grad.addColorStop(1, shadeHex(fillHex, -5));
+    }
+
+    // Yön vektörleri
+    const dx = p2x - p1x;
+    const dy = p2y - p1y;
+    const dlen = Math.hypot(dx, dy) || 1;
+    const nx = -dy / dlen;
+    const ny = dx / dlen;
+
+    // Kontrol noktası: orta kavis
+    const bulge = half * 0.21;
+    const mx = p1x + dx * 0.25 + nx * bulge;
+    const my = p1y + dy * 0.25 + ny * bulge;
+
+    // Ana ribbon — belirgin diagonal yassı örgü
+    ctx.strokeStyle = grad;
     ctx.lineCap = "round";
-    // Sağ kenar
+    ctx.lineJoin = "round";
+    ctx.lineWidth = half * 1.8;
     ctx.beginPath();
-    ctx.moveTo(cx + cw * 0.85, cy + ch * 0.10);
-    ctx.lineTo(cx + cw * 0.90, cy + ch * 0.90);
+    ctx.moveTo(p1x, p1y);
+    ctx.quadraticCurveTo(mx, my, p2x, p2y);
     ctx.stroke();
-    // Alt kenar
+
+    // c) Giriş ucunda oval bitiş
+    const dotR = half * 0.28;
+    ctx.fillStyle = grad;
     ctx.beginPath();
-    ctx.moveTo(cx + cw * 0.10, cy + ch * 0.85);
-    ctx.lineTo(cx + cw * 0.90, cy + ch * 0.90);
-    ctx.stroke();
+    ctx.ellipse(p1x + nx * dotR * 0.10, p1y + ny * dotR * 0.10,
+      dotR, dotR * 0.72, 0, 0, Math.PI * 2);
+    ctx.fill();
     ctx.restore();
   }
 
   // PASS 1: Draw topCarrier crowns — each cell gets its own rounded clip mask
   // Yuvarlak köşeler kare/kiremit hissini azaltır, daha organik görünüm
   // HARD-DISABLED: PASS 1 (drawSoft3DCrown) ve PASS 2 (underCarrier shadows) tamamen devre dışı
-  // PASS 0-ONLY validation için bu blok hard-comment-out edilmiştir.
+  // Sadece PASS 0'ın yuvarlak köşeli tint + diagonal ribbon'ı kullanılır.
   // const cornerRadius = Math.min(cellW, cellH) * 0.12;
   // if (!window.__PASS0_ONLY__) {
   // for (const crown of crowns) {
@@ -409,26 +418,23 @@ function drawVectorBraidSurface(ctx, sheet, width, height, close, grid, renderSt
 }
 
 function drawRopeShading(ctx, width, height, close) {
-  // Zemin gölgesi (alt kenarda) — daha geniş alana yayılan yoğun gölge
+  // Zemin gölgesi (alt kenarda) — hafif, doğal derinlik
   const floorShadow = ctx.createLinearGradient(0, height * 0.70, 0, height);
   floorShadow.addColorStop(0, "rgba(255,255,255,0)");
-  floorShadow.addColorStop(0.55, close ? "rgba(70,55,42,0.06)" : "rgba(70,55,42,0.03)");
-  floorShadow.addColorStop(0.82, close ? "rgba(48,36,28,0.14)" : "rgba(48,36,28,0.08)");
-  floorShadow.addColorStop(1, close ? "rgba(28,20,16,0.24)" : "rgba(28,20,16,0.16)");
+  floorShadow.addColorStop(0.55, close ? "rgba(70,55,42,0.03)" : "rgba(70,55,42,0.01)");
+  floorShadow.addColorStop(0.82, close ? "rgba(48,36,28,0.07)" : "rgba(48,36,28,0.04)");
+  floorShadow.addColorStop(1, close ? "rgba(28,20,16,0.12)" : "rgba(28,20,16,0.08)");
   ctx.fillStyle = floorShadow;
   ctx.fillRect(0, height * 0.68, width, height * 0.32);
 
-  // 3B tüp gölgelemesi: üst/alt kenarlarda kararma ile silindirik hacim hissi
-  // close modunda daha belirgin gölge katmanı
+  // 3B tüp gölgelemesi: hafif silindirik hacim
   const tubeShading = ctx.createLinearGradient(0, 0, 0, height);
-  tubeShading.addColorStop(0, close ? "rgba(36,28,22,0.16)" : "rgba(0,0,0,0.10)");
-  tubeShading.addColorStop(0.05, close ? "rgba(36,28,22,0.07)" : "rgba(0,0,0,0.04)");
-  tubeShading.addColorStop(0.15, close ? "rgba(36,28,22,0.03)" : "rgba(0,0,0,0.02)");
-  tubeShading.addColorStop(0.30, "rgba(0,0,0,0)");
-  tubeShading.addColorStop(0.70, "rgba(0,0,0,0)");
-  tubeShading.addColorStop(0.85, close ? "rgba(36,28,22,0.03)" : "rgba(0,0,0,0.02)");
-  tubeShading.addColorStop(0.95, close ? "rgba(36,28,22,0.07)" : "rgba(0,0,0,0.04)");
-  tubeShading.addColorStop(1, close ? "rgba(36,28,22,0.16)" : "rgba(0,0,0,0.12)");
+  tubeShading.addColorStop(0, close ? "rgba(36,28,22,0.08)" : "rgba(0,0,0,0.05)");
+  tubeShading.addColorStop(0.08, close ? "rgba(36,28,22,0.03)" : "rgba(0,0,0,0.02)");
+  tubeShading.addColorStop(0.20, "rgba(0,0,0,0)");
+  tubeShading.addColorStop(0.80, "rgba(0,0,0,0)");
+  tubeShading.addColorStop(0.92, close ? "rgba(36,28,22,0.03)" : "rgba(0,0,0,0.02)");
+  tubeShading.addColorStop(1, close ? "rgba(36,28,22,0.08)" : "rgba(0,0,0,0.05)");
   ctx.fillStyle = tubeShading;
   ctx.fillRect(0, 0, width, height);
 }
