@@ -280,7 +280,7 @@ function drawVectorBraidSurface(ctx, sheet, width, height, close, grid, renderSt
   // Arkaplan — halat gövdesi tonu (kare mozaik yerine doku)
   drawRopeBodyBase(ctx, width, height, close, renderStyle);
 
-  // PASS 0: Diagonal ribbon yüzeyi — yassı örgü izi, mozaik değil
+  // PASS 0: Tile zemin — düz dolgu + 2 kenarda bombe (giriş üst, çıkış alt)
   for (const crown of crowns) {
     const fillHex = colorToHex(crown.topColor);
     const bVal = brightness(fillHex);
@@ -292,15 +292,67 @@ function drawVectorBraidSurface(ctx, sheet, width, height, close, grid, renderSt
     const ch = cellH;
     const isCW = crown.direction === "clockwise";
 
-    // a) Hücre zemin — tam alan boyanır, çizgi/ribbon yok (sadece düz renk geçişi)
-    if (isBlack) {
-      ctx.fillStyle = shadeHex(fillHex, 30);
-    } else if (isWhite) {
-      ctx.fillStyle = shadeHex(fillHex, -2);
-    } else {
-      ctx.fillStyle = shadeHex(fillHex, 14);
-    }
+    // Temel renk
+    let baseColor;
+    if (isBlack) baseColor = shadeHex(fillHex, 30);
+    else if (isWhite) baseColor = shadeHex(fillHex, -2);
+    else baseColor = shadeHex(fillHex, 14);
+    ctx.fillStyle = baseColor;
     ctx.fillRect(cx, cy, cw, ch);
+
+    // Yönlü highlight/shadow — sadece diagonal giriş/çıkış köşelerinde
+    // "\" (↻): giriş top-left, çıkış bottom-right
+    // "/" (↺): giriş top-right, çıkış bottom-left
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(cx, cy, cw, ch);
+    ctx.clip();
+
+    const stripW = cw * 0.28;
+    const stripH = ch * 0.28;
+
+    if (isCW) {
+      // "\" — giriş top-left (highlight)
+      ctx.globalAlpha = 0.12;
+      ctx.fillStyle = "#ffffff";
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.lineTo(cx + stripW, cy);
+      ctx.lineTo(cx, cy + stripH);
+      ctx.closePath();
+      ctx.fill();
+
+      // "\" — çıkış bottom-right (shadow)
+      ctx.globalAlpha = 0.16;
+      ctx.fillStyle = "#000000";
+      ctx.beginPath();
+      ctx.moveTo(cx + cw, cy + ch);
+      ctx.lineTo(cx + cw - stripW, cy + ch);
+      ctx.lineTo(cx + cw, cy + ch - stripH);
+      ctx.closePath();
+      ctx.fill();
+    } else {
+      // "/" — giriş top-right (highlight)
+      ctx.globalAlpha = 0.12;
+      ctx.fillStyle = "#ffffff";
+      ctx.beginPath();
+      ctx.moveTo(cx + cw, cy);
+      ctx.lineTo(cx + cw - stripW, cy);
+      ctx.lineTo(cx + cw, cy + stripH);
+      ctx.closePath();
+      ctx.fill();
+
+      // "/" — çıkış bottom-left (shadow)
+      ctx.globalAlpha = 0.16;
+      ctx.fillStyle = "#000000";
+      ctx.beginPath();
+      ctx.moveTo(cx, cy + ch);
+      ctx.lineTo(cx + stripW, cy + ch);
+      ctx.lineTo(cx, cy + ch - stripH);
+      ctx.closePath();
+      ctx.fill();
+    }
+    ctx.restore();
   }
 
   // PASS 1: Draw topCarrier crowns — each cell gets its own rounded clip mask
