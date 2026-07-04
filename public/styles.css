@@ -832,6 +832,64 @@ dd {
   font-size: 12px;
 }
 
+.canvas-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: grid;
+  place-items: center;
+  opacity: 0;
+  transition: opacity 0.25s ease;
+  pointer-events: none;
+}
+.canvas-modal-overlay.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+.canvas-modal-bg {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.65);
+}
+.canvas-modal-wrap {
+  position: relative;
+  max-width: 94vw;
+  max-height: 94vh;
+  overflow: auto;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.35);
+  padding: 12px;
+}
+.canvas-modal-img {
+  display: block;
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  max-height: none;
+  border: 1px solid #111;
+}
+.canvas-modal-close {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 999px;
+  background: rgba(0,0,0,0.55);
+  color: #fff;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  transition: background 0.15s;
+}
+.canvas-modal-close:hover {
+  background: rgba(0,0,0,0.8);
+}
+
 .canvas-detail,
 .canvas-walk {
   border: 1px solid #111;

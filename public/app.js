@@ -872,6 +872,28 @@ function renderRecipeSheet(recipe) {
     <section class="ts-block"><h3>Kullanım alanları</h3><div class="usage-icons"><span>Yelken</span><span>Marina</span><span>Endüstriyel</span><span>Mooring</span></div></section>
   `;
   const canvasRender = renderTechnicalSheetCanvases(recipeSheet, sheet);
+
+  // Canvas tıklandığında orijinal boyutta modal aç
+  requestAnimationFrame(() => {
+    const canvas = recipeSheet.querySelector('[data-braid-canvas="main"]');
+    if (canvas && !canvas.dataset.modalBound) {
+      canvas.dataset.modalBound = "1";
+      canvas.style.cursor = "zoom-in";
+      canvas.addEventListener("click", () => {
+        const dataUrl = canvas.toDataURL("image/png");
+        const overlay = document.createElement("div");
+        overlay.className = "canvas-modal-overlay";
+        overlay.innerHTML = `<div class="canvas-modal-bg"></div><div class="canvas-modal-wrap"><img class="canvas-modal-img" src="${dataUrl}" alt="Ana halat görünümü" draggable="false"><button class="canvas-modal-close" aria-label="Kapat">✕</button></div>`;
+        document.body.appendChild(overlay);
+        requestAnimationFrame(() => overlay.classList.add("active"));
+        const close = () => { overlay.classList.remove("active"); setTimeout(() => overlay.remove(), 300); };
+        overlay.querySelector(".canvas-modal-bg").addEventListener("click", close);
+        overlay.querySelector(".canvas-modal-close").addEventListener("click", close);
+        document.addEventListener("keydown", function esc(e) { if (e.key === "Escape") { close(); document.removeEventListener("keydown", esc); } });
+      });
+    }
+  });
+
   logProcess("Renderer girdisi", "Teknik sheet DOM üretildi", {
     recipeId: recipe.recipe_id,
     patternType: sheet.pattern_type,
