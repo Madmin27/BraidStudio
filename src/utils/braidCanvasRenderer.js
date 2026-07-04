@@ -292,17 +292,17 @@ function drawVectorBraidSurface(ctx, sheet, width, height, close, grid, renderSt
     const ch = cellH;
     const isCW = crown.direction === "clockwise";
 
-    // a) Hücre zemin — hafif ton, clip yok (hücre kenarlarında boşluk/çizgi oluşmaz)
+    // a) Hücre zemin — tam alan boyanır, ince ribbon çizgisi üstüne biner
     if (isBlack) {
       ctx.fillStyle = shadeHex(fillHex, 30);
     } else if (isWhite) {
-      ctx.fillStyle = shadeHex(fillHex, -4);
+      ctx.fillStyle = shadeHex(fillHex, -2);
     } else {
-      ctx.fillStyle = shadeHex(fillHex, 10);
+      ctx.fillStyle = shadeHex(fillHex, 14);
     }
     ctx.fillRect(cx, cy, cw, ch);
 
-    // b) Diagonal ribbon — ana yüzey, %20 güçlü gradient (+%15 beyaz)
+    // b) Diagonal ribbon — ince doku çizgisi, tile boyasını kapatmaz
     ctx.save();
     const half = Math.min(cw, ch) * 0.20;
 
@@ -313,7 +313,12 @@ function drawVectorBraidSurface(ctx, sheet, width, height, close, grid, renderSt
     const p2x = isCW ? cx + cw * (1 - margin) : cx + cw * margin;
     const p2y = cy + ch * (1 - margin);
 
-    // Gradient: %20 artırılmış ton geçişi, beyaza ek %15
+    // Ribbon kalınlığı: beyazlarda minimum (ince tel), diğerlerinde orta
+    const ribbonWidth = isWhite
+      ? half * 0.28
+      : half * 0.55;
+
+    // Gradient: ton geçişi
     const grad = ctx.createLinearGradient(p1x, p1y, p2x, p2y);
     if (isBlack) {
       grad.addColorStop(0, shadeHex(fillHex, 10));
@@ -341,18 +346,18 @@ function drawVectorBraidSurface(ctx, sheet, width, height, close, grid, renderSt
     const mx = p1x + dx * 0.25 + nx * bulge;
     const my = p1y + dy * 0.25 + ny * bulge;
 
-    // Ana ribbon — belirgin diagonal yassı örgü
+    // Ana ribbon — ince doku çizgisi
     ctx.strokeStyle = grad;
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
-    ctx.lineWidth = half * 1.8;
+    ctx.lineWidth = ribbonWidth;
     ctx.beginPath();
     ctx.moveTo(p1x, p1y);
     ctx.quadraticCurveTo(mx, my, p2x, p2y);
     ctx.stroke();
 
-    // c) Giriş ucunda oval bitiş
-    const dotR = half * 0.28;
+    // Giriş ucunda minik nokta
+    const dotR = half * 0.12;
     ctx.fillStyle = grad;
     ctx.beginPath();
     ctx.ellipse(p1x + nx * dotR * 0.10, p1y + ny * dotR * 0.10,

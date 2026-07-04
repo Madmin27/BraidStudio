@@ -1554,3 +1554,6 @@ state = applyUserSelection(state, {
 });
 generateButton.disabled = false;
 render();
+
+// Sayfa yüklenince otomatik desen üret (default ayarlarla)
+setTimeout(() => generateButton.click(), 500);
