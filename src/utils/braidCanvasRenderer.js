@@ -292,7 +292,7 @@ function drawVectorBraidSurface(ctx, sheet, width, height, close, grid, renderSt
     const ch = cellH;
     const isCW = crown.direction === "clockwise";
 
-    // a) Hücre zemin — tam alan boyanır, ince ribbon çizgisi üstüne biner
+    // a) Hücre zemin — tam alan boyanır, çizgi/ribbon yok (sadece düz renk geçişi)
     if (isBlack) {
       ctx.fillStyle = shadeHex(fillHex, 30);
     } else if (isWhite) {
@@ -301,69 +301,6 @@ function drawVectorBraidSurface(ctx, sheet, width, height, close, grid, renderSt
       ctx.fillStyle = shadeHex(fillHex, 14);
     }
     ctx.fillRect(cx, cy, cw, ch);
-
-    // b) Diagonal ribbon — ince doku çizgisi, tile boyasını kapatmaz
-    ctx.save();
-    const half = Math.min(cw, ch) * 0.20;
-
-    // İplik uç noktaları
-    const margin = 0.15;
-    const p1x = isCW ? cx + cw * margin : cx + cw * (1 - margin);
-    const p1y = cy + ch * margin;
-    const p2x = isCW ? cx + cw * (1 - margin) : cx + cw * margin;
-    const p2y = cy + ch * (1 - margin);
-
-    // Ribbon kalınlığı: beyazlarda minimum (ince tel), diğerlerinde orta
-    const ribbonWidth = isWhite
-      ? half * 0.28
-      : half * 0.55;
-
-    // Gradient: ton geçişi
-    const grad = ctx.createLinearGradient(p1x, p1y, p2x, p2y);
-    if (isBlack) {
-      grad.addColorStop(0, shadeHex(fillHex, 10));
-      grad.addColorStop(0.5, shadeHex(fillHex, 1));
-      grad.addColorStop(1, shadeHex(fillHex, -2));
-    } else if (isWhite) {
-      grad.addColorStop(0, shadeHex(fillHex, 6));
-      grad.addColorStop(0.4, shadeHex(fillHex, 0));
-      grad.addColorStop(1, shadeHex(fillHex, -3));
-    } else {
-      grad.addColorStop(0, shadeHex(fillHex, 10));
-      grad.addColorStop(0.4, shadeHex(fillHex, 2));
-      grad.addColorStop(1, shadeHex(fillHex, -5));
-    }
-
-    // Yön vektörleri
-    const dx = p2x - p1x;
-    const dy = p2y - p1y;
-    const dlen = Math.hypot(dx, dy) || 1;
-    const nx = -dy / dlen;
-    const ny = dx / dlen;
-
-    // Kontrol noktası: orta kavis
-    const bulge = half * 0.21;
-    const mx = p1x + dx * 0.25 + nx * bulge;
-    const my = p1y + dy * 0.25 + ny * bulge;
-
-    // Ana ribbon — ince doku çizgisi
-    ctx.strokeStyle = grad;
-    ctx.lineCap = "round";
-    ctx.lineJoin = "round";
-    ctx.lineWidth = ribbonWidth;
-    ctx.beginPath();
-    ctx.moveTo(p1x, p1y);
-    ctx.quadraticCurveTo(mx, my, p2x, p2y);
-    ctx.stroke();
-
-    // Giriş ucunda minik nokta
-    const dotR = half * 0.12;
-    ctx.fillStyle = grad;
-    ctx.beginPath();
-    ctx.ellipse(p1x + nx * dotR * 0.10, p1y + ny * dotR * 0.10,
-      dotR, dotR * 0.72, 0, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.restore();
   }
 
   // PASS 1: Draw topCarrier crowns — each cell gets its own rounded clip mask
