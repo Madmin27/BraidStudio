@@ -268,6 +268,7 @@ function drawVectorBraidSurface(ctx, sheet, width, height, close, grid, renderSt
     close,
     braidLogic: sheet.braid_walk_type
   });
+  try { window.__BRAID_CROWNS__ = crowns; } catch(e) {}
 
   const drawFn = renderStyle === "soft3d" ? drawSoft3DCrown : drawIllustrationCrown;
 
@@ -276,137 +277,133 @@ function drawVectorBraidSurface(ctx, sheet, width, height, close, grid, renderSt
   ctx.rect(0, 0, width, height);
   ctx.clip();
 
-  // PASS 0: Gap/valley fill — her hücreyi o hücrenin sahibi (topCarrier) rengiyle doldur.
-  // Boşluklar arka plan rengi değil, o hücrenin ip renginin gölgeli uzantısı olur.
-  // "mainSurface -> topColor açık tonu, gapSurface -> topColor koyu tonu"
+  // PASS 0: Gap fill — yön bilinçli, 3 adım
+  // a) koyu zemin: tüm cell alanı current rengin koyu tonu — siyah boşluk kalmasın
+  // b) diyagonal ribbon: iplik yönünde gradient bandı (hafif içe çekik)
+  // c) kenar gölgesi: cell'in alt/sağ kenarında soft derinlik
   for (const crown of crowns) {
     const fillHex = colorToHex(crown.topColor);
     const bVal = brightness(fillHex);
-    const isWhite = bVal > 180;
     const isBlack = bVal < 30;
-
-    ctx.save();
-
-    const cx = crown.col * cellW;
-    const cy = crown.row * cellH;
-
-    // Merkezden yayılan gradient: ortada biraz açık (main yüzeye hazırlık),
-    // kenarlarda koyu (gap/çukur alan)
-    const gapGrad = ctx.createRadialGradient(
-      cx + cellW * 0.35, cy + cellH * 0.35, 0,
-      cx + cellW * 0.5, cy + cellH * 0.5, Math.max(cellW, cellH) * 0.85
-    );
-
-    if (isWhite) {
-      gapGrad.addColorStop(0, "#ececec");
-      gapGrad.addColorStop(0.5, "#d8d8d8");
-      gapGrad.addColorStop(1, "#b8b8b8");
-    } else if (isBlack) {
-      gapGrad.addColorStop(0, "#303030");
-      gapGrad.addColorStop(0.5, "#1c1c1c");
-      gapGrad.addColorStop(1, "#080808");
-    } else {
-      gapGrad.addColorStop(0, shadeHex(fillHex, -6));
-      gapGrad.addColorStop(0.5, shadeHex(fillHex, -18));
-      gapGrad.addColorStop(1, shadeHex(fillHex, -34));
-    }
-
-    ctx.fillStyle = gapGrad;
-    ctx.fillRect(cx, cy, cellW, cellH);
-
-    ctx.restore();
-  }
-
-  // PASS 0.5: Edge shadow — her hücrenin diyagonal yönü boyunca, topColor'ın en koyu tonuyla
-  // ince bir gölge çizgisi. Bu, ipliğin çukura gömüldüğü yeri belirtir.
-  for (const crown of crowns) {
-    const fillHex = colorToHex(crown.topColor);
-    const bVal = brightness(fillHex);
     const isWhite = bVal > 180;
-
-    ctx.save();
-    ctx.globalAlpha = 0.20;
-
     const cx = crown.col * cellW;
     const cy = crown.row * cellH;
-    const dir = crown.direction === "clockwise" ? 1 : -1;
+    const cw = cellW;
+    const ch = cellH;
 
-    // Diagonal hat: cell'in köşegenine yakın
-    const sx = cx + (dir > 0 ? cellW * 0.04 : cellW * 0.56);
-    const sy = cy + cellH * 0.10;
-    const ex = cx + (dir > 0 ? cellW * 0.56 : cellW * 0.04);
-    const ey = cy + cellH * 0.90;
-
-    const edgeColor = isWhite ? "#9a9a9a" : shadeHex(fillHex, -40);
-    ctx.strokeStyle = edgeColor;
-    ctx.lineWidth = cellW * 0.05;
-    ctx.lineCap = "round";
-    ctx.beginPath();
-    ctx.moveTo(sx, sy);
-    ctx.lineTo(ex, ey);
-    ctx.stroke();
-
-    ctx.restore();
-  }
-
-  // PASS 1: Draw topCarrier crowns — each cell gets its own clip mask
-  for (const crown of crowns) {
+    // a) Tüm cell alanını current rengin koyu tonu ile doldur
     ctx.save();
-    ctx.beginPath();
-    ctx.rect(crown.col * cellW, crown.row * cellH, cellW, cellH);
-    ctx.clip();
-
-    drawFn(ctx, crown);
-
+    const bgShade = isBlack
+      ? shadeHex(fillHex, -4)
+      : isWhite
+        ? shadeHex(fillHex, -18)
+        : shadeHex(fillHex, -28);
+    ctx.fillStyle = bgShade;
+    ctx.fillRect(cx, cy, cw, ch);
     ctx.restore();
-  }
 
-  // PASS 2: UnderCarrier contact shadows (alpha 0.04-0.06) — no color, only shadow
-  for (const crown of crowns) {
-    if (!crown.underCarrier) continue;
-
-    const underDir = crown.underCarrier.direction;
-    const ux1 = crown.col * cellW;
-    const uy1 = underDir === "clockwise"
-      ? crown.row * cellH + cellH * 0.88
-      : crown.row * cellH + cellH * 0.12;
-    const ux2 = (crown.col + 1) * cellW;
-    const uy2 = underDir === "clockwise"
-      ? crown.row * cellH + cellH * 0.12
-      : crown.row * cellH + cellH * 0.88;
-
+    // b) Diyagonal ribbon — iplik yönünü takip eden gradient bandı
     ctx.save();
-    ctx.globalAlpha = 0.02;
-    ctx.shadowColor = "rgba(0,0,0,0.08)";
-    ctx.shadowBlur = cellW * 0.06;
-    ctx.shadowOffsetY = 0.10;
-    ctx.lineCap = "round";
-    ctx.lineWidth = cellH * 0.05;
-    ctx.strokeStyle = "rgba(0,0,0,0.03)";
-    ctx.beginPath();
-    ctx.moveTo(ux1, uy1);
-    ctx.lineTo(ux2, uy2);
-    ctx.stroke();
-    ctx.restore();
-  }
+    const inset = 0.06;
+    const rx = cx + cw * inset;
+    const ry = cy + ch * inset;
+    const rw = cw * (1 - 2 * inset);
+    const rh = ch * (1 - 2 * inset);
 
-  // Debug: show topCarrierNo in each cell
-  if (renderDebugCellOwners) {
-    ctx.save();
-    const fontSize = Math.max(7, Math.min(14, cellH * 0.16));
-    ctx.font = `${fontSize}px monospace`;
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    for (const crown of crowns) {
-      const cx = crown.col * cellW + cellW / 2;
-      const cy = crown.row * cellH + cellH / 2;
-      ctx.fillStyle = "rgba(0,0,0,0.7)";
-      ctx.fillText(String(crown.topCarrierNo), cx + 0.5, cy + 0.5);
-      ctx.fillStyle = "rgba(255,255,255,0.85)";
-      ctx.fillText(String(crown.topCarrierNo), cx, cy);
+    let ribGrad;
+    if (crown.direction === "clockwise") {
+      // \ yönü: üst-sol açık → alt-sağ koyu
+      ribGrad = ctx.createLinearGradient(rx, ry, rx + rw, ry + rh);
+    } else {
+      // / yönü: üst-sağ açık → alt-sol koyu
+      ribGrad = ctx.createLinearGradient(rx + rw, ry, rx, ry + rh);
     }
+
+    if (isBlack) {
+      ribGrad.addColorStop(0, shadeHex(fillHex, 16));
+      ribGrad.addColorStop(0.5, shadeHex(fillHex, 2));
+      ribGrad.addColorStop(1, shadeHex(fillHex, -8));
+    } else {
+      ribGrad.addColorStop(0, shadeHex(fillHex, isWhite ? 4 : 14));
+      ribGrad.addColorStop(0.5, fillHex);
+      ribGrad.addColorStop(1, shadeHex(fillHex, isWhite ? -8 : -18));
+    }
+    ctx.fillStyle = ribGrad;
+    ctx.fillRect(rx, ry, rw, rh);
+    ctx.restore();
+
+    // c) Yumuşak kenar gölgesi — cell'in alt/sağ kenarında derinlik
+    ctx.save();
+    ctx.globalAlpha = 0.14;
+    const edgeShd = shadeHex(fillHex, -46);
+    ctx.strokeStyle = edgeShd;
+    ctx.lineWidth = Math.min(cw, ch) * 0.04;
+    ctx.lineCap = "round";
+    // Sağ kenar
+    ctx.beginPath();
+    ctx.moveTo(cx + cw * 0.85, cy + ch * 0.10);
+    ctx.lineTo(cx + cw * 0.90, cy + ch * 0.90);
+    ctx.stroke();
+    // Alt kenar
+    ctx.beginPath();
+    ctx.moveTo(cx + cw * 0.10, cy + ch * 0.85);
+    ctx.lineTo(cx + cw * 0.90, cy + ch * 0.90);
+    ctx.stroke();
     ctx.restore();
   }
+
+  // PASS 1: Draw topCarrier crowns — each cell gets its own rounded clip mask
+  // Yuvarlak köşeler kare/kiremit hissini azaltır, daha organik görünüm
+  // HARD-DISABLED: PASS 1 (drawSoft3DCrown) ve PASS 2 (underCarrier shadows) tamamen devre dışı
+  // PASS 0-ONLY validation için bu blok hard-comment-out edilmiştir.
+  // const cornerRadius = Math.min(cellW, cellH) * 0.12;
+  // if (!window.__PASS0_ONLY__) {
+  // for (const crown of crowns) {
+  //   ctx.save();
+  //   roundedClip(ctx, crown.col * cellW, crown.row * cellH, cellW, cellH, cornerRadius);
+  //   drawFn(ctx, crown);
+  //   ctx.restore();
+  // }
+  // // PASS 2: UnderCarrier contact shadows
+  // for (const crown of crowns) {
+  //   if (!crown.underCarrier) continue;
+  //   const underDir = crown.underCarrier.direction;
+  //   const ux1 = crown.col * cellW;
+  //   const uy1 = underDir === "clockwise" ? crown.row * cellH + cellH * 0.88 : crown.row * cellH + cellH * 0.12;
+  //   const ux2 = (crown.col + 1) * cellW;
+  //   const uy2 = underDir === "clockwise" ? crown.row * cellH + cellH * 0.12 : crown.row * cellH + cellH * 0.88;
+  //   ctx.save();
+  //   ctx.globalAlpha = 0.02;
+  //   ctx.shadowColor = "rgba(0,0,0,0.08)";
+  //   ctx.shadowBlur = cellW * 0.06;
+  //   ctx.shadowOffsetY = 0.10;
+  //   ctx.lineCap = "round";
+  //   ctx.lineWidth = cellH * 0.05;
+  //   ctx.strokeStyle = "rgba(0,0,0,0.03)";
+  //   ctx.beginPath();
+  //   ctx.moveTo(ux1, uy1);
+  //   ctx.lineTo(ux2, uy2);
+  //   ctx.stroke();
+  //   ctx.restore();
+  // }
+  // // Debug: show topCarrierNo in each cell
+  // if (renderDebugCellOwners) {
+  //   ctx.save();
+  //   const fontSize = Math.max(7, Math.min(14, cellH * 0.16));
+  //   ctx.font = `${fontSize}px monospace`;
+  //   ctx.textAlign = "center";
+  //   ctx.textBaseline = "middle";
+  //   for (const crown of crowns) {
+  //     const cx = crown.col * cellW + cellW / 2;
+  //     const cy = crown.row * cellH + cellH / 2;
+  //     ctx.fillStyle = "rgba(0,0,0,0.7)";
+  //     ctx.fillText(String(crown.topCarrierNo), cx + 0.5, cy + 0.5);
+  //     ctx.fillStyle = "rgba(255,255,255,0.85)";
+  //     ctx.fillText(String(crown.topCarrierNo), cx, cy);
+  //   }
+  //   ctx.restore();
+  // }
+  // } // end if (!window.__PASS0_ONLY__)
 
   ctx.restore();
 }
