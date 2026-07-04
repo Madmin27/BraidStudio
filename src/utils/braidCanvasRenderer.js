@@ -280,7 +280,9 @@ function drawVectorBraidSurface(ctx, sheet, width, height, close, grid, renderSt
   // Arkaplan — halat gövdesi tonu (kare mozaik yerine doku)
   drawRopeBodyBase(ctx, width, height, close, renderStyle);
 
-  // PASS 0: Tile zemin — düz dolgu + 2 kenarda bombe (giriş üst, çıkış alt)
+  // PASS 0: Tile zemin — carrier yönüne göre giriş/çıkış kenarlarına gölge
+  // Clockwise: iplik sol-alt → sağ-üst → giriş=ALT, çıkış=ÜST
+  // Counter-clockwise: iplik sol-üst → sağ-alt → giriş=ÜST, çıkış=ALT
   for (const crown of crowns) {
     const fillHex = colorToHex(crown.topColor);
     const bVal = brightness(fillHex);
@@ -290,9 +292,8 @@ function drawVectorBraidSurface(ctx, sheet, width, height, close, grid, renderSt
     const cy = crown.row * cellH;
     const cw = cellW;
     const ch = cellH;
-    const isCW = crown.direction === "clockwise";
 
-    // Temel renk
+    // Temel renk — hücrenin tamamı
     let baseColor;
     if (isBlack) baseColor = shadeHex(fillHex, 30);
     else if (isWhite) baseColor = shadeHex(fillHex, -2);
@@ -300,58 +301,24 @@ function drawVectorBraidSurface(ctx, sheet, width, height, close, grid, renderSt
     ctx.fillStyle = baseColor;
     ctx.fillRect(cx, cy, cw, ch);
 
-    // Yönlü highlight/shadow — sadece diagonal giriş/çıkış köşelerinde
-    // "\" (↻): giriş top-left, çıkış bottom-right
-    // "/" (↺): giriş top-right, çıkış bottom-left
+    // Tüm 4 kenara eşit iç gölge (radial gradient: merkez temiz → kenarlar koyu)
     ctx.save();
     ctx.beginPath();
     ctx.rect(cx, cy, cw, ch);
     ctx.clip();
 
-    const stripW = cw * 0.28;
-    const stripH = ch * 0.28;
+    const grad = ctx.createRadialGradient(
+      cx + cw/2, cy + ch/2, 0,
+      cx + cw/2, cy + ch/2, Math.max(cw, ch) * 0.72
+    );
+    grad.addColorStop(0, "rgba(0,0,0,0)");
+    grad.addColorStop(0.45, "rgba(0,0,0,0)");
+    grad.addColorStop(0.75, "rgba(0,0,0,0.03)");
+    grad.addColorStop(0.9, "rgba(0,0,0,0.07)");
+    grad.addColorStop(1, "rgba(0,0,0,0.13)");
+    ctx.fillStyle = grad;
+    ctx.fillRect(cx, cy, cw, ch);
 
-    if (isCW) {
-      // "\" — giriş top-left (highlight)
-      ctx.globalAlpha = 0.12;
-      ctx.fillStyle = "#ffffff";
-      ctx.beginPath();
-      ctx.moveTo(cx, cy);
-      ctx.lineTo(cx + stripW, cy);
-      ctx.lineTo(cx, cy + stripH);
-      ctx.closePath();
-      ctx.fill();
-
-      // "\" — çıkış bottom-right (shadow)
-      ctx.globalAlpha = 0.16;
-      ctx.fillStyle = "#000000";
-      ctx.beginPath();
-      ctx.moveTo(cx + cw, cy + ch);
-      ctx.lineTo(cx + cw - stripW, cy + ch);
-      ctx.lineTo(cx + cw, cy + ch - stripH);
-      ctx.closePath();
-      ctx.fill();
-    } else {
-      // "/" — giriş top-right (highlight)
-      ctx.globalAlpha = 0.12;
-      ctx.fillStyle = "#ffffff";
-      ctx.beginPath();
-      ctx.moveTo(cx + cw, cy);
-      ctx.lineTo(cx + cw - stripW, cy);
-      ctx.lineTo(cx + cw, cy + stripH);
-      ctx.closePath();
-      ctx.fill();
-
-      // "/" — çıkış bottom-left (shadow)
-      ctx.globalAlpha = 0.16;
-      ctx.fillStyle = "#000000";
-      ctx.beginPath();
-      ctx.moveTo(cx, cy + ch);
-      ctx.lineTo(cx + stripW, cy + ch);
-      ctx.lineTo(cx, cy + ch - stripH);
-      ctx.closePath();
-      ctx.fill();
-    }
     ctx.restore();
   }
 
