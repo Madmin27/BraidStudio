@@ -10,10 +10,6 @@
   canvas { width: 100%; height: auto; border-radius: 4px; display: block; }
   #info { text-align: center; font-size: 11px; color: #555; margin-top: 8px; }
   #report { margin-top: 16px; font-size: 10px; color: #888; max-height: 400px; overflow: auto; background: #1a1a1a; padding: 8px; border-radius: 4px; border: 1px solid #2a2a2a; white-space: pre-wrap; font-family: monospace; }
-  .legend { display: flex; justify-content: center; gap: 32px; margin-top: 10px; font-size: 11px; color: #999; }
-  .legend-item { display: flex; align-items: center; gap: 6px; }
-  .arrow-cw { display: inline-block; width: 28px; height: 2px; background: #4caf50; position: relative; transform: rotate(45deg); }
-  .arrow-ccw { display: inline-block; width: 28px; height: 2px; background: #ff7043; position: relative; transform: rotate(-45deg); }
   .summary { display: flex; justify-content: center; gap: 24px; margin-top: 6px; font-size: 12px; }
   .summary-item { padding: 4px 12px; background: #1a1a1a; border-radius: 4px; border: 1px solid #2a2a2a; }
   .summary-item .label { color: #666; }
@@ -27,17 +23,7 @@
 <h1>🔍 Block Orientation Debug</h1>
 <p class="subtitle">PASS 0 rotated fillRect — tüm tilelar ±45° döndürüldü</p>
 
-<div class="switch-row">
-  <button id="btnOverlay" class="active">Overlay ON</button>
-  <button id="btnPass0">Sadece PASS 0</button>
-</div>
-
 <canvas id="canvas" width="1520" height="280"></canvas>
-
-<div class="legend">
-  <div class="legend-item"><span class="arrow-cw"></span> CW — 45° (sol-alt → sağ-üst)</div>
-  <div class="legend-item"><span class="arrow-ccw"></span> CCW — +45° (sol-üst → sağ-alt)</div>
-</div>
 
 <div id="info">Hesaplanıyor...</div>
 
@@ -171,76 +157,6 @@ function drawRopeBodyBase(ctx, w, h) {
   ctx.restore();
 }
 
-// ─── Direction overlay ──────────────────────────────────────
-function drawDirectionOverlay(ctx, crown, cx, cy) {
-  // Overlay now matches the rotated tile angle
-  const cellW = grid.cellWidth;
-  const cellH = grid.cellHeight;
-  const dir = crown.direction;
-  const fillHex = colorToHex(crown.topColor);
-  const bVal = brightness(fillHex);
-  const isMarked = bVal <= 180; // colored cells
-
-  // Arrow parameters
-  const midX = cx + cellW / 2;
-  const midY = cy + cellH / 2;
-  // Arrow length: ~55% of cell diagonal for visibility
-  const arrowLen = Math.min(cellW, cellH) * 0.55;
-  // Arrow head size
-  const headLen = Math.min(cellW, cellH) * 0.14;
-  const headAngle = Math.PI / 7; // ~25.7°
-
-  let angle;
-  let color;
-  if (dir === "clockwise") {
-    angle = Math.PI / 4; // 45° — from bottom-left to top-right
-    color = isMarked ? "#4caf50" : "rgba(76,175,80,0.30)";
-  } else {
-    angle = -Math.PI / 4; // -45° — from top-left to bottom-right
-    color = isMarked ? "#ff7043" : "rgba(255,112,67,0.30)";
-  }
-
-  const dx = Math.cos(angle) * arrowLen / 2;
-  const dy = Math.sin(angle) * arrowLen / 2;
-  const x1 = midX - dx;
-  const y1 = midY - dy;
-  const x2 = midX + dx;
-  const y2 = midY + dy;
-
-  // Line width: thin for minimal visual interference
-  const lineW = isMarked ? Math.max(0.8, Math.min(cellW, cellH) * 0.035) : Math.max(0.5, Math.min(cellW, cellH) * 0.020);
-
-  ctx.save();
-  ctx.strokeStyle = color;
-  ctx.fillStyle = color;
-  ctx.lineWidth = lineW;
-  ctx.lineCap = "round";
-  ctx.globalAlpha = isMarked ? 1.0 : 0.40;
-
-  // Main line
-  ctx.beginPath();
-  ctx.moveTo(x1, y1);
-  ctx.lineTo(x2, y2);
-  ctx.stroke();
-
-  // Arrow head at x2,y2
-  const tipAngle = angle + Math.PI; // reverse direction for arrowhead from tip
-  ctx.beginPath();
-  ctx.moveTo(x2, y2);
-  ctx.lineTo(
-    x2 + Math.cos(tipAngle - headAngle) * headLen,
-    y2 + Math.sin(tipAngle - headAngle) * headLen
-  );
-  ctx.moveTo(x2, y2);
-  ctx.lineTo(
-    x2 + Math.cos(tipAngle + headAngle) * headLen,
-    y2 + Math.sin(tipAngle + headAngle) * headLen
-  );
-  ctx.stroke();
-
-  ctx.restore();
-}
-
 // ─── Block angle analysis ────────────────────────────────────
 function analyzeAngles() {
   const results = [];
@@ -291,7 +207,6 @@ function analyzeAngles() {
 // ─── Main render ─────────────────────────────────────────────
 const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
-let showOverlay = true;
 
 function render() {
   const dpr = window.devicePixelRatio || 1;
@@ -316,15 +231,6 @@ function render() {
     const cx = crown.col * grid.cellWidth;
     const cy = crown.row * grid.cellHeight;
     renderPass0(ctx, crown, cx, cy);
-  }
-
-  if (showOverlay) {
-    // Draw overlay on top of PASS 0
-    for (const crown of orderedCrowns) {
-      const cx = crown.col * grid.cellWidth;
-      const cy = crown.row * grid.cellHeight;
-      drawDirectionOverlay(ctx, crown, cx, cy);
-    }
   }
 
   ctx.restore();
@@ -385,20 +291,6 @@ function updateStats() {
   // Expose for extraction
   window.__DEBUG_REPORT__ = report;
 }
-
-// ─── Button controls ─────────────────────────────────────────
-document.getElementById("btnOverlay").addEventListener("click", () => {
-  showOverlay = true;
-  document.getElementById("btnOverlay").classList.add("active");
-  document.getElementById("btnPass0").classList.remove("active");
-  render();
-});
-document.getElementById("btnPass0").addEventListener("click", () => {
-  showOverlay = false;
-  document.getElementById("btnPass0").classList.add("active");
-  document.getElementById("btnOverlay").classList.remove("active");
-  render();
-});
 
 // ─── Initial render ──────────────────────────────────────────
 render();
