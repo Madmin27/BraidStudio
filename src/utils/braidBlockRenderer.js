@@ -90,7 +90,7 @@ export function drawVisibleBraidBlock(ctx, crown, cellW, cellH) {
 
   /* ---- Blok geometrisi ---- */
   // Uzun eksen hücre sınırlarının dışına taşar → ribbon overlap
-  const padX = cellW * 0.32;
+  const padX = cellW * 0.26;
   // Kısa kenarların hücre dikeyinde konumlanma oranı
   const offsetRatio = 0.18;
 
@@ -112,7 +112,7 @@ export function drawVisibleBraidBlock(ctx, crown, cellW, cellH) {
   const len = Math.hypot(dx, dy) || 1;
   const nx = -dy / len;  // birim normal (dik vektör)
   const ny = dx / len;
-  const halfW = cellH * 0.36;
+  const halfW = cellH * 0.20;
 
   // Dört köşe noktası (paralelkenar)
   // 0: üst-kenar başlangıç, 1: üst-kenar bitiş (kısa kenar)
@@ -132,12 +132,12 @@ export function drawVisibleBraidBlock(ctx, crown, cellW, cellH) {
   // Gölge, blok normali yönünde hafifçe ötelenmiş ve karartılmış bir şekildir.
   if (underCarrier) {
     ctx.save();
-    ctx.globalAlpha = 0.10;
-    ctx.fillStyle = "rgba(0,0,0,0.45)";
+    ctx.globalAlpha = bVal > 180 ? 0.03 : 0.05;
+    ctx.fillStyle = "rgba(0,0,0,0.20)";
     ctx.shadowColor = "transparent";
 
     // underCarrier gölgesi: bloğun alt-kenarı boyunca, normal yönünde ötelenmiş
-    const shift = -halfW * 0.45;
+    const shift = -halfW * 0.35;
     const shadowPts = pts.map(p => ({ x: p.x + nx * shift, y: p.y + ny * shift }));
     shadowPts[1] = { x: pts[1].x + nx * shift * 0.6, y: pts[1].y + ny * shift * 0.6 };
     shadowPts[2] = { x: pts[2].x + nx * shift * 0.6, y: pts[2].y + ny * shift * 0.6 };
@@ -150,12 +150,12 @@ export function drawVisibleBraidBlock(ctx, crown, cellW, cellH) {
   // Bloğun iki uzun kenarı boyunca ince bir gölge şeridi
   // (bloklar arası geçişte derinlik hissi)
   ctx.save();
-  ctx.globalAlpha = 0.08;
-  ctx.fillStyle = "rgba(0,0,0,0.35)";
+  ctx.globalAlpha = bVal > 180 ? 0.025 : 0.04;
+  ctx.fillStyle = "rgba(0,0,0,0.18)";
   ctx.shadowColor = "transparent";
 
   // Alt uzun kenar gölgesi (pt3→pt2 arası)
-  const edgeInset = halfW * 0.4;
+  const edgeInset = halfW * 0.3;
   const edgeShadowPts = [
     { x: pts[3].x - nx * edgeInset, y: pts[3].y - ny * edgeInset },
     { x: pts[2].x - nx * edgeInset, y: pts[2].y - ny * edgeInset },
@@ -178,30 +178,30 @@ export function drawVisibleBraidBlock(ctx, crown, cellW, cellH) {
   );
 
   if (bVal > 180) {
-    // Beyaz/açık iplik
-    grad.addColorStop(0, "#e8e8e8");
+    // Beyaz/açık iplik — yumuşak, düşük kontrast
+    grad.addColorStop(0, "#f2f2f2");
     grad.addColorStop(0.30, "#ffffff");
-    grad.addColorStop(0.70, "#f2f2f2");
-    grad.addColorStop(1, "#cecece");
+    grad.addColorStop(0.70, "#f7f7f7");
+    grad.addColorStop(1, "#e6e6e6");
   } else if (bVal < 40) {
-    // Siyah/koyu iplik
-    grad.addColorStop(0, _shadeHex(hex, -15));
-    grad.addColorStop(0.30, _shadeHex(hex, 22));
-    grad.addColorStop(0.70, _shadeHex(hex, 5));
-    grad.addColorStop(1, _shadeHex(hex, -20));
+    // Siyah/koyu iplik — hafif ton geçişi
+    grad.addColorStop(0, _shadeHex(hex, -6));
+    grad.addColorStop(0.30, _shadeHex(hex, 10));
+    grad.addColorStop(0.70, _shadeHex(hex, 3));
+    grad.addColorStop(1, _shadeHex(hex, -8));
   } else {
-    // Renkli iplik
-    grad.addColorStop(0, _shadeHex(hex, -15));
-    grad.addColorStop(0.28, _shadeHex(hex, 20));
-    grad.addColorStop(0.72, _shadeHex(hex, 4));
-    grad.addColorStop(1, _shadeHex(hex, -22));
+    // Renkli iplik — hafif ton geçişi
+    grad.addColorStop(0, _shadeHex(hex, -6));
+    grad.addColorStop(0.28, _shadeHex(hex, 8));
+    grad.addColorStop(0.72, _shadeHex(hex, 2));
+    grad.addColorStop(1, _shadeHex(hex, -8));
   }
 
   // Yumuşak gölge - bloklar arası derinlik
-  ctx.shadowColor = "rgba(0,0,0,0.15)";
-  ctx.shadowBlur = 1.8;
-  ctx.shadowOffsetX = nx * halfW * 0.12;
-  ctx.shadowOffsetY = ny * halfW * 0.12;
+  ctx.shadowColor = bVal > 180 ? "rgba(0,0,0,0.04)" : "rgba(0,0,0,0.07)";
+  ctx.shadowBlur = 0.8;
+  ctx.shadowOffsetX = nx * halfW * 0.08;
+  ctx.shadowOffsetY = ny * halfW * 0.08;
 
   ctx.fillStyle = grad;
   roundedQuadPath(ctx, pts);
@@ -209,9 +209,9 @@ export function drawVisibleBraidBlock(ctx, crown, cellW, cellH) {
 
   // İnce kenar çizgisi (blok sınırlarını belli belirsiz ayırır)
   ctx.shadowColor = "transparent";
-  ctx.globalAlpha = 0.20;
-  ctx.strokeStyle = bVal > 180 ? "rgba(160,160,160,0.15)" : _shadeHex(hex, -8);
-  ctx.lineWidth = 0.35;
+  ctx.globalAlpha = bVal > 180 ? 0.06 : 0.10;
+  ctx.strokeStyle = bVal > 180 ? "rgba(160,160,160,0.08)" : _shadeHex(hex, -4);
+  ctx.lineWidth = 0.20;
   ctx.stroke();
 
   ctx.restore();
