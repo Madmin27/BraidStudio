@@ -1,4 +1,5 @@
 import { buildBraidMatrix, getCarrierDirection, topDirectionAt } from "./braidMatrix.js";
+import { drawVisibleBraidBlock } from "./braidBlockRenderer.js";
 
 /* app.js'teki colorMap ile birebir uyumlu. Turkish/English renk adlarının
    her ikisi de aynı hex'e çözümlenir, böylece "siyah" FALLBACK_COLORS'ta
@@ -301,58 +302,7 @@ function drawVectorBraidSurface(ctx, sheet, width, height, close, grid, renderSt
   // Clockwise: iplik sol-alt → sağ-üst → giriş=ALT, çıkış=ÜST
   // Counter-clockwise: iplik sol-üst → sağ-alt → giriş=ÜST, çıkış=ALT
   for (const crown of _orderedCrowns) {
-    const fillHex = colorToHex(crown.topColor);
-    const bVal = brightness(fillHex);
-    const isBlack = bVal < 30;
-    const isWhite = bVal > 180;
-    const cx = crown.col * cellW;
-    const cy = crown.row * cellH;
-    // PASS 0 patch overlap: colored cells 1.12×1.08, white/black 1.08×1.04
-    // Debug override için window.__CROWN_WIDTH_MULT__ / __CROWN_HEIGHT_MULT__
-    const _baseW = (typeof window !== "undefined" && window.__CROWN_WIDTH_MULT__) ? window.__CROWN_WIDTH_MULT__ : 1.08;
-    const _baseH = (typeof window !== "undefined" && window.__CROWN_HEIGHT_MULT__) ? window.__CROWN_HEIGHT_MULT__ : 1.04;
-    const _wMult = (!isWhite && !isBlack) ? 1.12 : _baseW;
-    const _hMult = (!isWhite && !isBlack) ? 1.08 : _baseH;
-    const cw = cellW * _wMult;
-    const ch = cellH * _hMult;
-    const rx = cx + (cellW - cw) / 2;
-    const ry = cy + (cellH - ch) / 2;
-
-    // Temel renk — yön bazlı döndürülmüş tile
-    // CW: -45° (sol-alt → sağ-üst), CCW: 45° (sol-üst → sağ-alt)
-    let baseColor;
-    if (isBlack) baseColor = shadeHex(fillHex, 30);
-    else if (isWhite) baseColor = shadeHex(fillHex, -2);
-    else baseColor = shadeHex(fillHex, 14);
-    const angle = crown.direction === "clockwise" ? -Math.PI / 4 : Math.PI / 4;
-    ctx.save();
-    ctx.translate(cx + cellW / 2, cy + cellH / 2);
-    ctx.rotate(angle);
-    ctx.fillStyle = baseColor;
-    ctx.fillRect(-cw / 2, -ch / 2, cw, ch);
-    ctx.restore();
-
-    // RADIAL GRADIENT TEST-DISABLED (overlap isolation test)
-    /*
-    ctx.save();
-    ctx.beginPath();
-    ctx.rect(cx, cy, cw, ch);
-    ctx.clip();
-
-    const grad = ctx.createRadialGradient(
-      cx + cw/2, cy + ch/2, 0,
-      cx + cw/2, cy + ch/2, Math.max(cw, ch) * 0.72
-    );
-    grad.addColorStop(0, "rgba(0,0,0,0)");
-    grad.addColorStop(0.45, "rgba(0,0,0,0)");
-    grad.addColorStop(0.75, "rgba(0,0,0,0.03)");
-    grad.addColorStop(0.9, "rgba(0,0,0,0.07)");
-    grad.addColorStop(1, "rgba(0,0,0,0.13)");
-    ctx.fillStyle = grad;
-    ctx.fillRect(cx, cy, cw, ch);
-
-    ctx.restore();
-    */
+    drawVisibleBraidBlock(ctx, crown, cellW, cellH);
   }
 
   // PASS 1: Draw topCarrier crowns — each cell gets its own rounded clip mask
@@ -1183,11 +1133,11 @@ export function replaceCanvasWithImages(root, sourceRoot = root) {
   });
 }
 
-function colorToHex(color) {
+export function colorToHex(color) {
   return FALLBACK_COLORS[String(color || "").toLowerCase()] || "#8d9892";
 }
 
-function brightness(hex) {
+export function brightness(hex) {
   const value = hex.replace("#", "");
   const r = parseInt(value.substring(0, 2), 16);
   const g = parseInt(value.substring(2, 4), 16);
@@ -1195,7 +1145,7 @@ function brightness(hex) {
   return Math.round((r * 299 + g * 587 + b * 114) / 1000);
 }
 
-function shadeHex(hex, percent) {
+export function shadeHex(hex, percent) {
   const value = hex.replace("#", "");
   const num = parseInt(value.length === 3 ? value.split("").map((char) => char + char).join("") : value, 16);
   const amount = Math.round(2.55 * percent);
