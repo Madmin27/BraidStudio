@@ -318,13 +318,19 @@ function drawVectorBraidSurface(ctx, sheet, width, height, close, grid, renderSt
     const rx = cx + (cellW - cw) / 2;
     const ry = cy + (cellH - ch) / 2;
 
-    // Temel renk — hücrenin tamamı
+    // Temel renk — yön bazlı döndürülmüş tile
+    // CW: -45° (sol-alt → sağ-üst), CCW: 45° (sol-üst → sağ-alt)
     let baseColor;
     if (isBlack) baseColor = shadeHex(fillHex, 30);
     else if (isWhite) baseColor = shadeHex(fillHex, -2);
     else baseColor = shadeHex(fillHex, 14);
+    const angle = crown.direction === "clockwise" ? -Math.PI / 4 : Math.PI / 4;
+    ctx.save();
+    ctx.translate(cx + cellW / 2, cy + cellH / 2);
+    ctx.rotate(angle);
     ctx.fillStyle = baseColor;
-    ctx.fillRect(rx, ry, cw, ch);
+    ctx.fillRect(-cw / 2, -ch / 2, cw, ch);
+    ctx.restore();
 
     // RADIAL GRADIENT TEST-DISABLED (overlap isolation test)
     /*

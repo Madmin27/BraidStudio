@@ -36,20 +36,41 @@ export function buildBraidMatrix({
   const carrierPaths = carriers.map((carrier) => ({ carrier, points: [] }));
 
   for (let time = 0; time < normalizedSteps; time += 1) {
+    // Build column→carrier map for this time step
+    // Each column has exactly one carrier
+    const colToCarrier = {};
+    for (const carrier of carriers) {
+      colToCarrier[carrierColumnAt(carrier, carrierCount, time)] = carrier;
+    }
+
     const row = [];
     for (let column = 0; column < carrierCount; column += 1) {
-      const clockwise = findCarrierAt({ carriers, carrierCount, column, time, direction: "clockwise" });
-      const counterClockwise = findCarrierAt({ carriers, carrierCount, column, time, direction: "counterClockwise" });
+      const primary = colToCarrier[column];
+      if (!primary) continue;
+
+      // Find crossing partner from adjacent column.
+      // CW carriers move right (→), their crossing partner is a CCW carrier at column+1 (moving left).
+      // CCW carriers move left (←), their crossing partner is a CW carrier at column-1 (moving right).
+      const partnerCol = primary.direction === "clockwise"
+        ? (column + 1) % carrierCount
+        : (column - 1 + carrierCount) % carrierCount;
+      const partner = colToCarrier[partnerCol] || null;
+
+      const cwCarrier = primary.direction === "clockwise" ? primary
+        : (partner && partner.direction === "clockwise" ? partner : null);
+      const ccwCarrier = primary.direction === "counterClockwise" ? primary
+        : (partner && partner.direction === "counterClockwise" ? partner : null);
+
       const topDirection = topDirectionAt({ time, column, braidLogic });
-      const topCarrier = topDirection === "clockwise"
-        ? clockwise || counterClockwise
-        : counterClockwise || clockwise;
-      const underCarrier = topCarrier === clockwise ? counterClockwise : clockwise;
+      const topCarrier = topDirection === "clockwise" ? cwCarrier : ccwCarrier;
+      const underCarrier = topDirection === "clockwise" ? ccwCarrier : cwCarrier;
 
       row.push({
         time,
         column,
-        topDirection: topCarrier?.direction || topDirection,
+        topDirection,
+        cwCarrier,
+        ccwCarrier,
         topCarrier,
         underCarrier,
         visibleColor: topCarrier?.color || null

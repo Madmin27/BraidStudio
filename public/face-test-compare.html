@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>Face Test</title>
+<style>
+  body { font-family: sans-serif; background: #1e1e1e; color: #ccc; padding: 20px; }
+  h1 { color: #fff; }
+  .row { display: flex; gap: 20px; flex-wrap: wrap; margin-bottom: 30px; }
+  .card { background: #2a2a2a; border-radius: 8px; padding: 12px; }
+  .card h2 { margin: 0 0 8px 0; font-size: 16px; }
+  .card img { border: 1px solid #444; border-radius: 4px; max-width: 100%; }
+  .badge { display: inline-block; padding: 2px 10px; border-radius: 4px; font-size: 12px; font-weight: bold; margin-left: 8px; }
+  .badge-cur { background: #4a9eff; color: #000; }
+  .badge-wide { background: #69db7c; color: #000; }
+</style>
+</head><body>
+<h1>🧪 Face Test — visible-face / painted-cell</h1>
+<p style="margin-bottom:20px"><b>current:</b> tüm hücre dikdörtgen — <b>wideFace:</b> yön bazlı paralelkenar yüzey</p>
+
+<div class="row">
+  <div class="card">
+    <h2>current <span class="badge badge-cur">dikdörtgen</span></h2>
+    <img src="face-test-current.png" alt="current">
+  </div>
+  <div class="card">
+    <h2>wideFace <span class="badge badge-wide">%18.4 fark</span></h2>
+    <img src="face-test-wideFace.png" alt="wideFace">
+  </div>
+</div>
+
+<div class="row">
+  <div class="card">
+    <h2>🔴 Fark görseli (kırmızı = değişen)</h2>
+    <img src="diff-face.png" alt="diff">
+  </div>
+</div>
+
+</body></html>

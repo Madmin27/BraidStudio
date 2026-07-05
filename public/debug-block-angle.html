@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Debug — Block Orientation</title>
+<style>
+  body { background: #111; color: #ddd; font-family: system-ui, sans-serif; padding: 20; margin: 0; }
+  h1 { text-align: center; margin: 0 0 4px 0; font-size: 16px; color: #ccc; font-weight: 400; }
+  .subtitle { text-align: center; font-size: 12px; color: #666; margin-bottom: 8px; }
+  canvas { width: 100%; height: auto; border-radius: 4px; display: block; }
+  #info { text-align: center; font-size: 11px; color: #555; margin-top: 8px; }
+  #report { margin-top: 16px; font-size: 10px; color: #888; max-height: 400px; overflow: auto; background: #1a1a1a; padding: 8px; border-radius: 4px; border: 1px solid #2a2a2a; white-space: pre-wrap; font-family: monospace; }
+  .legend { display: flex; justify-content: center; gap: 32px; margin-top: 10px; font-size: 11px; color: #999; }
+  .legend-item { display: flex; align-items: center; gap: 6px; }
+  .arrow-cw { display: inline-block; width: 28px; height: 2px; background: #4caf50; position: relative; transform: rotate(45deg); }
+  .arrow-ccw { display: inline-block; width: 28px; height: 2px; background: #ff7043; position: relative; transform: rotate(-45deg); }
+  .summary { display: flex; justify-content: center; gap: 24px; margin-top: 6px; font-size: 12px; }
+  .summary-item { padding: 4px 12px; background: #1a1a1a; border-radius: 4px; border: 1px solid #2a2a2a; }
+  .summary-item .label { color: #666; }
+  .summary-item .value { color: #ddd; font-weight: 500; }
+  .switch-row { display: flex; justify-content: center; gap: 16px; margin: 8px 0; }
+  .switch-row button { background: #2a2a2a; color: #aaa; border: 1px solid #3a3a3a; padding: 4px 14px; border-radius: 4px; cursor: pointer; font-size: 11px; }
+  .switch-row button.active { background: #3a5a3a; color: #8f8; border-color: #4a8a4a; }
+</style>
+</head>
+<body>
+<h1>🔍 Block Orientation Debug</h1>
+<p class="subtitle">PASS 0 rotated fillRect — tüm tilelar ±45° döndürüldü</p>
+
+<div class="switch-row">
+  <button id="btnOverlay" class="active">Overlay ON</button>
+  <button id="btnPass0">Sadece PASS 0</button>
+</div>
+
+<canvas id="canvas" width="1520" height="280"></canvas>
+
+<div class="legend">
+  <div class="legend-item"><span class="arrow-cw"></span> CW — 45° (sol-alt → sağ-üst)</div>
+  <div class="legend-item"><span class="arrow-ccw"></span> CCW — +45° (sol-üst → sağ-alt)</div>
+</div>
+
+<div id="info">Hesaplanıyor...</div>
+
+<div class="summary" id="summary"></div>
+
+<div id="report"></div>
+
+<script type="module">
+import { buildBraidMatrix, getCarrierDirection } from "../src/utils/braidMatrix.js";
+import { buildMatrixSurfaceCrowns } from "../src/utils/braidCanvasRenderer.js";
+import { findMachineProfile } from "../src/machineProfiles.js";
+
+// ─── Inline helpers ──────────────────────────────────────────
+const FALLBACK_COLORS = {
+  siyah: "#1b1f1d", black: "#1b1f1d",
+  kırmızı: "#bd2f2b", red: "#bd2f2b",
+  lacivert: "#1f3d70", mavi: "#1f3d70", blue: "#1f3d70",
+  beyaz: "#f8faf9", white: "#f8faf9",
+  gray: "#77817b", gri: "#77817b",
+  nylon: "#d8dde0", sarı: "#d7a800", yellow: "#d7d900",
+  yeşil: "#2d7d46", green: "#2d7d46",
+  turuncu: "#d96c1a", orange: "#d96c1a",
+  mor: "#6b3fa0", purple: "#6b3fa0",
+  pembe: "#d45087", pink: "#d45087"
+};
+function colorToHex(color) { return FALLBACK_COLORS[String(color || "").toLowerCase()] || "#8d9892"; }
+function brightness(hex) {
+  const v = hex.replace("#","");
+  return Math.round((parseInt(v.substring(0,2),16)*299 + parseInt(v.substring(2,4),16)*587 + parseInt(v.substring(4,6),16)*114)/1000);
+}
+function shadeHex(hex, percent) {
+  const v = hex.replace("#","");
+  const num = parseInt(v.length===3?v.split("").map(c=>c+c).join(""):v,16);
+  const amt = Math.round(2.55*percent);
+  const r=Math.max(0,Math.min(255,(num>>16)+amt));
+  const g=Math.max(0,Math.min(255,((num>>8)&0xff)+amt));
+  const b=Math.max(0,Math.min(255,(num&0xff)+amt));
+  return `#${((1<<24)+(r<<16)+(g<<8)+b).toString(16).slice(1)}`;
+}
+
+// ─── Sheet config (same as renderer-test-abc) ────────────────
+const CARRIER_COUNT = 16;
+const COLORS = ["beyaz", "siyah", "kırmızı", "mavi"];
+const BASE_COLOR = "beyaz";
+const MACHINE_PROFILE = findMachineProfile("mp_16_std", CARRIER_COUNT);
+const BRAID_WALK = "two-over-two";
+
+const carrierLayout = Array.from({ length: CARRIER_COUNT }, (_, i) => {
+  const no = i + 1;
+  let color = BASE_COLOR;
+  if (no === 1) color = "siyah";
+  else if (no === 3 || no === 5) color = "kırmızı";
+  else if (no === 10 || no === 12) color = "mavi";
+  return { carrier_no: no, color };
+});
+
+const sheet = {
+  carrier_count: CARRIER_COUNT,
+  carrier_layout: carrierLayout,
+  machineProfile: MACHINE_PROFILE,
+  braid_walk_type: BRAID_WALK,
+  color_sequence: COLORS,
+  pattern_type: "spiral"
+};
+
+// ─── Grid ────────────────────────────────────────────────────
+const canvasW = 1520, canvasH = 280;
+const grid = {
+  rows: Math.max(1, Math.ceil(CARRIER_COUNT / 2)),
+  steps: 48,
+  cellWidth: canvasW / 48,
+  cellHeight: canvasH / Math.max(1, Math.ceil(CARRIER_COUNT / 2))
+};
+
+const crowns = buildMatrixSurfaceCrowns({
+  carrierLayout,
+  machineProfile: MACHINE_PROFILE,
+  cols: grid.steps,
+  cellW: grid.cellWidth,
+  cellH: grid.cellHeight,
+  close: false,
+  braidLogic: BRAID_WALK
+});
+
+// ─── PASS 0 render ──────────────────────────────────────────
+function renderPass0(ctx, crown, cx, cy) {
+  const cellW = grid.cellWidth;
+  const cellH = grid.cellHeight;
+  const fillHex = colorToHex(crown.topColor);
+  const bVal = brightness(fillHex);
+  const isBlack = bVal < 30;
+  const isWhite = bVal > 180;
+  const _wMult = (!isWhite && !isBlack) ? 1.12 : 1.08;
+  const _hMult = (!isWhite && !isBlack) ? 1.08 : 1.04;
+  const cw = cellW * _wMult;
+  const ch = cellH * _hMult;
+  const rx = cx + (cellW - cw) / 2;
+  const ry = cy + (cellH - ch) / 2;
+
+  const cellMidX = cx + cellW / 2;
+  const cellMidY = cy + cellH / 2;
+  let baseColor;
+  if (isBlack) baseColor = shadeHex(fillHex, 30);
+  else if (isWhite) baseColor = shadeHex(fillHex, -2);
+  else baseColor = shadeHex(fillHex, 14);
+  const angle = crown.direction === "clockwise" ? -Math.PI / 4 : Math.PI / 4;
+  ctx.save();
+  ctx.translate(cellMidX, cellMidY);
+  ctx.rotate(angle);
+  ctx.fillStyle = baseColor;
+  ctx.fillRect(-cw / 2, -ch / 2, cw, ch);
+  ctx.restore();
+
+  return { isWhite, isBlack, rx, ry, cw, ch };
+}
+
+function drawRopeBodyBase(ctx, w, h) {
+  const g = ctx.createLinearGradient(0, 0, 0, h);
+  g.addColorStop(0, "#b0b2b0");
+  g.addColorStop(0.05, "#c8c9c8");
+  g.addColorStop(0.15, "#e2e3e2");
+  g.addColorStop(0.30, "#f2f3f2");
+  g.addColorStop(0.5, "#ffffff");
+  g.addColorStop(0.70, "#f2f3f2");
+  g.addColorStop(0.85, "#e2e3e2");
+  g.addColorStop(0.95, "#c8c9c8");
+  g.addColorStop(1, "#b0b2b0");
+  ctx.save();
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, w, h);
+  ctx.restore();
+}
+
+// ─── Direction overlay ──────────────────────────────────────
+function drawDirectionOverlay(ctx, crown, cx, cy) {
+  // Overlay now matches the rotated tile angle
+  const cellW = grid.cellWidth;
+  const cellH = grid.cellHeight;
+  const dir = crown.direction;
+  const fillHex = colorToHex(crown.topColor);
+  const bVal = brightness(fillHex);
+  const isMarked = bVal <= 180; // colored cells
+
+  // Arrow parameters
+  const midX = cx + cellW / 2;
+  const midY = cy + cellH / 2;
+  // Arrow length: ~55% of cell diagonal for visibility
+  const arrowLen = Math.min(cellW, cellH) * 0.55;
+  // Arrow head size
+  const headLen = Math.min(cellW, cellH) * 0.14;
+  const headAngle = Math.PI / 7; // ~25.7°
+
+  let angle;
+  let color;
+  if (dir === "clockwise") {
+    angle = Math.PI / 4; // 45° — from bottom-left to top-right
+    color = isMarked ? "#4caf50" : "rgba(76,175,80,0.30)";
+  } else {
+    angle = -Math.PI / 4; // -45° — from top-left to bottom-right
+    color = isMarked ? "#ff7043" : "rgba(255,112,67,0.30)";
+  }
+
+  const dx = Math.cos(angle) * arrowLen / 2;
+  const dy = Math.sin(angle) * arrowLen / 2;
+  const x1 = midX - dx;
+  const y1 = midY - dy;
+  const x2 = midX + dx;
+  const y2 = midY + dy;
+
+  // Line width: thin for minimal visual interference
+  const lineW = isMarked ? Math.max(0.8, Math.min(cellW, cellH) * 0.035) : Math.max(0.5, Math.min(cellW, cellH) * 0.020);
+
+  ctx.save();
+  ctx.strokeStyle = color;
+  ctx.fillStyle = color;
+  ctx.lineWidth = lineW;
+  ctx.lineCap = "round";
+  ctx.globalAlpha = isMarked ? 1.0 : 0.40;
+
+  // Main line
+  ctx.beginPath();
+  ctx.moveTo(x1, y1);
+  ctx.lineTo(x2, y2);
+  ctx.stroke();
+
+  // Arrow head at x2,y2
+  const tipAngle = angle + Math.PI; // reverse direction for arrowhead from tip
+  ctx.beginPath();
+  ctx.moveTo(x2, y2);
+  ctx.lineTo(
+    x2 + Math.cos(tipAngle - headAngle) * headLen,
+    y2 + Math.sin(tipAngle - headAngle) * headLen
+  );
+  ctx.moveTo(x2, y2);
+  ctx.lineTo(
+    x2 + Math.cos(tipAngle + headAngle) * headLen,
+    y2 + Math.sin(tipAngle + headAngle) * headLen
+  );
+  ctx.stroke();
+
+  ctx.restore();
+}
+
+// ─── Block angle analysis ────────────────────────────────────
+function analyzeAngles() {
+  const results = [];
+  let cwCount = 0, ccwCount = 0;
+  let angleCorrect = 0, angleWrong = 0;
+  let cwNeg45 = 0, cwNon45 = 0;
+  let ccw45 = 0, ccwNon45 = 0;
+
+  for (const crown of crowns) {
+    const dir = crown.direction;
+    const expectedAngle = dir === "clockwise" ? -45 : 45;
+    const isMarked = brightness(colorToHex(crown.topColor)) <= 180;
+
+    // PASS 0 now draws rotated fillRect via translate+rotate
+    // CW: rotate(-PI/4) → -45°
+    // CCW: rotate(+PI/4) → +45°
+    const drawnAngle = dir === "clockwise" ? -45 : 45;
+
+    // Check correctness: does rotated tile match expected diagonal?
+    const angleMatch = drawnAngle === expectedAngle;
+    if (angleMatch) angleCorrect++; else angleWrong++;
+
+    if (dir === "clockwise") {
+      cwCount++;
+      if (expectedAngle === -45) cwNeg45++; else cwNon45++;
+    } else {
+      ccwCount++;
+      if (expectedAngle === 45) ccw45++; else ccwNon45++;
+    }
+
+    results.push({
+      col: crown.col,
+      row: crown.row,
+      carrierNo: crown.topCarrierNo,
+      carrierColor: crown.topColor,
+      direction: dir,
+      expectedAngle,
+      drawnAngle,
+      angleMatch,
+      isMarked,
+      isPASS0: true // PASS 0 only draws fillRect, never diagonal
+    });
+  }
+
+  return { results, cwCount, ccwCount, angleCorrect, angleWrong, cwNeg45, cwNon45, ccw45, ccwNon45 };
+}
+
+// ─── Main render ─────────────────────────────────────────────
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
+let showOverlay = true;
+
+function render() {
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width = canvasW * dpr;
+  canvas.height = canvasH * dpr;
+  ctx.scale(dpr, dpr);
+
+  ctx.clearRect(0, 0, canvasW, canvasH);
+  ctx.save();
+  ctx.rect(0, 0, canvasW, canvasH);
+  ctx.clip();
+
+  drawRopeBodyBase(ctx, canvasW, canvasH);
+
+  const orderedCrowns = [...crowns].sort((a, b) => {
+    const aW = brightness(colorToHex(a.topColor)) > 160;
+    const bW = brightness(colorToHex(b.topColor)) > 160;
+    return aW - bW;
+  });
+
+  for (const crown of orderedCrowns) {
+    const cx = crown.col * grid.cellWidth;
+    const cy = crown.row * grid.cellHeight;
+    renderPass0(ctx, crown, cx, cy);
+  }
+
+  if (showOverlay) {
+    // Draw overlay on top of PASS 0
+    for (const crown of orderedCrowns) {
+      const cx = crown.col * grid.cellWidth;
+      const cy = crown.row * grid.cellHeight;
+      drawDirectionOverlay(ctx, crown, cx, cy);
+    }
+  }
+
+  ctx.restore();
+  updateStats();
+}
+
+// ─── Stats + Report ──────────────────────────────────────────
+function updateStats() {
+  const analysis = analyzeAngles();
+  const { results, cwCount, ccwCount, angleCorrect, angleWrong, cwNeg45, cwNon45, ccw45, ccwNon45 } = analysis;
+
+  document.getElementById("info").innerHTML =
+    `Toplam hücre: ${crowns.length} · CW: ${cwCount} · CCW: ${ccwCount} · ` +
+    `Angle Match: ${angleCorrect}/${crowns.length} (${(100*angleCorrect/crowns.length).toFixed(1)}%)`;
+
+  document.getElementById("summary").innerHTML = `
+    <div class="summary-item"><span class="label">CW (-45°)</span> <span class="value">${cwNeg45}</span></div>
+    <div class="summary-item"><span class="label">CW non-45°</span> <span class="value">${cwNon45}</span></div>
+    <div class="summary-item"><span class="label">CCW (+45°)</span> <span class="value">${ccw45}</span></div>
+    <div class="summary-item"><span class="label">CCW non-45°</span> <span class="value">${ccwNon45}</span></div>
+    <div class="summary-item"><span class="label">Angle Match ✓</span> <span class="value">${angleCorrect}</span></div>
+  `;
+
+  // JSON report
+  const report = {
+    title: "Block Orientation Debug Report",
+    description: "PASS 0 rotated fillRect via translate+rotate. CW=-45°, CCW=+45°.",
+    grid: { cols: grid.steps, rows: grid.rows, cellWidth: grid.cellWidth, cellHeight: grid.cellHeight },
+    totalCrowns: crowns.length,
+    summary: {
+      cwCount,
+      ccwCount,
+      angleCorrect,
+      angleWrong,
+      angleCorrectPercent: Number((100 * angleCorrect / crowns.length).toFixed(1)),
+      allPASS0Rotated: true,
+      note: "PASS 0 now uses translate+rotate fillRect. CW → -45°, CCW → 45°."
+    },
+    directionConvention: {
+      clockwise: { expectedAngle: -45, description: "bottom-left → top-right" },
+      counterClockwise: { expectedAngle: 45, description: "top-left → bottom-right" }
+    },
+    angleData: results.map(r => ({
+      cell: `(${r.col},${r.row})`,
+      carrier: `#${r.carrierNo}`,
+      color: r.carrierColor,
+      direction: r.direction,
+      expectedAngle: r.expectedAngle,
+      drawnAngle: r.drawnAngle,
+      match: r.angleMatch,
+      marked: r.isMarked
+    }))
+  };
+
+  document.getElementById("report").textContent =
+    "// debug-block-angle.json\n" + JSON.stringify(report, null, 2);
+
+  // Expose for extraction
+  window.__DEBUG_REPORT__ = report;
+}
+
+// ─── Button controls ─────────────────────────────────────────
+document.getElementById("btnOverlay").addEventListener("click", () => {
+  showOverlay = true;
+  document.getElementById("btnOverlay").classList.add("active");
+  document.getElementById("btnPass0").classList.remove("active");
+  render();
+});
+document.getElementById("btnPass0").addEventListener("click", () => {
+  showOverlay = false;
+  document.getElementById("btnPass0").classList.add("active");
+  document.getElementById("btnOverlay").classList.remove("active");
+  render();
+});
+
+// ─── Initial render ──────────────────────────────────────────
+render();
+
+// Expose for extraction
+window.__TEST_CROWNS__ = crowns;
+window.__TEST_GRID__ = grid;
+</script>
+</body>
+</html>

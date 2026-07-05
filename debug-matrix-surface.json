@@ -1,0 +1,4045 @@
+{
+  "meta": {
+    "totalCells": 192,
+    "nullUnderCount": 0,
+    "nullUnderRatio": "0.0%",
+    "directionMismatchCount": 0,
+    "directionMismatchRatio": "0.0%",
+    "status": "PASS"
+  },
+  "directionMismatchDetails": [],
+  "cells": [
+    {
+      "row": 0,
+      "col": 0,
+      "cwCarrier": {
+        "no": 1,
+        "color": "siyah"
+      },
+      "ccwCarrier": {
+        "no": 2,
+        "color": "beyaz"
+      },
+      "topDirection": "clockwise",
+      "topCarrier": {
+        "no": 1,
+        "color": "siyah"
+      },
+      "underCarrier": {
+        "no": 2,
+        "color": "beyaz"
+      }
+    },
+    {
+      "row": 0,
+      "col": 1,
+      "cwCarrier": {
+        "no": 1,
+        "color": "siyah"
+      },
+      "ccwCarrier": {
+        "no": 2,
+        "color": "beyaz"
+      },
+      "topDirection": "clockwise",
+      "topCarrier": {
+        "no": 1,
+        "color": "siyah"
+      },
+      "underCarrier": {
+        "no": 2,
+        "color": "beyaz"
+      }
+    },
+    {
+      "row": 0,
+      "col": 2,
+      "cwCarrier": {
+        "no": 3,
+        "color": "kirmizi"
+      },
+      "ccwCarrier": {
+        "no": 4,
+        "color": "beyaz"
+      },
+      "topDirection": "counterClockwise",
+      "topCarrier": {
+        "no": 4,
+        "color": "beyaz"
+      },
+      "underCarrier": {
+        "no": 3,
+        "color": "kirmizi"
+      }
+    },
+    {
+      "row": 0,
+      "col": 3,
+      "cwCarrier": {
+        "no": 3,
+        "color": "kirmizi"
+      },
+      "ccwCarrier": {
+        "no": 4,
+        "color": "beyaz"
+      },
+      "topDirection": "counterClockwise",
+      "topCarrier": {
+        "no": 4,
+        "color": "beyaz"
+      },
+      "underCarrier": {
+        "no": 3,
+        "color": "kirmizi"
+      }
+    },
+    {
+      "row": 0,
+      "col": 4,
+      "cwCarrier": {
+        "no": 5,
+        "color": "kirmizi"
+      },
+      "ccwCarrier": {
+        "no": 6,
+        "color": "beyaz"
+      },
+      "topDirection": "clockwise",
+      "topCarrier": {
+        "no": 5,
+        "color": "kirmizi"
+      },
+      "underCarrier": {
+        "no": 6,
+        "color": "beyaz"
+      }
+    },
+    {
+      "row": 0,
+      "col": 5,
+      "cwCarrier": {
+        "no": 5,
+        "color": "kirmizi"
+      },
+      "ccwCarrier": {
+        "no": 6,
+        "color": "beyaz"
+      },
+      "topDirection": "clockwise",
+      "topCarrier": {
+        "no": 5,
+        "color": "kirmizi"
+      },
+      "underCarrier": {
+        "no": 6,
+        "color": "beyaz"
+      }
+    },
+    {
+      "row": 0,
+      "col": 6,
+      "cwCarrier": {
+        "no": 7,
+        "color": "beyaz"
+      },
+      "ccwCarrier": {
+        "no": 8,
+        "color": "beyaz"
+      },
+      "topDirection": "counterClockwise",
+      "topCarrier": {
+        "no": 8,
+        "color": "beyaz"
+      },
+      "underCarrier": {
+        "no": 7,
+        "color": "beyaz"
+      }
+    },
+    {
+      "row": 0,
+      "col": 7,
+      "cwCarrier": {
+        "no": 7,
+        "color": "beyaz"
+      },
+      "ccwCarrier": {
+        "no": 8,
+        "color": "beyaz"
+      },
+      "topDirection": "counterClockwise",
+      "topCarrier": {
+        "no": 8,
+        "color": "beyaz"
+      },
+      "underCarrier": {
+        "no": 7,
+        "color": "beyaz"
+      }
+    },
+    {
+      "row": 0,
+      "col": 8,
+      "cwCarrier": {
+        "no": 9,
+        "color": "beyaz"
+      },
+      "ccwCarrier": {
+        "no": 10,
+        "color": "mavi"
+      },
+      "topDirection": "clockwise",
+      "topCarrier": {
+        "no": 9,
+        "color": "beyaz"
+      },
+      "underCarrier": {
+        "no": 10,
+        "color": "mavi"
+      }
+    },
+    {
+      "row": 0,
+      "col": 9,
+      "cwCarrier": {
+        "no": 9,
+        "color": "beyaz"
+      },
+      "ccwCarrier": {
+        "no": 10,
+        "color": "mavi"
+      },
+      "topDirection": "clockwise",
+      "topCarrier": {
+        "no": 9,
+        "color": "beyaz"
+      },
+      "underCarrier": {
+        "no": 10,
+        "color": "mavi"
+      }
+    },
+    {
+      "row": 0,
+      "col": 10,
+      "cwCarrier": {
+        "no": 11,
+        "color": "beyaz"
+      },
+      "ccwCarrier": {
+        "no": 12,
+        "color": "mavi"
+      },
+      "topDirection": "counterClockwise",
+      "topCarrier": {
+        "no": 12,
+        "color": "mavi"
+      },
+      "underCarrier": {
+        "no": 11,
+        "color": "beyaz"
+      }
+    },
+    {
+      "row": 0,
+      "col": 11,
+      "cwCarrier": {
+        "no": 11,
+        "color": "beyaz"
+      },
+      "ccwCarrier": {
+        "no": 12,
+        "color": "mavi"
+      },
+      "topDirection": "counterClockwise",
+      "topCarrier": {
+        "no": 12,
+        "color": "mavi"
+      },
+      "underCarrier": {
+        "no": 11,
+        "color": "beyaz"
+      }
+    },
+    {
+      "row": 0,
+      "col": 12,
+      "cwCarrier": {
+        "no": 13,
+        "color": "beyaz"
+      },
+      "ccwCarrier": {
+        "no": 14,
+        "color": "beyaz"
+      },
+      "topDirection": "clockwise",
+      "topCarrier": {
+        "no": 13,
+        "color": "beyaz"
+      },
+      "underCarrier": {
+        "no": 14,
+        "color": "beyaz"
+      }
+    },
+    {
+      "row": 0,
+      "col": 13,
+      "cwCarrier": {
+        "no": 13,
+        "color": "beyaz"
+      },
+      "ccwCarrier": {
+        "no": 14,
+        "color": "beyaz"
+      },
+      "topDirection": "clockwise",
+      "topCarrier": {
+        "no": 13,
+        "color": "beyaz"
+      },
+      "underCarrier": {
+        "no": 14,
+        "color": "beyaz"
+      }
+    },
+    {
+      "row": 0,
+      "col": 14,
+      "cwCarrier": {
+        "no": 15,
+        "color": "beyaz"
+      },
+      "ccwCarrier": {
+        "no": 16,
+        "color": "beyaz"
+      },
+      "topDirection": "counterClockwise",
+      "topCarrier": {
+        "no": 16,
+        "color": "beyaz"
+      },
+      "underCarrier": {
+        "no": 15,
+        "color": "beyaz"
+      }
+    },
+    {
+      "row": 0,
+      "col": 15,
+      "cwCarrier": {
+        "no": 15,
+        "color": "beyaz"
+      },
+      "ccwCarrier": {
+        "no": 16,
+        "color": "beyaz"
+      },
+      "topDirection": "counterClockwise",
+      "topCarrier": {
+        "no": 16,
+        "color": "beyaz"
+      },
+      "underCarrier": {
+        "no": 15,
+        "color": "beyaz"
+      }
+    },
+    {
+      "row": 1,
+      "col": 0,
+      "cwCarrier": {
+        "no": 15,
+        "color": "beyaz"
+      },
+      "ccwCarrier": {
+        "no": 2,
+        "color": "beyaz"
+      },
+      "topDirection": "clockwise",
+      "topCarrier": {
+        "no": 15,
+        "color": "beyaz"
+      },
+      "underCarrier": {
+        "no": 2,
+        "color": "beyaz"
+      }
+    },
+    {
+      "row": 1,
+      "col": 1,
+      "cwCarrier": {
+        "no": 1,
+        "color": "siyah"
+      },
+      "ccwCarrier": {
+        "no": 4,
+        "color": "beyaz"
+      },
+      "topDirection": "counterClockwise",
+      "topCarrier": {
+        "no": 4,
+        "color": "beyaz"
+      },
+      "underCarrier": {
+        "no": 1,
+        "color": "siyah"
+      }
+    },
+    {
+      "row": 1,
+      "col": 2,
+      "cwCarrier": {
+        "no": 1,
+        "color": "siyah"
+      },
+      "ccwCarrier": {
+        "no": 4,
+        "color": "beyaz"
+      },
+      "topDirection": "counterClockwise",
+      "topCarrier": {
+        "no": 4,
+        "color": "beyaz"
+      },
+      "underCarrier": {
+        "no": 1,
+        "color": "siyah"
+      }
+    },
+    {
+      "row": 1,
+      "col": 3,
+      "cwCarrier": {
+        "no": 3,
+        "color": "kirmizi"
+      },
+      "ccwCarrier": {
+        "no": 6,
+        "color": "beyaz"
+      },
+      "topDirection": "clockwise",
+      "topCarrier": {
+        "no": 3,
+        "color": "kirmizi"
+      },
+      "underCarrier": {
+        "no": 6,
+        "color": "beyaz"
+      }
+    },
+    {
+      "row": 1,
+      "col": 4,
+      "cwCarrier": {
+        "no": 3,
+        "color": "kirmizi"
+      },
+      "ccwCarrier": {
+        "no": 6,
+        "color": "beyaz"
+      },
+      "topDirection": "clockwise",
+      "topCarrier": {
+        "no": 3,
+        "color": "kirmizi"
+      },
+      "underCarrier": {
+        "no": 6,
+        "color": "beyaz"
+      }
+    },
+    {
+      "row": 1,
+      "col": 5,
+      "cwCarrier": {
+        "no": 5,
+        "color": "kirmizi"
+      },
+      "ccwCarrier": {
+        "no": 8,
+        "color": "beyaz"
+      },
+      "topDirection": "counterClockwise",
+      "topCarrier": {
+        "no": 8,
+        "color": "beyaz"
+      },
+      "underCarrier": {
+        "no": 5,
+        "color": "kirmizi"
+      }
+    },
+    {
+      "row": 1,
+      "col": 6,
+      "cwCarrier": {
+        "no": 5,
+        "color": "kirmizi"
+      },
+      "ccwCarrier": {
+        "no": 8,
+        "color": "beyaz"
+      },
+      "topDirection": "counterClockwise",
+      "topCarrier": {
+        "no": 8,
+        "color": "beyaz"
+      },
+      "underCarrier": {
+        "no": 5,
+        "color": "kirmizi"
+      }
+    },
+    {
+      "row": 1,
+      "col": 7,
+      "cwCarrier": {
+        "no": 7,
+        "color": "beyaz"
+      },
+      "ccwCarrier": {
+        "no": 10,
+        "color": "mavi"
+      },
+      "topDirection": "clockwise",
+      "topCarrier": {
+        "no": 7,
+        "color": "beyaz"
+      },
+      "underCarrier": {
+        "no": 10,
+        "color": "mavi"
+      }
+    },
+    {
+      "row": 1,
+      "col": 8,
+      "cwCarrier": {
+        "no": 7,
+        "color": "beyaz"
+      },
+      "ccwCarrier": {
+        "no": 10,
+        "color": "mavi"
+      },
+      "topDirection": "clockwise",
+      "topCarrier": {
+        "no": 7,
+        "color": "beyaz"
+      },
+      "underCarrier": {
+        "no": 10,
+        "color": "mavi"
+      }
+    },
+    {
+      "row": 1,
+      "col": 9,
+      "cwCarrier": {
+        "no": 9,
+        "color": "beyaz"
+      },
+      "ccwCarrier": {
+        "no": 12,
+        "color": "mavi"
+      },
+      "topDirection": "counterClockwise",
+      "topCarrier": {
+        "no": 12,
+        "color": "mavi"
+      },
+      "underCarrier": {
+        "no": 9,
+        "color": "beyaz"
+      }
+    },
+    {
+      "row": 1,
+      "col": 10,
+      "cwCarrier": {
+        "no": 9,
+        "color": "beyaz"
+      },
+      "ccwCarrier": {
+        "no": 12,
+        "color": "mavi"
+      },
+      "topDirection": "counterClockwise",
+      "topCarrier": {
+        "no": 12,
+        "color": "mavi"
+      },
+      "underCarrier": {
+        "no": 9,
+        "color": "beyaz"
+      }
+    },
+    {
+      "row": 1,
+      "col": 11,
+      "cwCarrier": {
+        "no": 11,
+        "color": "beyaz"
+      },
+      "ccwCarrier": {
+        "no": 14,
+        "color": "beyaz"
+      },
+      "topDirection": "clockwise",
+      "topCarrier": {
+        "no": 11,
+        "color": "beyaz"
+      },
+      "underCarrier": {
+        "no": 14,
+        "color": "beyaz"
+      }
+    },
+    {
+      "row": 1,
+      "col": 12,
+      "cwCarrier": {
+        "no": 11,
+        "color": "beyaz"
+      },
+      "ccwCarrier": {
+        "no": 14,
+        "color": "beyaz"
+      },
+      "topDirection": "clockwise",
+      "topCarrier": {
+        "no": 11,
+        "color": "beyaz"
+      },
+      "underCarrier": {
+        "no": 14,
+        "color": "beyaz"
+      }
+    },
+    {
+      "row": 1,
+      "col": 13,
+      "cwCarrier": {
+        "no": 13,
+        "color": "beyaz"
+      },
+      "ccwCarrier": {
+        "no": 16,
+        "color": "beyaz"
+      },
+      "topDirection": "counterClockwise",
+      "topCarrier": {
+        "no": 16,
+        "color": "beyaz"
+      },
+      "underCarrier": {
+        "no": 13,
+        "color": "beyaz"
+      }
+    },
+    {
+      "row": 1,
+      "col": 14,
+      "cwCarrier": {
+        "no": 13,
+        "color": "beyaz"
+      },
+      "ccwCarrier": {
+        "no": 16,
+        "color": "beyaz"
+      },
+      "topDirection": "counterClockwise",
+      "topCarrier": {
+        "no": 16,
+        "color": "beyaz"
+      },
+      "underCarrier": {
+        "no": 13,
+        "color": "beyaz"
+      }
+    },
+    {
+      "row": 1,
+      "col": 15,
+      "cwCarrier": {
+        "no": 15,
+        "color": "beyaz"
+      },
+      "ccwCarrier": {
+        "no": 2,
+        "color": "beyaz"
+      },
+      "topDirection": "clockwise",
+      "topCarrier": {
+        "no": 15,
+        "color": "beyaz"
+      },
+      "underCarrier": {
+        "no": 2,
+        "color": "beyaz"
+      }
+    },
+    {
+      "row": 2,
+      "col": 0,
+      "cwCarrier": {
+        "no": 15,
+        "color": "beyaz"
+      },
+      "ccwCarrier": {
+        "no": 4,
+        "color": "beyaz"
+      },
+      "topDirection": "counterClockwise",
+      "topCarrier": {
+        "no": 4,
+        "color": "beyaz"
+      },
+      "underCarrier": {
+        "no": 15,
+        "color": "beyaz"
+      }
+    },
+    {
+      "row": 2,
+      "col": 1,
+      "cwCarrier": {
+        "no": 15,
+        "color": "beyaz"
+      },
+      "ccwCarrier": {
+        "no": 4,
+        "color": "beyaz"
+      },
+      "topDirection": "counterClockwise",
+      "topCarrier": {
+        "no": 4,
+        "color": "beyaz"
+      },
+      "underCarrier": {
+        "no": 15,
+        "color": "beyaz"
+      }
+    },
+    {
+      "row": 2,
+      "col": 2,
+      "cwCarrier": {
+        "no": 1,
+        "color": "siyah"
+      },
+      "ccwCarrier": {
+        "no": 6,
+        "color": "beyaz"
+      },
+      "topDirection": "clockwise",
+      "topCarrier": {
+        "no": 1,
+        "color": "siyah"
+      },
+      "underCarrier": {
+        "no": 6,
+        "color": "beyaz"
+      }
+    },
+    {
+      "row": 2,
+      "col": 3,
+      "cwCarrier": {
+        "no": 1,
+        "color": "siyah"
+      },
+      "ccwCarrier": {
+        "no": 6,
+        "color": "beyaz"
+      },
+      "topDirection": "clockwise",
+      "topCarrier": {
+        "no": 1,
+        "color": "siyah"
+      },
+      "underCarrier": {
+        "no": 6,
+        "color": "beyaz"
+      }
+    },
+    {
+      "row": 2,
+      "col": 4,
+      "cwCarrier": {
+        "no": 3,
+        "color": "kirmizi"
+      },
+      "ccwCarrier": {
+        "no": 8,
+        "color": "beyaz"
+      },
+      "topDirection": "counterClockwise",
+      "topCarrier": {
+        "no": 8,
+        "color": "beyaz"
+      },
+      "underCarrier": {
+        "no": 3,
+        "color": "kirmizi"
+      }
+    },
+    {
+      "row": 2,
+      "col": 5,
+      "cwCarrier": {
+        "no": 3,
+        "color": "kirmizi"
+      },
+      "ccwCarrier": {
+        "no": 8,
+        "color": "beyaz"
+      },
+      "topDirection": "counterClockwise",
+      "topCarrier": {
+        "no": 8,
+        "color": "beyaz"
+      },
+      "underCarrier": {
+        "no": 3,
+        "color": "kirmizi"
+      }
+    },
+    {
+      "row": 2,
+      "col": 6,
+      "cwCarrier": {
+        "no": 5,
+        "color": "kirmizi"
+      },
+      "ccwCarrier": {
+        "no": 10,
+        "color": "mavi"
+      },
+      "topDirection": "clockwise",
+      "topCarrier": {
+        "no": 5,
+        "color": "kirmizi"
+      },
+      "underCarrier": {
+        "no": 10,
+        "color": "mavi"
+      }
+    },
+    {
+      "row": 2,
+      "col": 7,
+      "cwCarrier": {
+        "no": 5,
+        "color": "kirmizi"
+      },
+      "ccwCarrier": {
+        "no": 10,
+        "color": "mavi"
+      },
+      "topDirection": "clockwise",
+      "topCarrier": {
+        "no": 5,
+        "color": "kirmizi"
+      },
+      "underCarrier": {
+        "no": 10,
+        "color": "mavi"
+      }
+    },
+    {
+      "row": 2,
+      "col": 8,
+      "cwCarrier": {
+        "no": 7,
+        "color": "beyaz"
+      },
+      "ccwCarrier": {
+        "no": 12,
+        "color": "mavi"
+      },
+      "topDirection": "counterClockwise",
+      "topCarrier": {
+        "no": 12,
+        "color": "mavi"
+      },
+      "underCarrier": {
+        "no": 7,
+        "color": "beyaz"
+      }
+    },
+    {
+      "row": 2,
+      "col": 9,
+      "cwCarrier": {
+        "no": 7,
+        "color": "beyaz"
+      },
+      "ccwCarrier": {
+        "no": 12,
+        "color": "mavi"
+      },
+      "topDirection": "counterClockwise",
+      "topCarrier": {
+        "no": 12,
+        "color": "mavi"
+      },
+      "underCarrier": {
+        "no": 7,
+        "color": "beyaz"
+      }
+    },
+    {
+      "row": 2,
+      "col": 10,
+      "cwCarrier": {
+        "no": 9,
+        "color": "beyaz"
+      },
+      "ccwCarrier": {
+        "no": 14,
+        "color": "beyaz"
+      },
+      "topDirection": "clockwise",
+      "topCarrier": {
+        "no": 9,
+        "color": "beyaz"
+      },
+      "underCarrier": {
+        "no": 14,
+        "color": "beyaz"
+      }
+    },
+    {
+      "row": 2,
+      "col": 11,
+      "cwCarrier": {
+        "no": 9,
+        "color": "beyaz"
+      },
+      "ccwCarrier": {
+        "no": 14,
+        "color": "beyaz"
+      },
+      "topDirection": "clockwise",
+      "topCarrier": {
+        "no": 9,
+        "color": "beyaz"
+      },
+      "underCarrier": {
+        "no": 14,
+        "color": "beyaz"
+      }
+    },
+    {
+      "row": 2,
+      "col": 12,
+      "cwCarrier": {
+        "no": 11,
+        "color": "beyaz"
+      },
+      "ccwCarrier": {
+        "no": 16,
+        "color": "beyaz"
+      },
+      "topDirection": "counterClockwise",
+      "topCarrier": {
+        "no": 16,
+        "color": "beyaz"
+      },
+      "underCarrier": {
+        "no": 11,
+        "color": "beyaz"
+      }
+    },
+    {
+      "row": 2,
+      "col": 13,
+      "cwCarrier": {
+        "no": 11,
+        "color": "beyaz"
+      },
+      "ccwCarrier": {
+        "no": 16,
+        "color": "beyaz"
+      },
+      "topDirection": "counterClockwise",
+      "topCarrier": {
+        "no": 16,
+        "color": "beyaz"
+      },
+      "underCarrier": {
+        "no": 11,
+        "color": "beyaz"
+      }
+    },
+    {
+      "row": 2,
+      "col": 14,
+      "cwCarrier": {
+        "no": 13,
+        "color": "beyaz"
+      },
+      "ccwCarrier": {
+        "no": 2,
+        "color": "beyaz"
+      },
+      "topDirection": "clockwise",
+      "topCarrier": {
+        "no": 13,
+        "color": "beyaz"
+      },
+      "underCarrier": {
+        "no": 2,
+        "color": "beyaz"
+      }
+    },
+    {
+      "row": 2,
+      "col": 15,
+      "cwCarrier": {
+        "no": 13,
+        "color": "beyaz"
+      },
+      "ccwCarrier": {
+        "no": 2,
+        "color": "beyaz"
+      },
+      "topDirection": "clockwise",
+      "topCarrier": {
+        "no": 13,
+        "color": "beyaz"
+      },
+      "underCarrier": {
+        "no": 2,
+        "color": "beyaz"
+      }
+    },
+    {
+      "row": 3,
+      "col": 0,
+      "cwCarrier": {
+        "no": 13,
+        "color": "beyaz"
+      },
+      "ccwCarrier": {
+        "no": 4,
+        "color": "beyaz"
+      },
+      "topDirection": "counterClockwise",
+      "topCarrier": {
+        "no": 4,
+        "color": "beyaz"
+      },
+      "underCarrier": {
+        "no": 13,
+        "color": "beyaz"
+      }
+    },
+    {
+      "row": 3,
+      "col": 1,
+      "cwCarrier": {
+        "no": 15,
+        "color": "beyaz"
+      },
+      "ccwCarrier": {
+        "no": 6,
+        "color": "beyaz"
+      },
+      "topDirection": "clockwise",
+      "topCarrier": {
+        "no": 15,
+        "color": "beyaz"
+      },
+      "underCarrier": {
+        "no": 6,
+        "color": "beyaz"
+      }
+    },
+    {
+      "row": 3,
+      "col": 2,
+      "cwCarrier": {
+        "no": 15,
+        "color": "beyaz"
+      },
+      "ccwCarrier": {
+        "no": 6,
+        "color": "beyaz"
+      },
+      "topDirection": "clockwise",
+      "topCarrier": {
+        "no": 15,
+        "color": "beyaz"
+      },
+      "underCarrier": {
+        "no": 6,
+        "color": "beyaz"
+      }
+    },
+    {
+      "row": 3,
+      "col": 3,
+      "cwCarrier": {
+        "no": 1,
+        "color": "siyah"
+      },
+      "ccwCarrier": {
+        "no": 8,
+        "color": "beyaz"
+      },
+      "topDirection": "counterClockwise",
+      "topCarrier": {
+        "no": 8,
+        "color": "beyaz"
+      },
+      "underCarrier": {
+        "no": 1,
+        "color": "siyah"
+      }
+    },
+    {
+      "row": 3,
+      "col": 4,
+      "cwCarrier": {
+        "no": 1,
+        "color": "siyah"
+      },
+      "ccwCarrier": {
+        "no": 8,
+        "color": "beyaz"
+      },
+      "topDirection": "counterClockwise",
+      "topCarrier": {
+        "no": 8,
+        "color": "beyaz"
+      },
+      "underCarrier": {
+        "no": 1,
+        "color": "siyah"
+      }
+    },
+    {
+      "row": 3,
+      "col": 5,
+      "cwCarrier": {
+        "no": 3,
+        "color": "kirmizi"
+      },
+      "ccwCarrier": {
+        "no": 10,
+        "color": "mavi"
+      },
+      "topDirection": "clockwise",
+      "topCarrier": {
+        "no": 3,
+        "color": "kirmizi"
+      },
+      "underCarrier": {
+        "no": 10,
+        "color": "mavi"
+      }
+    },
+    {
+      "row": 3,
+      "col": 6,
+      "cwCarrier": {
+        "no": 3,
+        "color": "kirmizi"
+      },
+      "ccwCarrier": {
+        "no": 10,
+        "color": "mavi"
+      },
+      "topDirection": "clockwise",
+      "topCarrier": {
+        "no": 3,
+        "color": "kirmizi"
+      },
+      "underCarrier": {
+        "no": 10,
+        "color": "mavi"
+      }
+    },
+    {
+      "row": 3,
+      "col": 7,
+      "cwCarrier": {
+        "no": 5,
+        "color": "kirmizi"
+      },
+      "ccwCarrier": {
+        "no": 12,
+        "color": "mavi"
+      },
+      "topDirection": "counterClockwise",
+      "topCarrier": {
+        "no": 12,
+        "color": "mavi"
+      },
+      "underCarrier": {
+        "no": 5,
+        "color": "kirmizi"
+      }
+    },
+    {
+      "row": 3,
+      "col": 8,
+      "cwCarrier": {
+        "no": 5,
+        "color": "kirmizi"
+      },
+      "ccwCarrier": {
+        "no": 12,
+        "color": "mavi"
+      },
+      "topDirection": "counterClockwise",
+      "topCarrier": {
+        "no": 12,
+        "color": "mavi"
+      },
+      "underCarrier": {
+        "no": 5,
+        "color": "kirmizi"
+      }
+    },
+    {
+      "row": 3,
+      "col": 9,
+      "cwCarrier": {
+        "no": 7,
+        "color": "beyaz"
+      },
+      "ccwCarrier": {
+        "no": 14,
+        "color": "beyaz"
+      },
+      "topDirection": "clockwise",
+      "topCarrier": {
+        "no": 7,
+        "color": "beyaz"
+      },
+      "underCarrier": {
+        "no": 14,
+        "color": "beyaz"
+      }
+    },
+    {
+      "row": 3,
+      "col": 10,
+      "cwCarrier": {
+        "no": 7,
+        "color": "beyaz"
+      },
+      "ccwCarrier": {
+        "no": 14,
+        "color": "beyaz"
+      },
+      "topDirection": "clockwise",
+      "topCarrier": {
+        "no": 7,
+        "color": "beyaz"
+      },
+      "underCarrier": {
+        "no": 14,
+        "color": "beyaz"
+      }
+    },
+    {
+      "row": 3,
+      "col": 11,
+      "cwCarrier": {
+        "no": 9,
+        "color": "beyaz"
+      },
+      "ccwCarrier": {
+        "no": 16,
+        "color": "beyaz"
+      },
+      "topDirection": "counterClockwise",
+      "topCarrier": {
+        "no": 16,
+        "color": "beyaz"
+      },
+      "underCarrier": {
+        "no": 9,
+        "color": "beyaz"
+      }
+    },
+    {
+      "row": 3,
+      "col": 12,
+      "cwCarrier": {
+        "no": 9,
+        "color": "beyaz"
+      },
+      "ccwCarrier": {
+        "no": 16,
+        "color": "beyaz"
+      },
+      "topDirection": "counterClockwise",
+      "topCarrier": {
+        "no": 16,
+        "color": "beyaz"
+      },
+      "underCarrier": {
+        "no": 9,
+        "color": "beyaz"
+      }
+    },
+    {
+      "row": 3,
+      "col": 13,
+      "cwCarrier": {
+        "no": 11,
+        "color": "beyaz"
+      },
+      "ccwCarrier": {
+        "no": 2,
+        "color": "beyaz"
+      },
+      "topDirection": "clockwise",
+      "topCarrier": {
+        "no": 11,
+        "color": "beyaz"
+      },
+      "underCarrier": {
+        "no": 2,
+        "color": "beyaz"
+      }
+    },
+    {
+      "row": 3,
+      "col": 14,
+      "cwCarrier": {
+        "no": 11,
+        "color": "beyaz"
+      },
+      "ccwCarrier": {
+        "no": 2,
+        "color": "beyaz"
+      },
+      "topDirection": "clockwise",
+      "topCarrier": {
+        "no": 11,
+        "color": "beyaz"
+      },
+      "underCarrier": {
+        "no": 2,
+        "color": "beyaz"
+      }
+    },
+    {
+      "row": 3,
+      "col": 15,
+      "cwCarrier": {
+        "no": 13,
+        "color": "beyaz"
+      },
+      "ccwCarrier": {
+        "no": 4,
+        "color": "beyaz"
+      },
+      "topDirection": "counterClockwise",
+      "topCarrier": {
+        "no": 4,
+        "color": "beyaz"
+      },
+      "underCarrier": {
+        "no": 13,
+        "color": "beyaz"
+      }
+    },
+    {
+      "row": 4,
+      "col": 0,
+      "cwCarrier": {
+        "no": 13,
+        "color": "beyaz"
+      },
+      "ccwCarrier": {
+        "no": 6,
+        "color": "beyaz"
+      },
+      "topDirection": "clockwise",
+      "topCarrier": {
+        "no": 13,
+        "color": "beyaz"
+      },
+      "underCarrier": {
+        "no": 6,
+        "color": "beyaz"
+      }
+    },
+    {
+      "row": 4,
+      "col": 1,
+      "cwCarrier": {
+        "no": 13,
+        "color": "beyaz"
+      },
+      "ccwCarrier": {
+        "no": 6,
+        "color": "beyaz"
+      },
+      "topDirection": "clockwise",
+      "topCarrier": {
+        "no": 13,
+        "color": "beyaz"
+      },
+      "underCarrier": {
+        "no": 6,
+        "color": "beyaz"
+      }
+    },
+    {
+      "row": 4,
+      "col": 2,
+      "cwCarrier": {
+        "no": 15,
+        "color": "beyaz"
+      },
+      "ccwCarrier": {
+        "no": 8,
+        "color": "beyaz"
+      },
+      "topDirection": "counterClockwise",
+      "topCarrier": {
+        "no": 8,
+        "color": "beyaz"
+      },
+      "underCarrier": {
+        "no": 15,
+        "color": "beyaz"
+      }
+    },
+    {
+      "row": 4,
+      "col": 3,
+      "cwCarrier": {
+        "no": 15,
+        "color": "beyaz"
+      },
+      "ccwCarrier": {
+        "no": 8,
+        "color": "beyaz"
+      },
+      "topDirection": "counterClockwise",
+      "topCarrier": {
+        "no": 8,
+        "color": "beyaz"
+      },
+      "underCarrier": {
+        "no": 15,
+        "color": "beyaz"
+      }
+    },
+    {
+      "row": 4,
+      "col": 4,
+      "cwCarrier": {
+        "no": 1,
+        "color": "siyah"
+      },
+      "ccwCarrier": {
+        "no": 10,
+        "color": "mavi"
+      },
+      "topDirection": "clockwise",
+      "topCarrier": {
+        "no": 1,
+        "color": "siyah"
+      },
+      "underCarrier": {
+        "no": 10,
+        "color": "mavi"
+      }
+    },
+    {
+      "row": 4,
+      "col": 5,
+      "cwCarrier": {
+        "no": 1,
+        "color": "siyah"
+      },
+      "ccwCarrier": {
+        "no": 10,
+        "color": "mavi"
+      },
+      "topDirection": "clockwise",
+      "topCarrier": {
+        "no": 1,
+        "color": "siyah"
+      },
+      "underCarrier": {
+        "no": 10,
+        "color": "mavi"
+      }
+    },
+    {
+      "row": 4,
+      "col": 6,
+      "cwCarrier": {
+        "no": 3,
+        "color": "kirmizi"
+      },
+      "ccwCarrier": {
+        "no": 12,
+        "color": "mavi"
+      },
+      "topDirection": "counterClockwise",
+      "topCarrier": {
+        "no": 12,
+        "color": "mavi"
+      },
+      "underCarrier": {
+        "no": 3,
+        "color": "kirmizi"
+      }
+    },
+    {
+      "row": 4,
+      "col": 7,
+      "cwCarrier": {
+        "no": 3,
+        "color": "kirmizi"
+      },
+      "ccwCarrier": {
+        "no": 12,
+        "color": "mavi"
+      },
+      "topDirection": "counterClockwise",
+      "topCarrier": {
+        "no": 12,
+        "color": "mavi"
+      },
+      "underCarrier": {
+        "no": 3,
+        "color": "kirmizi"
+      }
+    },
+    {
+      "row": 4,
+      "col": 8,
+      "cwCarrier": {
+        "no": 5,
+        "color": "kirmizi"
+      },
+      "ccwCarrier": {
+        "no": 14,
+        "color": "beyaz"
+      },
+      "topDirection": "clockwise",
+      "topCarrier": {
+        "no": 5,
+        "color": "kirmizi"
+      },
+      "underCarrier": {
+        "no": 14,
+        "color": "beyaz"
+      }
+    },
+    {
+      "row": 4,
+      "col": 9,
+      "cwCarrier": {
+        "no": 5,
+        "color": "kirmizi"
+      },
+      "ccwCarrier": {
+        "no": 14,
+        "color": "beyaz"
+      },
+      "topDirection": "clockwise",
+      "topCarrier": {
+        "no": 5,
+        "color": "kirmizi"
+      },
+      "underCarrier": {
+        "no": 14,
+        "color": "beyaz"
+      }
+    },
+    {
+      "row": 4,
+      "col": 10,
+      "cwCarrier": {
+        "no": 7,
+        "color": "beyaz"
+      },
+      "ccwCarrier": {
+        "no": 16,
+        "color": "beyaz"
+      },
+      "topDirection": "counterClockwise",
+      "topCarrier": {
+        "no": 16,
+        "color": "beyaz"
+      },
+      "underCarrier": {
+        "no": 7,
+        "color": "beyaz"
+      }
+    },
+    {
+      "row": 4,
+      "col": 11,
+      "cwCarrier": {
+        "no": 7,
+        "color": "beyaz"
+      },
+      "ccwCarrier": {
+        "no": 16,
+        "color": "beyaz"
+      },
+      "topDirection": "counterClockwise",
+      "topCarrier": {
+        "no": 16,
+        "color": "beyaz"
+      },
+      "underCarrier": {
+        "no": 7,
+        "color": "beyaz"
+      }
+    },
+    {
+      "row": 4,
+      "col": 12,
+      "cwCarrier": {
+        "no": 9,
+        "color": "beyaz"
+      },
+      "ccwCarrier": {
+        "no": 2,
+        "color": "beyaz"
+      },
+      "topDirection": "clockwise",
+      "topCarrier": {
+        "no": 9,
+        "color": "beyaz"
+      },
+      "underCarrier": {
+        "no": 2,
+        "color": "beyaz"
+      }
+    },
+    {
+      "row": 4,
+      "col": 13,
+      "cwCarrier": {
+        "no": 9,
+        "color": "beyaz"
+      },
+      "ccwCarrier": {
+        "no": 2,
+        "color": "beyaz"
+      },
+      "topDirection": "clockwise",
+      "topCarrier": {
+        "no": 9,
+        "color": "beyaz"
+      },
+      "underCarrier": {
+        "no": 2,
+        "color": "beyaz"
+      }
+    },
+    {
+      "row": 4,
+      "col": 14,
+      "cwCarrier": {
+        "no": 11,
+        "color": "beyaz"
+      },
+      "ccwCarrier": {
+        "no": 4,
+        "color": "beyaz"
+      },
+      "topDirection": "counterClockwise",
+      "topCarrier": {
+        "no": 4,
+        "color": "beyaz"
+      },
+      "underCarrier": {
+        "no": 11,
+        "color": "beyaz"
+      }
+    },
+    {
+      "row": 4,
+      "col": 15,
+      "cwCarrier": {
+        "no": 11,
+        "color": "beyaz"
+      },
+      "ccwCarrier": {
+        "no": 4,
+        "color": "beyaz"
+      },
+      "topDirection": "counterClockwise",
+      "topCarrier": {
+        "no": 4,
+        "color": "beyaz"
+      },
+      "underCarrier": {
+        "no": 11,
+        "color": "beyaz"
+      }
+    },
+    {
+      "row": 5,
+      "col": 0,
+      "cwCarrier": {
+        "no": 11,
+        "color": "beyaz"
+      },
+      "ccwCarrier": {
+        "no": 6,
+        "color": "beyaz"
+      },
+      "topDirection": "clockwise",
+      "topCarrier": {
+        "no": 11,
+        "color": "beyaz"
+      },
+      "underCarrier": {
+        "no": 6,
+        "color": "beyaz"
+      }
+    },
+    {
+      "row": 5,
+      "col": 1,
+      "cwCarrier": {
+        "no": 13,
+        "color": "beyaz"
+      },
+      "ccwCarrier": {
+        "no": 8,
+        "color": "beyaz"
+      },
+      "topDirection": "counterClockwise",
+      "topCarrier": {
+        "no": 8,
+        "color": "beyaz"
+      },
+      "underCarrier": {
+        "no": 13,
+        "color": "beyaz"
+      }
+    },
+    {
+      "row": 5,
+      "col": 2,
+      "cwCarrier": {
+        "no": 13,
+        "color": "beyaz"
+      },
+      "ccwCarrier": {
+        "no": 8,
+        "color": "beyaz"
+      },
+      "topDirection": "counterClockwise",
+      "topCarrier": {
+        "no": 8,
+        "color": "beyaz"
+      },
+      "underCarrier": {
+        "no": 13,
+        "color": "beyaz"
+      }
+    },
+    {
+      "row": 5,
+      "col": 3,
+      "cwCarrier": {
+        "no": 15,
+        "color": "beyaz"
+      },
+      "ccwCarrier": {
+        "no": 10,
+        "color": "mavi"
+      },
+      "topDirection": "clockwise",
+      "topCarrier": {
+        "no": 15,
+        "color": "beyaz"
+      },
+      "underCarrier": {
+        "no": 10,
+        "color": "mavi"
+      }
+    },
+    {
+      "row": 5,
+      "col": 4,
+      "cwCarrier": {
+        "no": 15,
+        "color": "beyaz"
+      },
+      "ccwCarrier": {
+        "no": 10,
+        "color": "mavi"
+      },
+      "topDirection": "clockwise",
+      "topCarrier": {
+        "no": 15,
+        "color": "beyaz"
+      },
+      "underCarrier": {
+        "no": 10,
+        "color": "mavi"
+      }
+    },
+    {
+      "row": 5,
+      "col": 5,
+      "cwCarrier": {
+        "no": 1,
+        "color": "siyah"
+      },
+      "ccwCarrier": {
+        "no": 12,
+        "color": "mavi"
+      },
+      "topDirection": "counterClockwise",
+      "topCarrier": {
+        "no": 12,
+        "color": "mavi"
+      },
+      "underCarrier": {
+        "no": 1,
+        "color": "siyah"
+      }
+    },
+    {
+      "row": 5,
+      "col": 6,
+      "cwCarrier": {
+        "no": 1,
+        "color": "siyah"
+      },
+      "ccwCarrier": {
+        "no": 12,
+        "color": "mavi"
+      },
+      "topDirection": "counterClockwise",
+      "topCarrier": {
+        "no": 12,
+        "color": "mavi"
+      },
+      "underCarrier": {
+        "no": 1,
+        "color": "siyah"
+      }
+    },
+    {
+      "row": 5,
+      "col": 7,
+      "cwCarrier": {
+        "no": 3,
+        "color": "kirmizi"
+      },
+      "ccwCarrier": {
+        "no": 14,
+        "color": "beyaz"
+      },
+      "topDirection": "clockwise",
+      "topCarrier": {
+        "no": 3,
+        "color": "kirmizi"
+      },
+      "underCarrier": {
+        "no": 14,
+        "color": "beyaz"
+      }
+    },
+    {
+      "row": 5,
+      "col": 8,
+      "cwCarrier": {
+        "no": 3,
+        "color": "kirmizi"
+      },
+      "ccwCarrier": {
+        "no": 14,
+        "color": "beyaz"
+      },
+      "topDirection": "clockwise",
+      "topCarrier": {
+        "no": 3,
+        "color": "kirmizi"
+      },
+      "underCarrier": {
+        "no": 14,
+        "color": "beyaz"
+      }
+    },
+    {
+      "row": 5,
+      "col": 9,
+      "cwCarrier": {
+        "no": 5,
+        "color": "kirmizi"
+      },
+      "ccwCarrier": {
+        "no": 16,
+        "color": "beyaz"
+      },
+      "topDirection": "counterClockwise",
+      "topCarrier": {
+        "no": 16,
+        "color": "beyaz"
+      },
+      "underCarrier": {
+        "no": 5,
+        "color": "kirmizi"
+      }
+    },
+    {
+      "row": 5,
+      "col": 10,
+      "cwCarrier": {
+        "no": 5,
+        "color": "kirmizi"
+      },
+      "ccwCarrier": {
+        "no": 16,
+        "color": "beyaz"
+      },
+      "topDirection": "counterClockwise",
+      "topCarrier": {
+        "no": 16,
+        "color": "beyaz"
+      },
+      "underCarrier": {
+        "no": 5,
+        "color": "kirmizi"
+      }
+    },
+    {
+      "row": 5,
+      "col": 11,
+      "cwCarrier": {
+        "no": 7,
+        "color": "beyaz"
+      },
+      "ccwCarrier": {
+        "no": 2,
+        "color": "beyaz"
+      },
+      "topDirection": "clockwise",
+      "topCarrier": {
+        "no": 7,
+        "color": "beyaz"
+      },
+      "underCarrier": {
+        "no": 2,
+        "color": "beyaz"
+      }
+    },
+    {
+      "row": 5,
+      "col": 12,
+      "cwCarrier": {
+        "no": 7,
+        "color": "beyaz"
+      },
+      "ccwCarrier": {
+        "no": 2,
+        "color": "beyaz"
+      },
+      "topDirection": "clockwise",
+      "topCarrier": {
+        "no": 7,
+        "color": "beyaz"
+      },
+      "underCarrier": {
+        "no": 2,
+        "color": "beyaz"
+      }
+    },
+    {
+      "row": 5,
+      "col": 13,
+      "cwCarrier": {
+        "no": 9,
+        "color": "beyaz"
+      },
+      "ccwCarrier": {
+        "no": 4,
+        "color": "beyaz"
+      },
+      "topDirection": "counterClockwise",
+      "topCarrier": {
+        "no": 4,
+        "color": "beyaz"
+      },
+      "underCarrier": {
+        "no": 9,
+        "color": "beyaz"
+      }
+    },
+    {
+      "row": 5,
+      "col": 14,
+      "cwCarrier": {
+        "no": 9,
+        "color": "beyaz"
+      },
+      "ccwCarrier": {
+        "no": 4,
+        "color": "beyaz"
+      },
+      "topDirection": "counterClockwise",
+      "topCarrier": {
+        "no": 4,
+        "color": "beyaz"
+      },
+      "underCarrier": {
+        "no": 9,
+        "color": "beyaz"
+      }
+    },
+    {
+      "row": 5,
+      "col": 15,
+      "cwCarrier": {
+        "no": 11,
+        "color": "beyaz"
+      },
+      "ccwCarrier": {
+        "no": 6,
+        "color": "beyaz"
+      },
+      "topDirection": "clockwise",
+      "topCarrier": {
+        "no": 11,
+        "color": "beyaz"
+      },
+      "underCarrier": {
+        "no": 6,
+        "color": "beyaz"
+      }
+    },
+    {
+      "row": 6,
+      "col": 0,
+      "cwCarrier": {
+        "no": 11,
+        "color": "beyaz"
+      },
+      "ccwCarrier": {
+        "no": 8,
+        "color": "beyaz"
+      },
+      "topDirection": "counterClockwise",
+      "topCarrier": {
+        "no": 8,
+        "color": "beyaz"
+      },
+      "underCarrier": {
+        "no": 11,
+        "color": "beyaz"
+      }
+    },
+    {
+      "row": 6,
+      "col": 1,
+      "cwCarrier": {
+        "no": 11,
+        "color": "beyaz"
+      },
+      "ccwCarrier": {
+        "no": 8,
+        "color": "beyaz"
+      },
+      "topDirection": "counterClockwise",
+      "topCarrier": {
+        "no": 8,
+        "color": "beyaz"
+      },
+      "underCarrier": {
+        "no": 11,
+        "color": "beyaz"
+      }
+    },
+    {
+      "row": 6,
+      "col": 2,
+      "cwCarrier": {
+        "no": 13,
+        "color": "beyaz"
+      },
+      "ccwCarrier": {
+        "no": 10,
+        "color": "mavi"
+      },
+      "topDirection": "clockwise",
+      "topCarrier": {
+        "no": 13,
+        "color": "beyaz"
+      },
+      "underCarrier": {
+        "no": 10,
+        "color": "mavi"
+      }
+    },
+    {
+      "row": 6,
+      "col": 3,
+      "cwCarrier": {
+        "no": 13,
+        "color": "beyaz"
+      },
+      "ccwCarrier": {
+        "no": 10,
+        "color": "mavi"
+      },
+      "topDirection": "clockwise",
+      "topCarrier": {
+        "no": 13,
+        "color": "beyaz"
+      },
+      "underCarrier": {
+        "no": 10,
+        "color": "mavi"
+      }
+    },
+    {
+      "row": 6,
+      "col": 4,
+      "cwCarrier": {
+        "no": 15,
+        "color": "beyaz"
+      },
+      "ccwCarrier": {
+        "no": 12,
+        "color": "mavi"
+      },
+      "topDirection": "counterClockwise",
+      "topCarrier": {
+        "no": 12,
+        "color": "mavi"
+      },
+      "underCarrier": {
+        "no": 15,
+        "color": "beyaz"
+      }
+    },
+    {
+      "row": 6,
+      "col": 5,
+      "cwCarrier": {
+        "no": 15,
+        "color": "beyaz"
+      },
+      "ccwCarrier": {
+        "no": 12,
+        "color": "mavi"
+      },
+      "topDirection": "counterClockwise",
+      "topCarrier": {
+        "no": 12,
+        "color": "mavi"
+      },
+      "underCarrier": {
+        "no": 15,
+        "color": "beyaz"
+      }
+    },
+    {
+      "row": 6,
+      "col": 6,
+      "cwCarrier": {
+        "no": 1,
+        "color": "siyah"
+      },
+      "ccwCarrier": {
+        "no": 14,
+        "color": "beyaz"
+      },
+      "topDirection": "clockwise",
+      "topCarrier": {
+        "no": 1,
+        "color": "siyah"
+      },
+      "underCarrier": {
+        "no": 14,
+        "color": "beyaz"
+      }
+    },
+    {
+      "row": 6,
+      "col": 7,
+      "cwCarrier": {
+        "no": 1,
+        "color": "siyah"
+      },
+      "ccwCarrier": {
+        "no": 14,
+        "color": "beyaz"
+      },
+      "topDirection": "clockwise",
+      "topCarrier": {
+        "no": 1,
+        "color": "siyah"
+      },
+      "underCarrier": {
+        "no": 14,
+        "color": "beyaz"
+      }
+    },
+    {
+      "row": 6,
+      "col": 8,
+      "cwCarrier": {
+        "no": 3,
+        "color": "kirmizi"
+      },
+      "ccwCarrier": {
+        "no": 16,
+        "color": "beyaz"
+      },
+      "topDirection": "counterClockwise",
+      "topCarrier": {
+        "no": 16,
+        "color": "beyaz"
+      },
+      "underCarrier": {
+        "no": 3,
+        "color": "kirmizi"
+      }
+    },
+    {
+      "row": 6,
+      "col": 9,
+      "cwCarrier": {
+        "no": 3,
+        "color": "kirmizi"
+      },
+      "ccwCarrier": {
+        "no": 16,
+        "color": "beyaz"
+      },
+      "topDirection": "counterClockwise",
+      "topCarrier": {
+        "no": 16,
+        "color": "beyaz"
+      },
+      "underCarrier": {
+        "no": 3,
+        "color": "kirmizi"
+      }
+    },
+    {
+      "row": 6,
+      "col": 10,
+      "cwCarrier": {
+        "no": 5,
+        "color": "kirmizi"
+      },
+      "ccwCarrier": {
+        "no": 2,
+        "color": "beyaz"
+      },
+      "topDirection": "clockwise",
+      "topCarrier": {
+        "no": 5,
+        "color": "kirmizi"
+      },
+      "underCarrier": {
+        "no": 2,
+        "color": "beyaz"
+      }
+    },
+    {
+      "row": 6,
+      "col": 11,
+      "cwCarrier": {
+        "no": 5,
+        "color": "kirmizi"
+      },
+      "ccwCarrier": {
+        "no": 2,
+        "color": "beyaz"
+      },
+      "topDirection": "clockwise",
+      "topCarrier": {
+        "no": 5,
+        "color": "kirmizi"
+      },
+      "underCarrier": {
+        "no": 2,
+        "color": "beyaz"
+      }
+    },
+    {
+      "row": 6,
+      "col": 12,
+      "cwCarrier": {
+        "no": 7,
+        "color": "beyaz"
+      },
+      "ccwCarrier": {
+        "no": 4,
+        "color": "beyaz"
+      },
+      "topDirection": "counterClockwise",
+      "topCarrier": {
+        "no": 4,
+        "color": "beyaz"
+      },
+      "underCarrier": {
+        "no": 7,
+        "color": "beyaz"
+      }
+    },
+    {
+      "row": 6,
+      "col": 13,
+      "cwCarrier": {
+        "no": 7,
+        "color": "beyaz"
+      },
+      "ccwCarrier": {
+        "no": 4,
+        "color": "beyaz"
+      },
+      "topDirection": "counterClockwise",
+      "topCarrier": {
+        "no": 4,
+        "color": "beyaz"
+      },
+      "underCarrier": {
+        "no": 7,
+        "color": "beyaz"
+      }
+    },
+    {
+      "row": 6,
+      "col": 14,
+      "cwCarrier": {
+        "no": 9,
+        "color": "beyaz"
+      },
+      "ccwCarrier": {
+        "no": 6,
+        "color": "beyaz"
+      },
+      "topDirection": "clockwise",
+      "topCarrier": {
+        "no": 9,
+        "color": "beyaz"
+      },
+      "underCarrier": {
+        "no": 6,
+        "color": "beyaz"
+      }
+    },
+    {
+      "row": 6,
+      "col": 15,
+      "cwCarrier": {
+        "no": 9,
+        "color": "beyaz"
+      },
+      "ccwCarrier": {
+        "no": 6,
+        "color": "beyaz"
+      },
+      "topDirection": "clockwise",
+      "topCarrier": {
+        "no": 9,
+        "color": "beyaz"
+      },
+      "underCarrier": {
+        "no": 6,
+        "color": "beyaz"
+      }
+    },
+    {
+      "row": 7,
+      "col": 0,
+      "cwCarrier": {
+        "no": 9,
+        "color": "beyaz"
+      },
+      "ccwCarrier": {
+        "no": 8,
+        "color": "beyaz"
+      },
+      "topDirection": "counterClockwise",
+      "topCarrier": {
+        "no": 8,
+        "color": "beyaz"
+      },
+      "underCarrier": {
+        "no": 9,
+        "color": "beyaz"
+      }
+    },
+    {
+      "row": 7,
+      "col": 1,
+      "cwCarrier": {
+        "no": 11,
+        "color": "beyaz"
+      },
+      "ccwCarrier": {
+        "no": 10,
+        "color": "mavi"
+      },
+      "topDirection": "clockwise",
+      "topCarrier": {
+        "no": 11,
+        "color": "beyaz"
+      },
+      "underCarrier": {
+        "no": 10,
+        "color": "mavi"
+      }
+    },
+    {
+      "row": 7,
+      "col": 2,
+      "cwCarrier": {
+        "no": 11,
+        "color": "beyaz"
+      },
+      "ccwCarrier": {
+        "no": 10,
+        "color": "mavi"
+      },
+      "topDirection": "clockwise",
+      "topCarrier": {
+        "no": 11,
+        "color": "beyaz"
+      },
+      "underCarrier": {
+        "no": 10,
+        "color": "mavi"
+      }
+    },
+    {
+      "row": 7,
+      "col": 3,
+      "cwCarrier": {
+        "no": 13,
+        "color": "beyaz"
+      },
+      "ccwCarrier": {
+        "no": 12,
+        "color": "mavi"
+      },
+      "topDirection": "counterClockwise",
+      "topCarrier": {
+        "no": 12,
+        "color": "mavi"
+      },
+      "underCarrier": {
+        "no": 13,
+        "color": "beyaz"
+      }
+    },
+    {
+      "row": 7,
+      "col": 4,
+      "cwCarrier": {
+        "no": 13,
+        "color": "beyaz"
+      },
+      "ccwCarrier": {
+        "no": 12,
+        "color": "mavi"
+      },
+      "topDirection": "counterClockwise",
+      "topCarrier": {
+        "no": 12,
+        "color": "mavi"
+      },
+      "underCarrier": {
+        "no": 13,
+        "color": "beyaz"
+      }
+    },
+    {
+      "row": 7,
+      "col": 5,
+      "cwCarrier": {
+        "no": 15,
+        "color": "beyaz"
+      },
+      "ccwCarrier": {
+        "no": 14,
+        "color": "beyaz"
+      },
+      "topDirection": "clockwise",
+      "topCarrier": {
+        "no": 15,
+        "color": "beyaz"
+      },
+      "underCarrier": {
+        "no": 14,
+        "color": "beyaz"
+      }
+    },
+    {
+      "row": 7,
+      "col": 6,
+      "cwCarrier": {
+        "no": 15,
+        "color": "beyaz"
+      },
+      "ccwCarrier": {
+        "no": 14,
+        "color": "beyaz"
+      },
+      "topDirection": "clockwise",
+      "topCarrier": {
+        "no": 15,
+        "color": "beyaz"
+      },
+      "underCarrier": {
+        "no": 14,
+        "color": "beyaz"
+      }
+    },
+    {
+      "row": 7,
+      "col": 7,
+      "cwCarrier": {
+        "no": 1,
+        "color": "siyah"
+      },
+      "ccwCarrier": {
+        "no": 16,
+        "color": "beyaz"
+      },
+      "topDirection": "counterClockwise",
+      "topCarrier": {
+        "no": 16,
+        "color": "beyaz"
+      },
+      "underCarrier": {
+        "no": 1,
+        "color": "siyah"
+      }
+    },
+    {
+      "row": 7,
+      "col": 8,
+      "cwCarrier": {
+        "no": 1,
+        "color": "siyah"
+      },
+      "ccwCarrier": {
+        "no": 16,
+        "color": "beyaz"
+      },
+      "topDirection": "counterClockwise",
+      "topCarrier": {
+        "no": 16,
+        "color": "beyaz"
+      },
+      "underCarrier": {
+        "no": 1,
+        "color": "siyah"
+      }
+    },
+    {
+      "row": 7,
+      "col": 9,
+      "cwCarrier": {
+        "no": 3,
+        "color": "kirmizi"
+      },
+      "ccwCarrier": {
+        "no": 2,
+        "color": "beyaz"
+      },
+      "topDirection": "clockwise",
+      "topCarrier": {
+        "no": 3,
+        "color": "kirmizi"
+      },
+      "underCarrier": {
+        "no": 2,
+        "color": "beyaz"
+      }
+    },
+    {
+      "row": 7,
+      "col": 10,
+      "cwCarrier": {
+        "no": 3,
+        "color": "kirmizi"
+      },
+      "ccwCarrier": {
+        "no": 2,
+        "color": "beyaz"
+      },
+      "topDirection": "clockwise",
+      "topCarrier": {
+        "no": 3,
+        "color": "kirmizi"
+      },
+      "underCarrier": {
+        "no": 2,
+        "color": "beyaz"
+      }
+    },
+    {
+      "row": 7,
+      "col": 11,
+      "cwCarrier": {
+        "no": 5,
+        "color": "kirmizi"
+      },
+      "ccwCarrier": {
+        "no": 4,
+        "color": "beyaz"
+      },
+      "topDirection": "counterClockwise",
+      "topCarrier": {
+        "no": 4,
+        "color": "beyaz"
+      },
+      "underCarrier": {
+        "no": 5,
+        "color": "kirmizi"
+      }
+    },
+    {
+      "row": 7,
+      "col": 12,
+      "cwCarrier": {
+        "no": 5,
+        "color": "kirmizi"
+      },
+      "ccwCarrier": {
+        "no": 4,
+        "color": "beyaz"
+      },
+      "topDirection": "counterClockwise",
+      "topCarrier": {
+        "no": 4,
+        "color": "beyaz"
+      },
+      "underCarrier": {
+        "no": 5,
+        "color": "kirmizi"
+      }
+    },
+    {
+      "row": 7,
+      "col": 13,
+      "cwCarrier": {
+        "no": 7,
+        "color": "beyaz"
+      },
+      "ccwCarrier": {
+        "no": 6,
+        "color": "beyaz"
+      },
+      "topDirection": "clockwise",
+      "topCarrier": {
+        "no": 7,
+        "color": "beyaz"
+      },
+      "underCarrier": {
+        "no": 6,
+        "color": "beyaz"
+      }
+    },
+    {
+      "row": 7,
+      "col": 14,
+      "cwCarrier": {
+        "no": 7,
+        "color": "beyaz"
+      },
+      "ccwCarrier": {
+        "no": 6,
+        "color": "beyaz"
+      },
+      "topDirection": "clockwise",
+      "topCarrier": {
+        "no": 7,
+        "color": "beyaz"
+      },
+      "underCarrier": {
+        "no": 6,
+        "color": "beyaz"
+      }
+    },
+    {
+      "row": 7,
+      "col": 15,
+      "cwCarrier": {
+        "no": 9,
+        "color": "beyaz"
+      },
+      "ccwCarrier": {
+        "no": 8,
+        "color": "beyaz"
+      },
+      "topDirection": "counterClockwise",
+      "topCarrier": {
+        "no": 8,
+        "color": "beyaz"
+      },
+      "underCarrier": {
+        "no": 9,
+        "color": "beyaz"
+      }
+    },
+    {
+      "row": 8,
+      "col": 0,
+      "cwCarrier": {
+        "no": 9,
+        "color": "beyaz"
+      },
+      "ccwCarrier": {
+        "no": 10,
+        "color": "mavi"
+      },
+      "topDirection": "clockwise",
+      "topCarrier": {
+        "no": 9,
+        "color": "beyaz"
+      },
+      "underCarrier": {
+        "no": 10,
+        "color": "mavi"
+      }
+    },
+    {
+      "row": 8,
+      "col": 1,
+      "cwCarrier": {
+        "no": 9,
+        "color": "beyaz"
+      },
+      "ccwCarrier": {
+        "no": 10,
+        "color": "mavi"
+      },
+      "topDirection": "clockwise",
+      "topCarrier": {
+        "no": 9,
+        "color": "beyaz"
+      },
+      "underCarrier": {
+        "no": 10,
+        "color": "mavi"
+      }
+    },
+    {
+      "row": 8,
+      "col": 2,
+      "cwCarrier": {
+        "no": 11,
+        "color": "beyaz"
+      },
+      "ccwCarrier": {
+        "no": 12,
+        "color": "mavi"
+      },
+      "topDirection": "counterClockwise",
+      "topCarrier": {
+        "no": 12,
+        "color": "mavi"
+      },
+      "underCarrier": {
+        "no": 11,
+        "color": "beyaz"
+      }
+    },
+    {
+      "row": 8,
+      "col": 3,
+      "cwCarrier": {
+        "no": 11,
+        "color": "beyaz"
+      },
+      "ccwCarrier": {
+        "no": 12,
+        "color": "mavi"
+      },
+      "topDirection": "counterClockwise",
+      "topCarrier": {
+        "no": 12,
+        "color": "mavi"
+      },
+      "underCarrier": {
+        "no": 11,
+        "color": "beyaz"
+      }
+    },
+    {
+      "row": 8,
+      "col": 4,
+      "cwCarrier": {
+        "no": 13,
+        "color": "beyaz"
+      },
+      "ccwCarrier": {
+        "no": 14,
+        "color": "beyaz"
+      },
+      "topDirection": "clockwise",
+      "topCarrier": {
+        "no": 13,
+        "color": "beyaz"
+      },
+      "underCarrier": {
+        "no": 14,
+        "color": "beyaz"
+      }
+    },
+    {
+      "row": 8,
+      "col": 5,
+      "cwCarrier": {
+        "no": 13,
+        "color": "beyaz"
+      },
+      "ccwCarrier": {
+        "no": 14,
+        "color": "beyaz"
+      },
+      "topDirection": "clockwise",
+      "topCarrier": {
+        "no": 13,
+        "color": "beyaz"
+      },
+      "underCarrier": {
+        "no": 14,
+        "color": "beyaz"
+      }
+    },
+    {
+      "row": 8,
+      "col": 6,
+      "cwCarrier": {
+        "no": 15,
+        "color": "beyaz"
+      },
+      "ccwCarrier": {
+        "no": 16,
+        "color": "beyaz"
+      },
+      "topDirection": "counterClockwise",
+      "topCarrier": {
+        "no": 16,
+        "color": "beyaz"
+      },
+      "underCarrier": {
+        "no": 15,
+        "color": "beyaz"
+      }
+    },
+    {
+      "row": 8,
+      "col": 7,
+      "cwCarrier": {
+        "no": 15,
+        "color": "beyaz"
+      },
+      "ccwCarrier": {
+        "no": 16,
+        "color": "beyaz"
+      },
+      "topDirection": "counterClockwise",
+      "topCarrier": {
+        "no": 16,
+        "color": "beyaz"
+      },
+      "underCarrier": {
+        "no": 15,
+        "color": "beyaz"
+      }
+    },
+    {
+      "row": 8,
+      "col": 8,
+      "cwCarrier": {
+        "no": 1,
+        "color": "siyah"
+      },
+      "ccwCarrier": {
+        "no": 2,
+        "color": "beyaz"
+      },
+      "topDirection": "clockwise",
+      "topCarrier": {
+        "no": 1,
+        "color": "siyah"
+      },
+      "underCarrier": {
+        "no": 2,
+        "color": "beyaz"
+      }
+    },
+    {
+      "row": 8,
+      "col": 9,
+      "cwCarrier": {
+        "no": 1,
+        "color": "siyah"
+      },
+      "ccwCarrier": {
+        "no": 2,
+        "color": "beyaz"
+      },
+      "topDirection": "clockwise",
+      "topCarrier": {
+        "no": 1,
+        "color": "siyah"
+      },
+      "underCarrier": {
+        "no": 2,
+        "color": "beyaz"
+      }
+    },
+    {
+      "row": 8,
+      "col": 10,
+      "cwCarrier": {
+        "no": 3,
+        "color": "kirmizi"
+      },
+      "ccwCarrier": {
+        "no": 4,
+        "color": "beyaz"
+      },
+      "topDirection": "counterClockwise",
+      "topCarrier": {
+        "no": 4,
+        "color": "beyaz"
+      },
+      "underCarrier": {
+        "no": 3,
+        "color": "kirmizi"
+      }
+    },
+    {
+      "row": 8,
+      "col": 11,
+      "cwCarrier": {
+        "no": 3,
+        "color": "kirmizi"
+      },
+      "ccwCarrier": {
+        "no": 4,
+        "color": "beyaz"
+      },
+      "topDirection": "counterClockwise",
+      "topCarrier": {
+        "no": 4,
+        "color": "beyaz"
+      },
+      "underCarrier": {
+        "no": 3,
+        "color": "kirmizi"
+      }
+    },
+    {
+      "row": 8,
+      "col": 12,
+      "cwCarrier": {
+        "no": 5,
+        "color": "kirmizi"
+      },
+      "ccwCarrier": {
+        "no": 6,
+        "color": "beyaz"
+      },
+      "topDirection": "clockwise",
+      "topCarrier": {
+        "no": 5,
+        "color": "kirmizi"
+      },
+      "underCarrier": {
+        "no": 6,
+        "color": "beyaz"
+      }
+    },
+    {
+      "row": 8,
+      "col": 13,
+      "cwCarrier": {
+        "no": 5,
+        "color": "kirmizi"
+      },
+      "ccwCarrier": {
+        "no": 6,
+        "color": "beyaz"
+      },
+      "topDirection": "clockwise",
+      "topCarrier": {
+        "no": 5,
+        "color": "kirmizi"
+      },
+      "underCarrier": {
+        "no": 6,
+        "color": "beyaz"
+      }
+    },
+    {
+      "row": 8,
+      "col": 14,
+      "cwCarrier": {
+        "no": 7,
+        "color": "beyaz"
+      },
+      "ccwCarrier": {
+        "no": 8,
+        "color": "beyaz"
+      },
+      "topDirection": "counterClockwise",
+      "topCarrier": {
+        "no": 8,
+        "color": "beyaz"
+      },
+      "underCarrier": {
+        "no": 7,
+        "color": "beyaz"
+      }
+    },
+    {
+      "row": 8,
+      "col": 15,
+      "cwCarrier": {
+        "no": 7,
+        "color": "beyaz"
+      },
+      "ccwCarrier": {
+        "no": 8,
+        "color": "beyaz"
+      },
+      "topDirection": "counterClockwise",
+      "topCarrier": {
+        "no": 8,
+        "color": "beyaz"
+      },
+      "underCarrier": {
+        "no": 7,
+        "color": "beyaz"
+      }
+    },
+    {
+      "row": 9,
+      "col": 0,
+      "cwCarrier": {
+        "no": 7,
+        "color": "beyaz"
+      },
+      "ccwCarrier": {
+        "no": 10,
+        "color": "mavi"
+      },
+      "topDirection": "clockwise",
+      "topCarrier": {
+        "no": 7,
+        "color": "beyaz"
+      },
+      "underCarrier": {
+        "no": 10,
+        "color": "mavi"
+      }
+    },
+    {
+      "row": 9,
+      "col": 1,
+      "cwCarrier": {
+        "no": 9,
+        "color": "beyaz"
+      },
+      "ccwCarrier": {
+        "no": 12,
+        "color": "mavi"
+      },
+      "topDirection": "counterClockwise",
+      "topCarrier": {
+        "no": 12,
+        "color": "mavi"
+      },
+      "underCarrier": {
+        "no": 9,
+        "color": "beyaz"
+      }
+    },
+    {
+      "row": 9,
+      "col": 2,
+      "cwCarrier": {
+        "no": 9,
+        "color": "beyaz"
+      },
+      "ccwCarrier": {
+        "no": 12,
+        "color": "mavi"
+      },
+      "topDirection": "counterClockwise",
+      "topCarrier": {
+        "no": 12,
+        "color": "mavi"
+      },
+      "underCarrier": {
+        "no": 9,
+        "color": "beyaz"
+      }
+    },
+    {
+      "row": 9,
+      "col": 3,
+      "cwCarrier": {
+        "no": 11,
+        "color": "beyaz"
+      },
+      "ccwCarrier": {
+        "no": 14,
+        "color": "beyaz"
+      },
+      "topDirection": "clockwise",
+      "topCarrier": {
+        "no": 11,
+        "color": "beyaz"
+      },
+      "underCarrier": {
+        "no": 14,
+        "color": "beyaz"
+      }
+    },
+    {
+      "row": 9,
+      "col": 4,
+      "cwCarrier": {
+        "no": 11,
+        "color": "beyaz"
+      },
+      "ccwCarrier": {
+        "no": 14,
+        "color": "beyaz"
+      },
+      "topDirection": "clockwise",
+      "topCarrier": {
+        "no": 11,
+        "color": "beyaz"
+      },
+      "underCarrier": {
+        "no": 14,
+        "color": "beyaz"
+      }
+    },
+    {
+      "row": 9,
+      "col": 5,
+      "cwCarrier": {
+        "no": 13,
+        "color": "beyaz"
+      },
+      "ccwCarrier": {
+        "no": 16,
+        "color": "beyaz"
+      },
+      "topDirection": "counterClockwise",
+      "topCarrier": {
+        "no": 16,
+        "color": "beyaz"
+      },
+      "underCarrier": {
+        "no": 13,
+        "color": "beyaz"
+      }
+    },
+    {
+      "row": 9,
+      "col": 6,
+      "cwCarrier": {
+        "no": 13,
+        "color": "beyaz"
+      },
+      "ccwCarrier": {
+        "no": 16,
+        "color": "beyaz"
+      },
+      "topDirection": "counterClockwise",
+      "topCarrier": {
+        "no": 16,
+        "color": "beyaz"
+      },
+      "underCarrier": {
+        "no": 13,
+        "color": "beyaz"
+      }
+    },
+    {
+      "row": 9,
+      "col": 7,
+      "cwCarrier": {
+        "no": 15,
+        "color": "beyaz"
+      },
+      "ccwCarrier": {
+        "no": 2,
+        "color": "beyaz"
+      },
+      "topDirection": "clockwise",
+      "topCarrier": {
+        "no": 15,
+        "color": "beyaz"
+      },
+      "underCarrier": {
+        "no": 2,
+        "color": "beyaz"
+      }
+    },
+    {
+      "row": 9,
+      "col": 8,
+      "cwCarrier": {
+        "no": 15,
+        "color": "beyaz"
+      },
+      "ccwCarrier": {
+        "no": 2,
+        "color": "beyaz"
+      },
+      "topDirection": "clockwise",
+      "topCarrier": {
+        "no": 15,
+        "color": "beyaz"
+      },
+      "underCarrier": {
+        "no": 2,
+        "color": "beyaz"
+      }
+    },
+    {
+      "row": 9,
+      "col": 9,
+      "cwCarrier": {
+        "no": 1,
+        "color": "siyah"
+      },
+      "ccwCarrier": {
+        "no": 4,
+        "color": "beyaz"
+      },
+      "topDirection": "counterClockwise",
+      "topCarrier": {
+        "no": 4,
+        "color": "beyaz"
+      },
+      "underCarrier": {
+        "no": 1,
+        "color": "siyah"
+      }
+    },
+    {
+      "row": 9,
+      "col": 10,
+      "cwCarrier": {
+        "no": 1,
+        "color": "siyah"
+      },
+      "ccwCarrier": {
+        "no": 4,
+        "color": "beyaz"
+      },
+      "topDirection": "counterClockwise",
+      "topCarrier": {
+        "no": 4,
+        "color": "beyaz"
+      },
+      "underCarrier": {
+        "no": 1,
+        "color": "siyah"
+      }
+    },
+    {
+      "row": 9,
+      "col": 11,
+      "cwCarrier": {
+        "no": 3,
+        "color": "kirmizi"
+      },
+      "ccwCarrier": {
+        "no": 6,
+        "color": "beyaz"
+      },
+      "topDirection": "clockwise",
+      "topCarrier": {
+        "no": 3,
+        "color": "kirmizi"
+      },
+      "underCarrier": {
+        "no": 6,
+        "color": "beyaz"
+      }
+    },
+    {
+      "row": 9,
+      "col": 12,
+      "cwCarrier": {
+        "no": 3,
+        "color": "kirmizi"
+      },
+      "ccwCarrier": {
+        "no": 6,
+        "color": "beyaz"
+      },
+      "topDirection": "clockwise",
+      "topCarrier": {
+        "no": 3,
+        "color": "kirmizi"
+      },
+      "underCarrier": {
+        "no": 6,
+        "color": "beyaz"
+      }
+    },
+    {
+      "row": 9,
+      "col": 13,
+      "cwCarrier": {
+        "no": 5,
+        "color": "kirmizi"
+      },
+      "ccwCarrier": {
+        "no": 8,
+        "color": "beyaz"
+      },
+      "topDirection": "counterClockwise",
+      "topCarrier": {
+        "no": 8,
+        "color": "beyaz"
+      },
+      "underCarrier": {
+        "no": 5,
+        "color": "kirmizi"
+      }
+    },
+    {
+      "row": 9,
+      "col": 14,
+      "cwCarrier": {
+        "no": 5,
+        "color": "kirmizi"
+      },
+      "ccwCarrier": {
+        "no": 8,
+        "color": "beyaz"
+      },
+      "topDirection": "counterClockwise",
+      "topCarrier": {
+        "no": 8,
+        "color": "beyaz"
+      },
+      "underCarrier": {
+        "no": 5,
+        "color": "kirmizi"
+      }
+    },
+    {
+      "row": 9,
+      "col": 15,
+      "cwCarrier": {
+        "no": 7,
+        "color": "beyaz"
+      },
+      "ccwCarrier": {
+        "no": 10,
+        "color": "mavi"
+      },
+      "topDirection": "clockwise",
+      "topCarrier": {
+        "no": 7,
+        "color": "beyaz"
+      },
+      "underCarrier": {
+        "no": 10,
+        "color": "mavi"
+      }
+    },
+    {
+      "row": 10,
+      "col": 0,
+      "cwCarrier": {
+        "no": 7,
+        "color": "beyaz"
+      },
+      "ccwCarrier": {
+        "no": 12,
+        "color": "mavi"
+      },
+      "topDirection": "counterClockwise",
+      "topCarrier": {
+        "no": 12,
+        "color": "mavi"
+      },
+      "underCarrier": {
+        "no": 7,
+        "color": "beyaz"
+      }
+    },
+    {
+      "row": 10,
+      "col": 1,
+      "cwCarrier": {
+        "no": 7,
+        "color": "beyaz"
+      },
+      "ccwCarrier": {
+        "no": 12,
+        "color": "mavi"
+      },
+      "topDirection": "counterClockwise",
+      "topCarrier": {
+        "no": 12,
+        "color": "mavi"
+      },
+      "underCarrier": {
+        "no": 7,
+        "color": "beyaz"
+      }
+    },
+    {
+      "row": 10,
+      "col": 2,
+      "cwCarrier": {
+        "no": 9,
+        "color": "beyaz"
+      },
+      "ccwCarrier": {
+        "no": 14,
+        "color": "beyaz"
+      },
+      "topDirection": "clockwise",
+      "topCarrier": {
+        "no": 9,
+        "color": "beyaz"
+      },
+      "underCarrier": {
+        "no": 14,
+        "color": "beyaz"
+      }
+    },
+    {
+      "row": 10,
+      "col": 3,
+      "cwCarrier": {
+        "no": 9,
+        "color": "beyaz"
+      },
+      "ccwCarrier": {
+        "no": 14,
+        "color": "beyaz"
+      },
+      "topDirection": "clockwise",
+      "topCarrier": {
+        "no": 9,
+        "color": "beyaz"
+      },
+      "underCarrier": {
+        "no": 14,
+        "color": "beyaz"
+      }
+    },
+    {
+      "row": 10,
+      "col": 4,
+      "cwCarrier": {
+        "no": 11,
+        "color": "beyaz"
+      },
+      "ccwCarrier": {
+        "no": 16,
+        "color": "beyaz"
+      },
+      "topDirection": "counterClockwise",
+      "topCarrier": {
+        "no": 16,
+        "color": "beyaz"
+      },
+      "underCarrier": {
+        "no": 11,
+        "color": "beyaz"
+      }
+    },
+    {
+      "row": 10,
+      "col": 5,
+      "cwCarrier": {
+        "no": 11,
+        "color": "beyaz"
+      },
+      "ccwCarrier": {
+        "no": 16,
+        "color": "beyaz"
+      },
+      "topDirection": "counterClockwise",
+      "topCarrier": {
+        "no": 16,
+        "color": "beyaz"
+      },
+      "underCarrier": {
+        "no": 11,
+        "color": "beyaz"
+      }
+    },
+    {
+      "row": 10,
+      "col": 6,
+      "cwCarrier": {
+        "no": 13,
+        "color": "beyaz"
+      },
+      "ccwCarrier": {
+        "no": 2,
+        "color": "beyaz"
+      },
+      "topDirection": "clockwise",
+      "topCarrier": {
+        "no": 13,
+        "color": "beyaz"
+      },
+      "underCarrier": {
+        "no": 2,
+        "color": "beyaz"
+      }
+    },
+    {
+      "row": 10,
+      "col": 7,
+      "cwCarrier": {
+        "no": 13,
+        "color": "beyaz"
+      },
+      "ccwCarrier": {
+        "no": 2,
+        "color": "beyaz"
+      },
+      "topDirection": "clockwise",
+      "topCarrier": {
+        "no": 13,
+        "color": "beyaz"
+      },
+      "underCarrier": {
+        "no": 2,
+        "color": "beyaz"
+      }
+    },
+    {
+      "row": 10,
+      "col": 8,
+      "cwCarrier": {
+        "no": 15,
+        "color": "beyaz"
+      },
+      "ccwCarrier": {
+        "no": 4,
+        "color": "beyaz"
+      },
+      "topDirection": "counterClockwise",
+      "topCarrier": {
+        "no": 4,
+        "color": "beyaz"
+      },
+      "underCarrier": {
+        "no": 15,
+        "color": "beyaz"
+      }
+    },
+    {
+      "row": 10,
+      "col": 9,
+      "cwCarrier": {
+        "no": 15,
+        "color": "beyaz"
+      },
+      "ccwCarrier": {
+        "no": 4,
+        "color": "beyaz"
+      },
+      "topDirection": "counterClockwise",
+      "topCarrier": {
+        "no": 4,
+        "color": "beyaz"
+      },
+      "underCarrier": {
+        "no": 15,
+        "color": "beyaz"
+      }
+    },
+    {
+      "row": 10,
+      "col": 10,
+      "cwCarrier": {
+        "no": 1,
+        "color": "siyah"
+      },
+      "ccwCarrier": {
+        "no": 6,
+        "color": "beyaz"
+      },
+      "topDirection": "clockwise",
+      "topCarrier": {
+        "no": 1,
+        "color": "siyah"
+      },
+      "underCarrier": {
+        "no": 6,
+        "color": "beyaz"
+      }
+    },
+    {
+      "row": 10,
+      "col": 11,
+      "cwCarrier": {
+        "no": 1,
+        "color": "siyah"
+      },
+      "ccwCarrier": {
+        "no": 6,
+        "color": "beyaz"
+      },
+      "topDirection": "clockwise",
+      "topCarrier": {
+        "no": 1,
+        "color": "siyah"
+      },
+      "underCarrier": {
+        "no": 6,
+        "color": "beyaz"
+      }
+    },
+    {
+      "row": 10,
+      "col": 12,
+      "cwCarrier": {
+        "no": 3,
+        "color": "kirmizi"
+      },
+      "ccwCarrier": {
+        "no": 8,
+        "color": "beyaz"
+      },
+      "topDirection": "counterClockwise",
+      "topCarrier": {
+        "no": 8,
+        "color": "beyaz"
+      },
+      "underCarrier": {
+        "no": 3,
+        "color": "kirmizi"
+      }
+    },
+    {
+      "row": 10,
+      "col": 13,
+      "cwCarrier": {
+        "no": 3,
+        "color": "kirmizi"
+      },
+      "ccwCarrier": {
+        "no": 8,
+        "color": "beyaz"
+      },
+      "topDirection": "counterClockwise",
+      "topCarrier": {
+        "no": 8,
+        "color": "beyaz"
+      },
+      "underCarrier": {
+        "no": 3,
+        "color": "kirmizi"
+      }
+    },
+    {
+      "row": 10,
+      "col": 14,
+      "cwCarrier": {
+        "no": 5,
+        "color": "kirmizi"
+      },
+      "ccwCarrier": {
+        "no": 10,
+        "color": "mavi"
+      },
+      "topDirection": "clockwise",
+      "topCarrier": {
+        "no": 5,
+        "color": "kirmizi"
+      },
+      "underCarrier": {
+        "no": 10,
+        "color": "mavi"
+      }
+    },
+    {
+      "row": 10,
+      "col": 15,
+      "cwCarrier": {
+        "no": 5,
+        "color": "kirmizi"
+      },
+      "ccwCarrier": {
+        "no": 10,
+        "color": "mavi"
+      },
+      "topDirection": "clockwise",
+      "topCarrier": {
+        "no": 5,
+        "color": "kirmizi"
+      },
+      "underCarrier": {
+        "no": 10,
+        "color": "mavi"
+      }
+    },
+    {
+      "row": 11,
+      "col": 0,
+      "cwCarrier": {
+        "no": 5,
+        "color": "kirmizi"
+      },
+      "ccwCarrier": {
+        "no": 12,
+        "color": "mavi"
+      },
+      "topDirection": "counterClockwise",
+      "topCarrier": {
+        "no": 12,
+        "color": "mavi"
+      },
+      "underCarrier": {
+        "no": 5,
+        "color": "kirmizi"
+      }
+    },
+    {
+      "row": 11,
+      "col": 1,
+      "cwCarrier": {
+        "no": 7,
+        "color": "beyaz"
+      },
+      "ccwCarrier": {
+        "no": 14,
+        "color": "beyaz"
+      },
+      "topDirection": "clockwise",
+      "topCarrier": {
+        "no": 7,
+        "color": "beyaz"
+      },
+      "underCarrier": {
+        "no": 14,
+        "color": "beyaz"
+      }
+    },
+    {
+      "row": 11,
+      "col": 2,
+      "cwCarrier": {
+        "no": 7,
+        "color": "beyaz"
+      },
+      "ccwCarrier": {
+        "no": 14,
+        "color": "beyaz"
+      },
+      "topDirection": "clockwise",
+      "topCarrier": {
+        "no": 7,
+        "color": "beyaz"
+      },
+      "underCarrier": {
+        "no": 14,
+        "color": "beyaz"
+      }
+    },
+    {
+      "row": 11,
+      "col": 3,
+      "cwCarrier": {
+        "no": 9,
+        "color": "beyaz"
+      },
+      "ccwCarrier": {
+        "no": 16,
+        "color": "beyaz"
+      },
+      "topDirection": "counterClockwise",
+      "topCarrier": {
+        "no": 16,
+        "color": "beyaz"
+      },
+      "underCarrier": {
+        "no": 9,
+        "color": "beyaz"
+      }
+    },
+    {
+      "row": 11,
+      "col": 4,
+      "cwCarrier": {
+        "no": 9,
+        "color": "beyaz"
+      },
+      "ccwCarrier": {
+        "no": 16,
+        "color": "beyaz"
+      },
+      "topDirection": "counterClockwise",
+      "topCarrier": {
+        "no": 16,
+        "color": "beyaz"
+      },
+      "underCarrier": {
+        "no": 9,
+        "color": "beyaz"
+      }
+    },
+    {
+      "row": 11,
+      "col": 5,
+      "cwCarrier": {
+        "no": 11,
+        "color": "beyaz"
+      },
+      "ccwCarrier": {
+        "no": 2,
+        "color": "beyaz"
+      },
+      "topDirection": "clockwise",
+      "topCarrier": {
+        "no": 11,
+        "color": "beyaz"
+      },
+      "underCarrier": {
+        "no": 2,
+        "color": "beyaz"
+      }
+    },
+    {
+      "row": 11,
+      "col": 6,
+      "cwCarrier": {
+        "no": 11,
+        "color": "beyaz"
+      },
+      "ccwCarrier": {
+        "no": 2,
+        "color": "beyaz"
+      },
+      "topDirection": "clockwise",
+      "topCarrier": {
+        "no": 11,
+        "color": "beyaz"
+      },
+      "underCarrier": {
+        "no": 2,
+        "color": "beyaz"
+      }
+    },
+    {
+      "row": 11,
+      "col": 7,
+      "cwCarrier": {
+        "no": 13,
+        "color": "beyaz"
+      },
+      "ccwCarrier": {
+        "no": 4,
+        "color": "beyaz"
+      },
+      "topDirection": "counterClockwise",
+      "topCarrier": {
+        "no": 4,
+        "color": "beyaz"
+      },
+      "underCarrier": {
+        "no": 13,
+        "color": "beyaz"
+      }
+    },
+    {
+      "row": 11,
+      "col": 8,
+      "cwCarrier": {
+        "no": 13,
+        "color": "beyaz"
+      },
+      "ccwCarrier": {
+        "no": 4,
+        "color": "beyaz"
+      },
+      "topDirection": "counterClockwise",
+      "topCarrier": {
+        "no": 4,
+        "color": "beyaz"
+      },
+      "underCarrier": {
+        "no": 13,
+        "color": "beyaz"
+      }
+    },
+    {
+      "row": 11,
+      "col": 9,
+      "cwCarrier": {
+        "no": 15,
+        "color": "beyaz"
+      },
+      "ccwCarrier": {
+        "no": 6,
+        "color": "beyaz"
+      },
+      "topDirection": "clockwise",
+      "topCarrier": {
+        "no": 15,
+        "color": "beyaz"
+      },
+      "underCarrier": {
+        "no": 6,
+        "color": "beyaz"
+      }
+    },
+    {
+      "row": 11,
+      "col": 10,
+      "cwCarrier": {
+        "no": 15,
+        "color": "beyaz"
+      },
+      "ccwCarrier": {
+        "no": 6,
+        "color": "beyaz"
+      },
+      "topDirection": "clockwise",
+      "topCarrier": {
+        "no": 15,
+        "color": "beyaz"
+      },
+      "underCarrier": {
+        "no": 6,
+        "color": "beyaz"
+      }
+    },
+    {
+      "row": 11,
+      "col": 11,
+      "cwCarrier": {
+        "no": 1,
+        "color": "siyah"
+      },
+      "ccwCarrier": {
+        "no": 8,
+        "color": "beyaz"
+      },
+      "topDirection": "counterClockwise",
+      "topCarrier": {
+        "no": 8,
+        "color": "beyaz"
+      },
+      "underCarrier": {
+        "no": 1,
+        "color": "siyah"
+      }
+    },
+    {
+      "row": 11,
+      "col": 12,
+      "cwCarrier": {
+        "no": 1,
+        "color": "siyah"
+      },
+      "ccwCarrier": {
+        "no": 8,
+        "color": "beyaz"
+      },
+      "topDirection": "counterClockwise",
+      "topCarrier": {
+        "no": 8,
+        "color": "beyaz"
+      },
+      "underCarrier": {
+        "no": 1,
+        "color": "siyah"
+      }
+    },
+    {
+      "row": 11,
+      "col": 13,
+      "cwCarrier": {
+        "no": 3,
+        "color": "kirmizi"
+      },
+      "ccwCarrier": {
+        "no": 10,
+        "color": "mavi"
+      },
+      "topDirection": "clockwise",
+      "topCarrier": {
+        "no": 3,
+        "color": "kirmizi"
+      },
+      "underCarrier": {
+        "no": 10,
+        "color": "mavi"
+      }
+    },
+    {
+      "row": 11,
+      "col": 14,
+      "cwCarrier": {
+        "no": 3,
+        "color": "kirmizi"
+      },
+      "ccwCarrier": {
+        "no": 10,
+        "color": "mavi"
+      },
+      "topDirection": "clockwise",
+      "topCarrier": {
+        "no": 3,
+        "color": "kirmizi"
+      },
+      "underCarrier": {
+        "no": 10,
+        "color": "mavi"
+      }
+    },
+    {
+      "row": 11,
+      "col": 15,
+      "cwCarrier": {
+        "no": 5,
+        "color": "kirmizi"
+      },
+      "ccwCarrier": {
+        "no": 12,
+        "color": "mavi"
+      },
+      "topDirection": "counterClockwise",
+      "topCarrier": {
+        "no": 12,
+        "color": "mavi"
+      },
+      "underCarrier": {
+        "no": 5,
+        "color": "kirmizi"
+      }
+    }
+  ]
+}
