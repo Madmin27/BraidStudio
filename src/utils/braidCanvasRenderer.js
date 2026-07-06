@@ -278,23 +278,34 @@ function drawVectorBraidSurface(ctx, sheet, width, height, close, grid, renderSt
   ctx.rect(0, 0, width, height);
   ctx.clip();
 
-  // PASS 1: Draw topCarrier crowns — each cell gets its own clip mask
+  // PASS 1: Draw topCarrier crowns — her hücre diamond (baklava) şeklinde çizilir
+  // Diamond: üst-alt-sağ-sol olmak üzere 4 noktalı eşkenar dörtgen.
+  // Beyaz ve renkli hücreler aynı esasla çizilir, hiçbir hücre iki defa çizilmez.
+  // GAP=0.4px → kıl kadar boşluk, çakışma yok.
+  const GAP = 0.4;
   for (const crown of crowns) {
     const cellX = crown.col * cellW;
     const cellY = crown.row * cellH;
 
+    // Diamond köşeleri
+    const cx = cellX + cellW / 2;
+    const cy = cellY + cellH / 2;
+
     ctx.save();
     ctx.beginPath();
-    ctx.rect(cellX, cellY, cellW, cellH);
+    ctx.moveTo(cx, cellY + GAP);                 // üst
+    ctx.lineTo(cellX + cellW - GAP, cy);         // sağ
+    ctx.lineTo(cx, cellY + cellH - GAP);         // alt
+    ctx.lineTo(cellX + GAP, cy);                 // sol
+    ctx.closePath();
     ctx.clip();
 
-    // Hücre boşluğunu üstteki iplik rengiyle doldur
+    // Hücre boşluğunu diamond içinde üstteki iplik rengiyle doldur
     const topHex = colorToHex(crown.color);
     ctx.fillStyle = topHex;
     ctx.fillRect(cellX, cellY, cellW, cellH);
 
-    // Yatay (silindirik) gradient — her hücreye yuvarlak halat hissi verir
-    // Kenarlarda hafif kararma, merkezde parlak
+    // Yatay (silindirik) gradient — diamond clip sayesinde sadece diamond içine düşer
     const cylGrad = ctx.createLinearGradient(cellX, 0, cellX + cellW, 0);
     cylGrad.addColorStop(0, "rgba(0,0,0,0.08)");
     cylGrad.addColorStop(0.2, "rgba(0,0,0,0.01)");
@@ -330,9 +341,6 @@ function drawVectorBraidSurface(ctx, sheet, width, height, close, grid, renderSt
     lGrad.addColorStop(0.4, "rgba(255,255,255,0)");
     ctx.fillStyle = lGrad;
     ctx.fillRect(cellX, cellY, cellW, cellH);
-
-    // İplik çizimi kaldırıldı (kullanıcı isteği: sadece boşluk boyama yeterli)
-    // drawFn(ctx, crown);
 
     ctx.restore();
   }
