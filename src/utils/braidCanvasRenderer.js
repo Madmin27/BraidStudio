@@ -280,44 +280,65 @@ function drawVectorBraidSurface(ctx, sheet, width, height, close, grid, renderSt
 
   // PASS 1: Draw topCarrier crowns — each cell gets its own clip mask
   for (const crown of crowns) {
+    const cellX = crown.col * cellW;
+    const cellY = crown.row * cellH;
+
     ctx.save();
     ctx.beginPath();
-    ctx.rect(crown.col * cellW, crown.row * cellH, cellW, cellH);
+    ctx.rect(cellX, cellY, cellW, cellH);
     ctx.clip();
 
-    drawFn(ctx, crown);
+    // Hücre boşluğunu üstteki iplik rengiyle doldur
+    const topHex = colorToHex(crown.color);
+    ctx.fillStyle = topHex;
+    ctx.fillRect(cellX, cellY, cellW, cellH);
+
+    // Yatay (silindirik) gradient — her hücreye yuvarlak halat hissi verir
+    // Kenarlarda hafif kararma, merkezde parlak
+    const cylGrad = ctx.createLinearGradient(cellX, 0, cellX + cellW, 0);
+    cylGrad.addColorStop(0, "rgba(0,0,0,0.08)");
+    cylGrad.addColorStop(0.2, "rgba(0,0,0,0.01)");
+    cylGrad.addColorStop(0.5, "rgba(255,255,255,0.08)");
+    cylGrad.addColorStop(0.8, "rgba(0,0,0,0.01)");
+    cylGrad.addColorStop(1, "rgba(0,0,0,0.08)");
+    ctx.fillStyle = cylGrad;
+    ctx.fillRect(cellX, cellY, cellW, cellH);
+
+    // Over/under — ipin geldiği yönde gölge (alttaki ipe gömülme), gittiği yönde ışık (üstten geçme)
+    // Saat yönü ↻: ip sol-üstten gelir sağ-alt'a gider → gölge sol-üst, ışık sağ-alt
+    // Ters yön ↺: ip sağ-üstten gelir sol-alt'a gider → gölge sağ-üst, ışık sol-alt
+    const dir = crown.direction;
+    const isCW = dir === "clockwise";
+    // Gölge katmanı
+    const sgx = isCW ? cellX : cellX + cellW;
+    const sgy = cellY;
+    const sgx2 = isCW ? cellX + cellW : cellX;
+    const sgy2 = cellY + cellH;
+    const sGrad = ctx.createLinearGradient(sgx, sgy, sgx2, sgy2);
+    sGrad.addColorStop(0, "rgba(0,0,0,0.22)");
+    sGrad.addColorStop(0.3, "rgba(0,0,0,0.02)");
+    sGrad.addColorStop(0.5, "rgba(0,0,0,0)");
+    ctx.fillStyle = sGrad;
+    ctx.fillRect(cellX, cellY, cellW, cellH);
+    // Işık katmanı (gittiği yön)
+    const lgx = isCW ? cellX + cellW : cellX;
+    const lgy = cellY + cellH;
+    const lgx2 = isCW ? cellX : cellX + cellW;
+    const lgy2 = cellY;
+    const lGrad = ctx.createLinearGradient(lgx, lgy, lgx2, lgy2);
+    lGrad.addColorStop(0, "rgba(255,255,255,0.12)");
+    lGrad.addColorStop(0.4, "rgba(255,255,255,0)");
+    ctx.fillStyle = lGrad;
+    ctx.fillRect(cellX, cellY, cellW, cellH);
+
+    // İplik çizimi kaldırıldı (kullanıcı isteği: sadece boşluk boyama yeterli)
+    // drawFn(ctx, crown);
 
     ctx.restore();
   }
 
-  // PASS 2: UnderCarrier contact shadows (alpha 0.04-0.06) — no color, only shadow
-  for (const crown of crowns) {
-    if (!crown.underCarrier) continue;
-
-    const underDir = crown.underCarrier.direction;
-    const ux1 = crown.col * cellW;
-    const uy1 = underDir === "clockwise"
-      ? crown.row * cellH + cellH * 0.88
-      : crown.row * cellH + cellH * 0.12;
-    const ux2 = (crown.col + 1) * cellW;
-    const uy2 = underDir === "clockwise"
-      ? crown.row * cellH + cellH * 0.12
-      : crown.row * cellH + cellH * 0.88;
-
-    ctx.save();
-    ctx.globalAlpha = 0.02;
-    ctx.shadowColor = "rgba(0,0,0,0.08)";
-    ctx.shadowBlur = cellW * 0.06;
-    ctx.shadowOffsetY = 0.10;
-    ctx.lineCap = "round";
-    ctx.lineWidth = cellH * 0.05;
-    ctx.strokeStyle = "rgba(0,0,0,0.03)";
-    ctx.beginPath();
-    ctx.moveTo(ux1, uy1);
-    ctx.lineTo(ux2, uy2);
-    ctx.stroke();
-    ctx.restore();
-  }
+  // PASS 2: UnderCarrier contact shadows — kaldırıldı (iplik çizimi tamamen kalktı)
+  // for (const crown of crowns) { ... }
 
   // Debug: show topCarrierNo in each cell
   if (renderDebugCellOwners) {
