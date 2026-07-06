@@ -278,85 +278,85 @@ function drawVectorBraidSurface(ctx, sheet, width, height, close, grid, renderSt
   ctx.rect(0, 0, width, height);
   ctx.clip();
 
-  // Arkaplan — halat gövdesi tonu (kare mozaik yerine doku)
-  drawRopeBodyBase(ctx, width, height, close, renderStyle);
+  // PASS 1: Draw topCarrier crowns — each cell gets its own clip mask
+  for (const crown of crowns) {
+    const cellX = crown.col * cellW;
+    const cellY = crown.row * cellH;
 
-  // PASS 0: Tile zemin — draw order testi (__PAINT_ORDER_MODE__: "current" | "colored-first" | "white-first")
-  // TEMPORARY: B (colored-first) seçildi çünkü beyaz ana yüzey hissini koruyor, renkler altta akıyor.
-  // Gerçek çözüm: painted-face / visible-cell seçimini hücre bazında düzeltmek.
-  let _orderedCrowns = crowns;
-  const _orderMode = (typeof window !== "undefined" && window.__PAINT_ORDER_MODE__) || "colored-first";
-  if (_orderMode === "colored-first") {
-    _orderedCrowns = [...crowns].sort((a, b) => {
-      const aW = brightness(colorToHex(a.topColor)) > 160;
-      const bW = brightness(colorToHex(b.topColor)) > 160;
-      return aW - bW;
-    });
-  } else if (_orderMode === "white-first") {
-    _orderedCrowns = [...crowns].sort((a, b) => {
-      const aW = brightness(colorToHex(a.topColor)) > 160;
-      const bW = brightness(colorToHex(b.topColor)) > 160;
-      return bW - aW;
-    });
-  }
-  // Clockwise: iplik sol-alt → sağ-üst → giriş=ALT, çıkış=ÜST
-  // Counter-clockwise: iplik sol-üst → sağ-alt → giriş=ÜST, çıkış=ALT
-  for (const crown of _orderedCrowns) {
-    drawVisibleBraidBlock(ctx, crown, cellW, cellH);
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(cellX, cellY, cellW, cellH);
+    ctx.clip();
+
+    // Hücre boşluğunu üstteki iplik rengiyle doldur
+    const topHex = colorToHex(crown.color);
+    ctx.fillStyle = topHex;
+    ctx.fillRect(cellX, cellY, cellW, cellH);
+
+    // Yatay (silindirik) gradient — her hücreye yuvarlak halat hissi verir
+    // Kenarlarda hafif kararma, merkezde parlak
+    const cylGrad = ctx.createLinearGradient(cellX, 0, cellX + cellW, 0);
+    cylGrad.addColorStop(0, "rgba(0,0,0,0.08)");
+    cylGrad.addColorStop(0.2, "rgba(0,0,0,0.01)");
+    cylGrad.addColorStop(0.5, "rgba(255,255,255,0.08)");
+    cylGrad.addColorStop(0.8, "rgba(0,0,0,0.01)");
+    cylGrad.addColorStop(1, "rgba(0,0,0,0.08)");
+    ctx.fillStyle = cylGrad;
+    ctx.fillRect(cellX, cellY, cellW, cellH);
+
+    // Over/under — ipin geldiği yönde gölge (alttaki ipe gömülme), gittiği yönde ışık (üstten geçme)
+    // Saat yönü ↻: ip sol-üstten gelir sağ-alt'a gider → gölge sol-üst, ışık sağ-alt
+    // Ters yön ↺: ip sağ-üstten gelir sol-alt'a gider → gölge sağ-üst, ışık sol-alt
+    const dir = crown.direction;
+    const isCW = dir === "clockwise";
+    // Gölge katmanı
+    const sgx = isCW ? cellX : cellX + cellW;
+    const sgy = cellY;
+    const sgx2 = isCW ? cellX + cellW : cellX;
+    const sgy2 = cellY + cellH;
+    const sGrad = ctx.createLinearGradient(sgx, sgy, sgx2, sgy2);
+    sGrad.addColorStop(0, "rgba(0,0,0,0.22)");
+    sGrad.addColorStop(0.3, "rgba(0,0,0,0.02)");
+    sGrad.addColorStop(0.5, "rgba(0,0,0,0)");
+    ctx.fillStyle = sGrad;
+    ctx.fillRect(cellX, cellY, cellW, cellH);
+    // Işık katmanı (gittiği yön)
+    const lgx = isCW ? cellX + cellW : cellX;
+    const lgy = cellY + cellH;
+    const lgx2 = isCW ? cellX : cellX + cellW;
+    const lgy2 = cellY;
+    const lGrad = ctx.createLinearGradient(lgx, lgy, lgx2, lgy2);
+    lGrad.addColorStop(0, "rgba(255,255,255,0.12)");
+    lGrad.addColorStop(0.4, "rgba(255,255,255,0)");
+    ctx.fillStyle = lGrad;
+    ctx.fillRect(cellX, cellY, cellW, cellH);
+
+    // İplik çizimi kaldırıldı (kullanıcı isteği: sadece boşluk boyama yeterli)
+    // drawFn(ctx, crown);
+
+    ctx.restore();
   }
 
-  // PASS 1: Draw topCarrier crowns — each cell gets its own rounded clip mask
-  // Yuvarlak köşeler kare/kiremit hissini azaltır, daha organik görünüm
-  // HARD-DISABLED: PASS 1 (drawSoft3DCrown) ve PASS 2 (underCarrier shadows) tamamen devre dışı
-  // Sadece PASS 0'ın yuvarlak köşeli tint + diagonal ribbon'ı kullanılır.
-  // const cornerRadius = Math.min(cellW, cellH) * 0.12;
-  // if (!window.__PASS0_ONLY__) {
-  // for (const crown of crowns) {
-  //   ctx.save();
-  //   roundedClip(ctx, crown.col * cellW, crown.row * cellH, cellW, cellH, cornerRadius);
-  //   drawFn(ctx, crown);
-  //   ctx.restore();
-  // }
-  // // PASS 2: UnderCarrier contact shadows
-  // for (const crown of crowns) {
-  //   if (!crown.underCarrier) continue;
-  //   const underDir = crown.underCarrier.direction;
-  //   const ux1 = crown.col * cellW;
-  //   const uy1 = underDir === "clockwise" ? crown.row * cellH + cellH * 0.88 : crown.row * cellH + cellH * 0.12;
-  //   const ux2 = (crown.col + 1) * cellW;
-  //   const uy2 = underDir === "clockwise" ? crown.row * cellH + cellH * 0.12 : crown.row * cellH + cellH * 0.88;
-  //   ctx.save();
-  //   ctx.globalAlpha = 0.02;
-  //   ctx.shadowColor = "rgba(0,0,0,0.08)";
-  //   ctx.shadowBlur = cellW * 0.06;
-  //   ctx.shadowOffsetY = 0.10;
-  //   ctx.lineCap = "round";
-  //   ctx.lineWidth = cellH * 0.05;
-  //   ctx.strokeStyle = "rgba(0,0,0,0.03)";
-  //   ctx.beginPath();
-  //   ctx.moveTo(ux1, uy1);
-  //   ctx.lineTo(ux2, uy2);
-  //   ctx.stroke();
-  //   ctx.restore();
-  // }
-  // // Debug: show topCarrierNo in each cell
-  // if (renderDebugCellOwners) {
-  //   ctx.save();
-  //   const fontSize = Math.max(7, Math.min(14, cellH * 0.16));
-  //   ctx.font = `${fontSize}px monospace`;
-  //   ctx.textAlign = "center";
-  //   ctx.textBaseline = "middle";
-  //   for (const crown of crowns) {
-  //     const cx = crown.col * cellW + cellW / 2;
-  //     const cy = crown.row * cellH + cellH / 2;
-  //     ctx.fillStyle = "rgba(0,0,0,0.7)";
-  //     ctx.fillText(String(crown.topCarrierNo), cx + 0.5, cy + 0.5);
-  //     ctx.fillStyle = "rgba(255,255,255,0.85)";
-  //     ctx.fillText(String(crown.topCarrierNo), cx, cy);
-  //   }
-  //   ctx.restore();
-  // }
-  // } // end if (!window.__PASS0_ONLY__)
+  // PASS 2: UnderCarrier contact shadows — kaldırıldı (iplik çizimi tamamen kalktı)
+  // for (const crown of crowns) { ... }
+
+  // Debug: show topCarrierNo in each cell
+  if (renderDebugCellOwners) {
+    ctx.save();
+    const fontSize = Math.max(7, Math.min(14, cellH * 0.16));
+    ctx.font = `${fontSize}px monospace`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    for (const crown of crowns) {
+      const cx = crown.col * cellW + cellW / 2;
+      const cy = crown.row * cellH + cellH / 2;
+      ctx.fillStyle = "rgba(0,0,0,0.7)";
+      ctx.fillText(String(crown.topCarrierNo), cx + 0.5, cy + 0.5);
+      ctx.fillStyle = "rgba(255,255,255,0.85)";
+      ctx.fillText(String(crown.topCarrierNo), cx, cy);
+    }
+    ctx.restore();
+  }
 
   ctx.restore();
 }
