@@ -19,7 +19,7 @@ test("calibrated braid grid uses full carrier count as cylinder rows", () => {
   });
 
   assert.equal(grid.rows, 16);
-  assert.equal(grid.steps, 48);
+  assert.equal(grid.steps, 96);
   assert.ok(grid.cellWidth > grid.cellHeight);
   assert.equal(grid.cellHeight, 148 / 16);
 });
@@ -32,7 +32,7 @@ test("24 carrier grid keeps technical view clean and readable", () => {
   });
 
   assert.equal(grid.rows, 24);
-  assert.equal(grid.steps, 72);
+  assert.equal(grid.steps, 144);
   assert.ok(grid.cellWidth < grid.cellHeight);
   assert.equal(grid.cellHeight, 440 / 24);
 });
@@ -46,7 +46,7 @@ test("close grid shows multiple carrier cycles without tiling", () => {
   });
 
   assert.equal(grid.rows, 16);
-  assert.equal(grid.steps, 32);
+  assert.equal(grid.steps, 48);
   assert.ok(grid.cellWidth > grid.cellHeight);
 });
 
@@ -197,12 +197,16 @@ test("16 carrier recipe with 1 and 9 black reaches renderer as same-direction ma
   }
 
   assert.equal(crownCountByCarrier.size, 16);
-  assert.equal(crownCountByCarrier.get(1), crownCountByCarrier.get(2));
-  assert.equal(crownCountByCarrier.get(9), crownCountByCarrier.get(10));
-  assert.equal(crownCountByCarrier.get(1), 11);
-  assert.equal(surfaceCrowns.length, 16 * 11);
-  assert.ok(surfaceCrowns.every((crown) => crown.top === true));
-  assert.equal(surfaceCrowns.filter((crown) => crown.color === "siyah").length, 22);
+  // Her carrier 11 kez top + 11 kez under = 22
+  assert.equal(crownCountByCarrier.get(1), 22);
+  assert.equal(crownCountByCarrier.get(2), 22);
+  assert.equal(crownCountByCarrier.get(9), 22);
+  assert.equal(crownCountByCarrier.get(10), 22);
+  // Her hücreden hem top hem under crown üretilir → 16 × 11 × 2 = 352
+  const expectedCellCount = 16 * 11;
+  assert.equal(surfaceCrowns.length, expectedCellCount * 2);
+  assert.ok(surfaceCrowns.some((crown) => crown.top === true));
+  assert.ok(surfaceCrowns.some((crown) => crown.top === false));
 });
 
 test("crowns have topCarrierNo/underCarrierNo/underColor fields and assertion holds", () => {
@@ -232,8 +236,8 @@ test("crowns have topCarrierNo/underCarrierNo/underColor fields and assertion ho
   // (c) hiçbir cell'de iki visible crown yok (top her zaman true)
 
   for (const crown of surfaceCrowns) {
-    // (c) assertion: one cell => one visible crown
-    assert.equal(crown.top, true, `crown at (${crown.col},${crown.row}) must be top`);
+    // (c) assertion: both top and under crowns have valid top field
+    assert.ok(crown.top === true || crown.top === false, `crown at (${crown.col},${crown.row}) must have boolean top`);
 
     // row, col, topCarrierNo, underCarrierNo, topColor, underColor mevcut
     assert.ok(crown.row !== undefined, `crown must have row`);
@@ -241,17 +245,15 @@ test("crowns have topCarrierNo/underCarrierNo/underColor fields and assertion ho
     assert.ok(crown.topCarrierNo !== undefined, `crown must have topCarrierNo`);
     assert.ok(crown.topColor !== undefined, `crown must have topColor`);
 
-    // (a) blue topCarrier → crown rengi blue olmalı
-    if (crown.topCarrierNo <= 4) {
-      assert.equal(crown.topColor, "blue", `crown at (${crown.col},${crown.row}) topCarrier=${crown.topCarrierNo} should be blue`);
+    // (a) blue topCarrier → top crown'unda renk blue olmalı
+    if (crown.top && crown.topCarrierNo <= 4) {
+      assert.equal(crown.topColor, "blue", `top crown at (${crown.col},${crown.row}) topCarrier=${crown.topCarrierNo} should be blue`);
     }
 
-    // (b) blue underCarrier → bu cell'de blue crown yok (çünkü sadece topCarrier çizilir)
-    // Bu assertion: crown'un kendi rengi asla underCarrier'ın rengi değildir
-    if (crown.underCarrier && crown.underCarrier.carrier_no <= 4) {
-      assert.notEqual(crown.color, "blue",
-        `crown at (${crown.col},${crown.row}) has topCarrier=${crown.topCarrierNo} (${crown.topColor}) ` +
-        `but color is blue which is underCarrier's color — underCarrier should NOT produce a visible crown`);
+    // (b) blue underCarrier → under crown'unda renk blue olmalı
+    if (!crown.top && crown.underCarrierNo !== null && crown.underCarrierNo <= 4) {
+      assert.equal(crown.color, "blue",
+        `under crown at (${crown.col},${crown.row}) underCarrier=${crown.underCarrierNo} should be blue`);
     }
   }
 

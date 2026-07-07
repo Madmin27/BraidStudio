@@ -32,13 +32,17 @@ const FALLBACK_COLORS = {
 /* ------------------------------------------------------------------ */
 /* Debug log — her desen üretiminde temizlenir, console'dan izlenir    */
 /* ------------------------------------------------------------------ */
-window.__braidDebugLogs = [];
-function braidLog(...args) {
-  window.__braidDebugLogs.push(args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' '));
+if (typeof window !== 'undefined') {
+  window.__braidDebugLogs = [];
 }
-function braidLogClear() { window.__braidDebugLogs = []; }
+function braidLog(...args) {
+  if (typeof window !== 'undefined' && window.__braidDebugLogs) {
+    window.__braidDebugLogs.push(args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' '));
+  }
+}
+function braidLogClear() { if (typeof window !== 'undefined') window.__braidDebugLogs = []; }
 function braidLogDump() {
-  if (window.__braidDebugLogs.length) {
+  if (typeof window !== 'undefined' && window.__braidDebugLogs && window.__braidDebugLogs.length) {
     console.log('=== BRAID DEBUG ===');
     window.__braidDebugLogs.forEach(l => console.log(l));
     console.log('=== END ===');
@@ -283,24 +287,50 @@ function drawVectorBraidSurface(ctx, sheet, width, height, close, grid, renderSt
   // Beyaz ve renkli hücreler aynı esasla çizilir, hiçbir hücre iki defa çizilmez.
   // GAP=0.4px → kıl kadar boşluk, çakışma yok.
   const GAP = 0.4;
+  const TOP_INSET = 2.5;  // üstteki diamond'ın içeri çekilmesi → alttaki iplik kenarlardan görünür
+
+  // PASS A: Under carrier background — top=false crown'lar tam boy diamond
+  // Alttaki iplik rengi, üstteki diamond'ın kenarından taşarak görünür.
   for (const crown of crowns) {
+    if (crown.top) continue;
     const cellX = crown.col * cellW;
     const cellY = crown.row * cellH;
-
-    // Diamond köşeleri
     const cx = cellX + cellW / 2;
     const cy = cellY + cellH / 2;
 
     ctx.save();
     ctx.beginPath();
-    ctx.moveTo(cx, cellY + GAP);                 // üst
-    ctx.lineTo(cellX + cellW - GAP, cy);         // sağ
-    ctx.lineTo(cx, cellY + cellH - GAP);         // alt
-    ctx.lineTo(cellX + GAP, cy);                 // sol
+    ctx.moveTo(cx, cellY + GAP);
+    ctx.lineTo(cellX + cellW - GAP, cy);
+    ctx.lineTo(cx, cellY + cellH - GAP);
+    ctx.lineTo(cellX + GAP, cy);
     ctx.closePath();
     ctx.clip();
 
-    // Hücre boşluğunu diamond içinde üstteki iplik rengiyle doldur
+    const underHex = colorToHex(crown.color);
+    ctx.fillStyle = underHex;
+    ctx.fillRect(cellX, cellY, cellW, cellH);
+    ctx.restore();
+  }
+
+  // PASS B: Top carrier diamonds (INSET — üstteki iplik daha küçük diamond, alttaki kenardan görünür)
+  // TOP_INSET px kadar içerden çizilir, böylece PASS A'daki underCarrier rengi kenarlardan taşar.
+  for (const crown of crowns) {
+    if (!crown.top) continue;
+    const cellX = crown.col * cellW;
+    const cellY = crown.row * cellH;
+    const cx = cellX + cellW / 2;
+    const cy = cellY + cellH / 2;
+
+    ctx.save();
+    ctx.beginPath();
+    ctx.moveTo(cx, cellY + TOP_INSET);
+    ctx.lineTo(cellX + cellW - TOP_INSET, cy);
+    ctx.lineTo(cx, cellY + cellH - TOP_INSET);
+    ctx.lineTo(cellX + TOP_INSET, cy);
+    ctx.closePath();
+    ctx.clip();
+
     const topHex = colorToHex(crown.color);
     ctx.fillStyle = topHex;
     ctx.fillRect(cellX, cellY, cellW, cellH);
@@ -344,9 +374,6 @@ function drawVectorBraidSurface(ctx, sheet, width, height, close, grid, renderSt
 
     ctx.restore();
   }
-
-  // PASS 2: UnderCarrier contact shadows — kaldırıldı (iplik çizimi tamamen kalktı)
-  // for (const crown of crowns) { ... }
 
   // Debug: show topCarrierNo in each cell
   if (renderDebugCellOwners) {
@@ -499,6 +526,7 @@ export function buildMatrixSurfaceCrowns({ carrierLayout, machineProfile, cols, 
     for (const cell of row) {
       if (!cell.topCarrier) continue;
       const isMarker = cell.topCarrier.color !== baseColor;
+      // Birincil crown: topCarrier
       crowns.push({
         row: cell.column,
         col: cell.time,
@@ -524,13 +552,31 @@ export function buildMatrixSurfaceCrowns({ carrierLayout, machineProfile, cols, 
           direction: cell.underCarrier.direction
         } : null
       });
-    }
-  }
-
-  // Assertion: every crown must have top=true (one cell => one visible crown)
-  for (const crown of crowns) {
-    if (crown.top !== true) {
-      console.warn(`[buildMatrixSurfaceCrowns] ASSERT FAIL: crown at (${crown.col},${crown.row}) has top=${crown.top} — expected true`);
+      // İkincil crown: underCarrier (varsa)
+      if (cell.underCarrier) {
+        const underMarker = cell.underCarrier.color !== baseColor;
+        crowns.push({
+          row: cell.column,
+          col: cell.time,
+          topCarrierNo: cell.topCarrier.carrier_no,
+          topColor: cell.topCarrier.color,
+          underCarrierNo: cell.underCarrier.carrier_no,
+          underColor: cell.underCarrier.color,
+          carrier_no: cell.underCarrier.carrier_no,
+          time: cell.time,
+          column: cell.column,
+          x: cell.time * cellW,
+          y: cell.column * cellH,
+          width: cellW * _cwMult,
+          height: cellH * _chMult,
+          color: cell.underCarrier.color,
+          direction: cell.underCarrier.direction,
+          top: false,
+          close,
+          marker: underMarker,
+          underCarrier: null
+        });
+      }
     }
   }
 
