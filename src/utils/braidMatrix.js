@@ -95,11 +95,14 @@ export function buildBraidMatrix({
   };
 }
 
-export function topDirectionAt({ time, column, braidLogic = "1_over_1" }) {
+export function topDirectionAt({ time, column: _column, braidLogic = "1_over_1" }) {
   const value = String(braidLogic || "").toLowerCase();
   const span = value.includes("2_over_2") || value.includes("two-over-two") || value.includes("twill") || value.includes("2 üst") || value.includes("2 alt") ? 2 : 1;
   const counterRotating = value.includes("counter-rotating") || value.includes("counter_rotating") || value.includes("karşı");
-  const clockwiseOnTop = Math.floor((time + column) / span) % 2 === 0;
+  // time baz alınır: CW → column = start+time, CCW → column = start-time
+  // (time+column) kullanılırsa her kukla için parite sabit kalır → hatalı.
+  // time tek başına kullanılınca her time adımında üst/alt değişir → doğru.
+  const clockwiseOnTop = Math.floor(time / span) % 2 === 0;
   if (counterRotating) {
     return clockwiseOnTop ? "counterClockwise" : "clockwise";
   }
