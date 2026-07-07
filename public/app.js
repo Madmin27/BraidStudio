@@ -1575,13 +1575,12 @@ state = applyUserSelection(state, {
   braid_walk_type: "two-over-two"
 });
 generateButton.disabled = false;
-render();
 
-/* ── Sayfa yüklenince default ayarlarla desen üret ── */
-// DOM tamamen hazır olunca "Desen Üret" butonuna otomatik tıkla
+/* ── Sayfa yüklenince default ayarlarla desen üret (tek sefer) ── */
 requestAnimationFrame(() => {
   requestAnimationFrame(() => {
-    generateButton.click();
+    state = generateRecipe(state);
+    render();
   });
 });
 
