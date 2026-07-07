@@ -99,9 +99,8 @@ export function topDirectionAt({ time, column: _column, braidLogic = "1_over_1" 
   const value = String(braidLogic || "").toLowerCase();
   const span = value.includes("2_over_2") || value.includes("two-over-two") || value.includes("twill") || value.includes("2 üst") || value.includes("2 alt") ? 2 : 1;
   const counterRotating = value.includes("counter-rotating") || value.includes("counter_rotating") || value.includes("karşı");
-  // time baz alınır: CW → column = start+time, CCW → column = start-time
-  // (time+column) kullanılırsa her kukla için parite sabit kalır → hatalı.
-  // time tek başına kullanılınca her time adımında üst/alt değişir → doğru.
+  // Doğru örgü: tüm crossing'ler aynı zaman adımında aynı kurala göre üst/alt değiştirir.
+  // Sadece time'a bağlı olmalı, column'a değil (column eklenince carrier bazında sabit parity oluşur).
   const clockwiseOnTop = Math.floor(time / span) % 2 === 0;
   if (counterRotating) {
     return clockwiseOnTop ? "counterClockwise" : "clockwise";
