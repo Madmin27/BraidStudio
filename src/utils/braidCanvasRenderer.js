@@ -287,7 +287,7 @@ function drawVectorBraidSurface(ctx, sheet, width, height, close, grid, renderSt
   // Beyaz ve renkli hücreler aynı esasla çizilir, hiçbir hücre iki defa çizilmez.
   // GAP=0.4px → kıl kadar boşluk, çakışma yok.
   const GAP = 0.4;
-  const TOP_INSET = 2.5;  // üstteki diamond'ın içeri çekilmesi → alttaki iplik kenarlardan görünür
+  const TOP_INSET = GAP;  // üstteki diamond da aynı boyutta → çerçeve olmaz
 
   // PASS A: Under carrier background — top=false crown'lar tam boy diamond
   // Alttaki iplik rengi, üstteki diamond'ın kenarından taşarak görünür.
