@@ -135,7 +135,8 @@ function drawMatrixTextileCells(ctx, sheet, width, height, options) {
   const grid = calculateCalibratedBraidGrid({ width, height, carrierCount, close: options.close });
   const renderStyle = options.renderStyle || "technical";
 
-  // Base: silindirik halat gövdesi yok — her hücre PASS 0'da kendi owner rengiyle doldurulur
+  // Base: silindirik halat gövdesi — boş hücreler gradient görsün
+  drawRopeBodyBase(ctx, width, height, options.close, renderStyle);
   drawVectorBraidSurface(ctx, sheet, width, height, options.close, grid, renderStyle);
   return grid;
 }
@@ -289,26 +290,63 @@ function drawVectorBraidSurface(ctx, sheet, width, height, close, grid, renderSt
   const GAP = 0.4;
   const TOP_INSET = GAP;  // üstteki diamond da aynı boyutta → çerçeve olmaz
 
-  // PASS 0: Tüm hücreleri tam kare doldur — diamond dışındaki köşeler boş kalmasın
-  // Under carrier rengi tercih edilir, yoksa top carrier rengi kullan
+  // PASS A: Under carrier diamonds — top diamond'ın altında kalır, üstteki diamond köşeleri örter
   {
-    const cellColors = {};
+    // Her hücre için sadece bir under diamond çiz — son under crown kazansın
+    const underMap = {};
     for (const c of crowns) {
+      if (c.top) continue;
       const key = c.col + "," + c.row;
-      if (!c.top) {
-        cellColors[key] = c.color; // under renk öncelikli
-      } else if (!(key in cellColors)) {
-        cellColors[key] = c.color; // top renk sadece under yoksa
-      }
+      underMap[key] = c;
     }
-    for (const key in cellColors) {
-      const [col, row] = key.split(",").map(Number);
-      ctx.fillStyle = colorToHex(cellColors[key]);
-      ctx.fillRect(col * cellW, row * cellH, cellW, cellH);
+    for (const key in underMap) {
+      const c = underMap[key];
+      const cellX = c.col * cellW;
+      const cellY = c.row * cellH;
+      const cx = cellX + cellW / 2;
+      const cy = cellY + cellH / 2;
+
+      ctx.save();
+      ctx.beginPath();
+      ctx.moveTo(cx, cellY + GAP);
+      ctx.lineTo(cellX + cellW - GAP, cy);
+      ctx.lineTo(cx, cellY + cellH - GAP);
+      ctx.lineTo(cellX + GAP, cy);
+      ctx.closePath();
+      ctx.clip();
+
+      ctx.fillStyle = colorToHex(c.color);
+      ctx.fillRect(cellX, cellY, cellW, cellH);
+
+      // Yatay silindirik gradient
+      const cylGrad = ctx.createLinearGradient(cellX, 0, cellX + cellW, 0);
+      cylGrad.addColorStop(0, "rgba(0,0,0,0.08)");
+      cylGrad.addColorStop(0.2, "rgba(0,0,0,0.01)");
+      cylGrad.addColorStop(0.5, "rgba(255,255,255,0.08)");
+      cylGrad.addColorStop(0.8, "rgba(0,0,0,0.01)");
+      cylGrad.addColorStop(1, "rgba(0,0,0,0.08)");
+      ctx.fillStyle = cylGrad;
+      ctx.fillRect(cellX, cellY, cellW, cellH);
+
+      const dir = c.direction;
+      const isCW = dir === "clockwise";
+      const sgx = isCW ? cellX : cellX + cellW;
+      const sgy = cellY;
+      const sgx2 = isCW ? cellX + cellW : cellX;
+      ctx.fillStyle = "rgba(0,0,0,0.07)";
+      ctx.beginPath();
+      ctx.moveTo(cx, cellY + GAP);
+      ctx.lineTo(sgx, sgy);
+      ctx.lineTo(sgx2, cellY + cellH);
+      ctx.lineTo(cx, cellY + cellH - GAP);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.restore();
     }
   }
 
-  // PASS B: Top carrier diamonds (INSET — üstteki iplik daha küçük diamond, alttaki kenardan taşar)
+  // PASS B: Top carrier diamonds (INSET — üstteki iplik aynı boyutta diamond)
   for (const crown of crowns) {
     if (!crown.top) continue;
     const cellX = crown.col * cellW;
