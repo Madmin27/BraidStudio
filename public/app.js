@@ -1057,7 +1057,7 @@ function mostCommonColor(colors = []) {
 }
 
 function renderMainRopeSvg(sheet) {
-  return `<div class="canvas-rope-frame"><canvas data-braid-canvas="main" width="1520" height="280" aria-label="Ana halat görünümü"></canvas><div class="rope-scale"><span>0</span><span>30 cm</span></div></div>`;
+  return `<div class="canvas-rope-frame"><canvas data-braid-canvas="main" width="3040" height="560" aria-label="Ana halat görünümü"></canvas><div class="rope-scale"><span>0</span><span>30 cm</span></div></div>`;
 }
 
 function renderSectionSvg(sheet) {
