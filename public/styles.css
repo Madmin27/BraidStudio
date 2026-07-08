@@ -816,20 +816,10 @@ dd {
 .canvas-rope-frame {
   display: grid;
   gap: 6px;
-  overflow-x: auto;
 }
 
-.canvas-rope-frame canvas[data-braid-canvas="main"] {
-  width: 3040px;
-  height: 560px;
-  image-rendering: crisp-edges;
-  border: 1px solid #111;
-  background: #f3f5f1;
-}
-
-.canvas-rope-frame :not([data-braid-canvas="main"]) canvas,
+.canvas-rope-frame canvas,
 .canvas-rope-frame img {
-  display: block;
   border: 1px solid #111;
   background: #f3f5f1;
 }

@@ -145,8 +145,8 @@ export function calculateCalibratedBraidGrid({ width, height, carrierCount, clos
   const steps = close
     ? Math.max(rows * 3, 32)
     : Math.max(rows * 6, 48);
-  const cellHeight = height / rows;
-  const cellWidth = width / Math.max(steps, 1);
+  const cellHeight = (height / rows) * 2;
+  const cellWidth = (width / Math.max(steps, 1)) * 2;
   return {
     rows,
     cellHeight,
