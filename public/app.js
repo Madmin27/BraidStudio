@@ -1588,28 +1588,5 @@ requestAnimationFrame(() => {
 });
 
 /* ── Tıklayınca büyütme (modal) ── */
-const enlargeModal = document.getElementById("enlargeModal");
-
-// recipeSheet içindeki canvas'a tıklayınca modalı aç
-recipeSheet.addEventListener("click", (e) => {
-  const canvas = e.target.closest("[data-braid-canvas='main']");
-  if (!canvas) return;
-
-  const enlargedImg = enlargeModal.querySelector(".enlarged-image");
-  enlargedImg.src = canvas.toDataURL("image/png");
-  enlargeModal.hidden = false;
-});
-
-// modal arka planına/kapatma düğmesine tıklayınca kapat
-enlargeModal.addEventListener("click", (e) => {
-  if (e.target === enlargeModal || e.target.closest(".enlarge-close")) {
-    enlargeModal.hidden = true;
-  }
-});
-
-// ESC tuşuyla modalı kapat
-document.addEventListener("keydown", (e) => {
-  if (e.key === "Escape" && !enlargeModal.hidden) {
-    enlargeModal.hidden = true;
-  }
-});
+// renderRecipeSheet içinde canvas-modal-overlay kullanılıyor (aktif)
+// enlargeModal eski sistem — kullanılmıyor
