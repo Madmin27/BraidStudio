@@ -1118,7 +1118,9 @@ function applyPattern(patternId) {
   const preservedColors = colorsFromCarrierLayout(previousLayout, formSelection.colors);
 
   selectedPatternId = pattern.id;
+  window.__applyingFromAlbum = true;
   patternSelect.value = pattern.id;
+  window.__applyingFromAlbum = false;
   state = applyUserSelection(state, {
     ...formSelection,
     pattern_type: pattern.id,
@@ -1288,6 +1290,7 @@ generateButton.addEventListener("click", () => {
 });
 
 selectionForm.addEventListener("change", (event) => {
+  if (window.__applyingFromAlbum) return;
   const previousLayout = Array.isArray(state.user_selected_options.carrier_layout)
     ? state.user_selected_options.carrier_layout
     : [];
