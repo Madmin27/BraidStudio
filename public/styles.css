@@ -820,9 +820,9 @@ dd {
 }
 
 .canvas-rope-frame canvas[data-braid-canvas="main"] {
-  width: auto;
-  max-width: none;
-  height: auto;
+  width: 3040px;
+  height: 560px;
+  image-rendering: crisp-edges;
   border: 1px solid #111;
   background: #f3f5f1;
 }
