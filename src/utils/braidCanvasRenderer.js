@@ -289,32 +289,26 @@ function drawVectorBraidSurface(ctx, sheet, width, height, close, grid, renderSt
   const GAP = 0.4;
   const TOP_INSET = GAP;  // üstteki diamond da aynı boyutta → çerçeve olmaz
 
-  // PASS A: Under carrier background — top=false crown'lar tam boy diamond
-  // Alttaki iplik rengi, üstteki diamond'ın kenarından taşarak görünür.
-  for (const crown of crowns) {
-    if (crown.top) continue;
-    const cellX = crown.col * cellW;
-    const cellY = crown.row * cellH;
-    const cx = cellX + cellW / 2;
-    const cy = cellY + cellH / 2;
-
-    ctx.save();
-    ctx.beginPath();
-    ctx.moveTo(cx, cellY + GAP);
-    ctx.lineTo(cellX + cellW - GAP, cy);
-    ctx.lineTo(cx, cellY + cellH - GAP);
-    ctx.lineTo(cellX + GAP, cy);
-    ctx.closePath();
-    ctx.clip();
-
-    const underHex = colorToHex(crown.color);
-    ctx.fillStyle = underHex;
-    ctx.fillRect(cellX, cellY, cellW, cellH);
-    ctx.restore();
+  // PASS 0: Tüm hücreleri tam kare doldur — diamond dışındaki köşeler boş kalmasın
+  // Under carrier rengi tercih edilir, yoksa top carrier rengi kullan
+  {
+    const cellColors = {};
+    for (const c of crowns) {
+      const key = c.col + "," + c.row;
+      if (!c.top) {
+        cellColors[key] = c.color; // under renk öncelikli
+      } else if (!(key in cellColors)) {
+        cellColors[key] = c.color; // top renk sadece under yoksa
+      }
+    }
+    for (const key in cellColors) {
+      const [col, row] = key.split(",").map(Number);
+      ctx.fillStyle = colorToHex(cellColors[key]);
+      ctx.fillRect(col * cellW, row * cellH, cellW, cellH);
+    }
   }
 
-  // PASS B: Top carrier diamonds (INSET — üstteki iplik daha küçük diamond, alttaki kenardan görünür)
-  // TOP_INSET px kadar içerden çizilir, böylece PASS A'daki underCarrier rengi kenarlardan taşar.
+  // PASS B: Top carrier diamonds (INSET — üstteki iplik daha küçük diamond, alttaki kenardan taşar)
   for (const crown of crowns) {
     if (!crown.top) continue;
     const cellX = crown.col * cellW;
