@@ -1544,16 +1544,15 @@ printPdfButton.addEventListener("click", () => {
 
 renderMachineProfiles();
 
-/* ── Initialize with default 16-carrier simulation ── */
+/* ── Initialize with the calibrated Tres 16-carrier simulation ── */
 const defaultCount = 16;
-const defaultColors = ["beyaz", "siyah", "kırmızı", "mavi"];
-const baseColor = String(defaultColors[0]).toLowerCase();
+const defaultColors = ["beyaz", "sarı"];
+const defaultPattern = "solid_with_markers";
+const defaultMachineProfileId = "tres_16x2_calibrated";
+const defaultWalkType = "1_over_1";
 const defaultColorByCarrier = new Map([
-  [1, "siyah"],
-  [3, "kırmızı"],
-  [5, "kırmızı"],
-  [10, "mavi"],
-  [12, "mavi"]
+  [1, "sarı"],
+  [9, "sarı"]
 ]);
 const defaultLayout = Array.from({ length: defaultCount }, (_, index) => ({
   carrier_no: index + 1,
@@ -1565,17 +1564,19 @@ const defaultLayout = Array.from({ length: defaultCount }, (_, index) => ({
 if (carrierSelect) carrierSelect.value = String(defaultCount);
 if (colorsInput) colorsInput.value = defaultColors.join(", ");
 if (sheathInput) sheathInput.value = "polyester";
-if (patternSelect) patternSelect.value = selectedPatternId;
-if (walkTypeSelect) walkTypeSelect.value = "two-over-two";
-syncMachineProfileToCarrierCount();
+selectedPatternId = defaultPattern;
+if (patternSelect) patternSelect.value = defaultPattern;
+if (walkTypeSelect) walkTypeSelect.value = defaultWalkType;
+if (machineProfileSelect) machineProfileSelect.value = defaultMachineProfileId;
 
 state = applyUserSelection(state, {
   carrier_layout: defaultLayout,
   carrier_count: defaultCount,
   colors: [...defaultColors],
   material: "polyester",
-  pattern_type: selectedPatternId,
-  braid_walk_type: "two-over-two"
+  pattern_type: defaultPattern,
+  machine_profile_id: defaultMachineProfileId,
+  braid_walk_type: defaultWalkType
 });
 generateButton.disabled = false;
 

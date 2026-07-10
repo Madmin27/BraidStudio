@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { loadLibrary } from "../server/lib/libraryLoader.js";
+import { findMachineProfile } from "../src/machineProfiles.js";
 import { resolveCarrierGroups, simulateBraidSurface } from "../src/engine/braidSurfaceSimulator.js";
 
 test("rec_12_medical_dual_trace is same-direction parallel tracer, not counter spiral", async () => {
@@ -162,4 +163,31 @@ test("mp_24_standard carrierGroups drive same-direction tracer simulation", asyn
 
   assert.equal(result.expectedVisualSignature, "parallel_spiral_tracer");
   assert.deepEqual(result.analysis.accentDirections, ["clockwise"]);
+});
+
+test("calibrated Tres analysis uses the same eight physical crossings as the canvas matrix", () => {
+  const machineProfile = findMachineProfile("tres_16x2_calibrated", 16);
+  const recipe = {
+    braidLogic: "1_over_1",
+    carrierColorMap: Object.fromEntries(Array.from({ length: 16 }, (_, index) => [
+      String(index + 1),
+      [1, 9].includes(index + 1) ? "sarı" : "beyaz"
+    ]))
+  };
+  const result = simulateBraidSurface({ recipe, machineProfile, steps: 8 });
+
+  assert.equal(result.analysis.modelSource, "tres_walk_map");
+  assert.equal(result.surfaceGrid.length, 8);
+  assert.ok(result.surfaceGrid.every((frame) => frame.slots.length === 8));
+  assert.deepEqual(result.surfaceGrid[0].slots[0], {
+    slot: 1,
+    visibleCarrierNo: 1,
+    underCarrierNo: 2,
+    color: "sarı",
+    underColor: "beyaz",
+    direction: "clockwise",
+    underDirection: "counterClockwise",
+    layer: "top",
+    crossingId: "1:0:0-1"
+  });
 });

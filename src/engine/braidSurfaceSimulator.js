@@ -1,3 +1,5 @@
+import { buildBraidMatrix } from "../utils/braidMatrix.js";
+
 export function simulateBraidSurface({ recipe = {}, machineProfile = null, steps = 48 } = {}) {
   const carrierColorMap = recipe.carrierColorMap || recipe.carrier_color_map || {};
   const carrierCount = Number(machineProfile?.carrierCount || recipe.carrierCount || Object.keys(carrierColorMap).length || 0);
@@ -15,7 +17,10 @@ export function simulateBraidSurface({ recipe = {}, machineProfile = null, steps
     .filter((carrier) => carrier.color && carrier.color !== baseColor);
   const accentDirections = new Set(accentCarriers.map((carrier) => carrierDirection(carrier.carrierNo, carrierGroups)));
   const crossingSchedule = crossingScheduleFor(braidLogic);
-  const surfaceGrid = buildSurfaceGrid({ colors, carrierGroups, crossingSchedule, steps: normalizedSteps });
+  const walkMapDriven = usesWalkMap(machineProfile, braidLogic);
+  const surfaceGrid = walkMapDriven
+    ? buildWalkMapSurfaceGrid({ colors, machineProfile, steps: normalizedSteps })
+    : buildSurfaceGrid({ colors, carrierGroups, crossingSchedule, steps: normalizedSteps });
   const expectedVisualSignature = expectedSignatureFor({
     colors,
     braidLogic,
@@ -41,9 +46,43 @@ export function simulateBraidSurface({ recipe = {}, machineProfile = null, steps
       baseColor,
       accentCarriers,
       accentDirections: Array.from(accentDirections),
-      crossingSchedule
+      crossingSchedule,
+      modelSource: walkMapDriven ? "tres_walk_map" : "legacy_slot_schedule"
     }
   };
+}
+
+function usesWalkMap(machineProfile, braidLogic) {
+  return String(machineProfile?.walkType || "").toLowerCase() === "pair_swap_provisional"
+    && braidLogic === "1_over_1";
+}
+
+function buildWalkMapSurfaceGrid({ colors, machineProfile, steps }) {
+  const carrierLayout = colors.map((color, index) => ({
+    carrier_no: index + 1,
+    color,
+    strand_role: "sheath"
+  }));
+  const matrix = buildBraidMatrix({
+    carrierLayout,
+    machineProfile,
+    braidLogic: "1_over_1",
+    steps
+  });
+  return matrix.cells.map((cells, step) => ({
+    step,
+    slots: cells.map((cell) => ({
+      slot: cell.column + 1,
+      visibleCarrierNo: cell.topCarrier.carrier_no,
+      underCarrierNo: cell.underCarrier.carrier_no,
+      color: cell.topCarrier.color,
+      underColor: cell.underCarrier.color,
+      direction: cell.topCarrier.direction,
+      underDirection: cell.underCarrier.direction,
+      layer: "top",
+      crossingId: cell.crossingId
+    }))
+  }));
 }
 
 export function resolveCarrierGroups(machineProfile, carrierCount, warnings = []) {
