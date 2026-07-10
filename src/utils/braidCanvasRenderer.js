@@ -40,23 +40,19 @@ function braidLog(...args) {
     window.__braidDebugLogs.push(args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' '));
   }
 }
-function braidLogClear() { if (typeof window !== 'undefined') window.__braidDebugLogs = []; }
+
+function braidLogClear() { if (typeof window !== "undefined") window.__braidDebugLogs = []; }
 function braidLogDump() {
-  if (typeof window !== 'undefined' && window.__braidDebugLogs && window.__braidDebugLogs.length) {
-    console.log('=== BRAID DEBUG ===');
-    window.__braidDebugLogs.forEach(l => console.log(l));
-    console.log('=== END ===');
+  if (typeof window !== "undefined" && window.__braidDebugLogs?.length) {
+    console.log("=== BRAID DEBUG ===");
+    window.__braidDebugLogs.forEach((entry) => console.log(entry));
+    console.log("=== END ===");
   }
 }
-/* ------------------------------------------------------------------ */
 
 export function drawMainRopeCanvas(canvas, sheet, options = {}) {
   const ctx = canvas?.getContext?.("2d");
   if (!ctx) return null;
-
-  // HTML attribute'leri (width="1520" height="280") sabit referans boyutudur.
-  // CSS width:100% viewport'a göre değişir — kullanma, aynı desen her browser'da
-  // aynı çıksın. Sadece devicePixelRatio için buffer'ı scale et.
   const attrW = canvas.getAttribute("width");
   const attrH = canvas.getAttribute("height");
   const logicalW = attrW ? Number(attrW) : canvas.width;
@@ -67,37 +63,20 @@ export function drawMainRopeCanvas(canvas, sheet, options = {}) {
     canvas.height = logicalH * dpr;
     ctx.scale(dpr, dpr);
   }
-  // canvas attributelarını CSS boyutuna sıfırlama — CSS width:100% zaten doğru görüntüleme sağlar
 
-  const width = logicalW;
-  const height = logicalH;
   const close = Boolean(options.close);
   const renderStyle = options.renderStyle || "soft3d";
-
   braidLogClear();
-  braidLog(`[drawMainRopeCanvas] logicalW=${logicalW} logicalH=${logicalH} dpr=${dpr} renderStyle=${renderStyle} close=${close}`);
-  braidLog(`[drawMainRopeCanvas] carrierCount=${sheet.carrier_count} walk=${sheet.braid_walk_type} colors=${JSON.stringify(sheet.color_sequence)}`);
-
-  ctx.clearRect(0, 0, width, height);
+  ctx.clearRect(0, 0, logicalW, logicalH);
   ctx.save();
-  roundedClip(ctx, 0, 0, width, height, close ? 0 : 4);
+  roundedClip(ctx, 0, 0, logicalW, logicalH, close ? 0 : 4);
   const grid = close
-    ? drawCloseTextileView(ctx, sheet, width, height)
+    ? drawCloseTextileView(ctx, sheet, logicalW, logicalH)
     : renderStyle === "soft3d"
-      ? drawSoft3DRopeView(ctx, sheet, width, height)
-      : drawTechnicalRopeView(ctx, sheet, width, height);
-  if (close) {
-    const shadow = ctx.createLinearGradient(0, height * 0.78, 0, height);
-    shadow.addColorStop(0, "rgba(0,0,0,0)");
-    shadow.addColorStop(1, "rgba(0,0,0,0.10)");
-    ctx.fillStyle = shadow;
-    ctx.fillRect(0, height * 0.72, width, height * 0.28);
-  }
+      ? drawSoft3DRopeView(ctx, sheet, logicalW, logicalH)
+      : drawTechnicalRopeView(ctx, sheet, logicalW, logicalH);
   ctx.restore();
-
-  braidLog(`[drawMainRopeCanvas] grid: steps=${grid.steps} rows=${grid.rows} cellW=${grid.cellWidth?.toFixed(1)} cellH=${grid.cellHeight?.toFixed(1)}`);
   braidLogDump();
-
   return {
     steps: grid.steps,
     carrierCount: Number(sheet.carrier_count || sheet.carrier_layout?.length || 0),
@@ -109,33 +88,24 @@ export function drawMainRopeCanvas(canvas, sheet, options = {}) {
 }
 
 function drawTechnicalRopeView(ctx, sheet, width, height) {
-  return drawMatrixTextileCells(ctx, sheet, width, height, {
-    close: false,
-    background: "#fcfcfc"
-  });
+  return drawMatrixTextileCells(ctx, sheet, width, height, { close: false, background: "#fcfcfc" });
 }
 
 function drawCloseTextileView(ctx, sheet, width, height) {
-  return drawMatrixTextileCells(ctx, sheet, width, height, {
-    close: true,
-    background: "#fafafa"
-  });
+  return drawMatrixTextileCells(ctx, sheet, width, height, { close: true, background: "#fafafa" });
 }
 
 function drawSoft3DRopeView(ctx, sheet, width, height) {
-  return drawMatrixTextileCells(ctx, sheet, width, height, {
-    close: false,
-    renderStyle: "soft3d",
-    background: "#b5afa8"
-  });
+  return drawMatrixTextileCells(ctx, sheet, width, height, { close: false, renderStyle: "soft3d", background: "#b5afa8" });
 }
 
 function drawMatrixTextileCells(ctx, sheet, width, height, options) {
   const carrierCount = Number(sheet.carrier_count || sheet.carrier_layout?.length || 0);
-  const grid = calculateCalibratedBraidGrid({ width, height, carrierCount, close: options.close });
+  const physicalCrossingRows = String(sheet.machineProfile?.walkType || "").toLowerCase() === "pair_swap_provisional"
+    ? Math.max(1, carrierCount / 2)
+    : carrierCount;
+  const grid = calculateCalibratedBraidGrid({ width, height, carrierCount: physicalCrossingRows, close: options.close });
   const renderStyle = options.renderStyle || "technical";
-
-  // Base: silindirik halat gövdesi — boş hücreler gradient görsün
   drawRopeBodyBase(ctx, width, height, options.close, renderStyle);
   drawVectorBraidSurface(ctx, sheet, width, height, options.close, grid, renderStyle);
   return grid;
@@ -143,15 +113,11 @@ function drawMatrixTextileCells(ctx, sheet, width, height, options) {
 
 export function calculateCalibratedBraidGrid({ width, height, carrierCount, close = false }) {
   const rows = Math.max(1, Number(carrierCount || 0));
-  const steps = close
-    ? Math.max(rows * 3, 32)
-    : Math.max(rows * 6, 48);
-  const cellHeight = (height / rows) * 2;
-  const cellWidth = (width / Math.max(steps, 1)) * 2;
+  const steps = close ? Math.max(rows * 3, 32) : Math.max(rows * 6, 48);
   return {
     rows,
-    cellHeight,
-    cellWidth,
+    cellHeight: (height / rows) * 2,
+    cellWidth: (width / Math.max(steps, 1)) * 2,
     steps
   };
 }
@@ -220,17 +186,13 @@ function normalizeCarrierLayout(carrierLayout, colorSequence, carrierCount) {
 
 function drawRopeBodyBase(ctx, width, height, close, renderStyle) {
   if (renderStyle === "soft3d") {
-    // Soft3d: belirgin silindirik tonlama — beyaz iplikler görünsün
+    // Diamondlar arası zemin, beyaz kılıfla aynı tonda kalır; gri hücre boşluğu oluşmaz.
     const gradient = ctx.createLinearGradient(0, 0, 0, height);
-    gradient.addColorStop(0, "#8a847d");
-    gradient.addColorStop(0.06, "#9e9891");
-    gradient.addColorStop(0.15, "#b0aaa3");
-    gradient.addColorStop(0.35, "#bab4ad");
-    gradient.addColorStop(0.5, "#c0bab3");
-    gradient.addColorStop(0.65, "#bab4ad");
-    gradient.addColorStop(0.85, "#b0aaa3");
-    gradient.addColorStop(0.94, "#9e9891");
-    gradient.addColorStop(1, "#8a847d");
+    gradient.addColorStop(0, "#e4e6e5");
+    gradient.addColorStop(0.18, "#f3f5f4");
+    gradient.addColorStop(0.5, "#ffffff");
+    gradient.addColorStop(0.82, "#f3f5f4");
+    gradient.addColorStop(1, "#e4e6e5");
     ctx.save();
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, width, height);
@@ -283,12 +245,9 @@ function drawVectorBraidSurface(ctx, sheet, width, height, close, grid, renderSt
   ctx.rect(0, 0, width, height);
   ctx.clip();
 
-  // PASS 1: Draw topCarrier crowns — her hücre diamond (baklava) şeklinde çizilir
-  // Diamond: üst-alt-sağ-sol olmak üzere 4 noktalı eşkenar dörtgen.
-  // Beyaz ve renkli hücreler aynı esasla çizilir, hiçbir hücre iki defa çizilmez.
-  // GAP=0.4px → kıl kadar boşluk, çakışma yok.
-  const GAP = 0.4;
-  const TOP_INSET = GAP;  // üstteki diamond da aynı boyutta → çerçeve olmaz
+  // Her fiziksel kesişim tek bir diamond hücresidir: önce alt iplik, aynı
+  // geometri içinde üst iplik çizilir. Hücre dışına taşan şerit kullanılmaz.
+  const EDGE_OVERLAP = 0;
 
   // PASS A: Under carrier diamonds — top diamond'ın altında kalır, üstteki diamond köşeleri örter
   {
@@ -308,10 +267,10 @@ function drawVectorBraidSurface(ctx, sheet, width, height, close, grid, renderSt
 
       ctx.save();
       ctx.beginPath();
-      ctx.moveTo(cx, cellY + GAP);
-      ctx.lineTo(cellX + cellW - GAP, cy);
-      ctx.lineTo(cx, cellY + cellH - GAP);
-      ctx.lineTo(cellX + GAP, cy);
+      ctx.moveTo(cx, cellY - EDGE_OVERLAP);
+      ctx.lineTo(cellX + cellW + EDGE_OVERLAP, cy);
+      ctx.lineTo(cx, cellY + cellH + EDGE_OVERLAP);
+      ctx.lineTo(cellX - EDGE_OVERLAP, cy);
       ctx.closePath();
       ctx.clip();
 
@@ -335,10 +294,10 @@ function drawVectorBraidSurface(ctx, sheet, width, height, close, grid, renderSt
       const sgx2 = isCW ? cellX + cellW : cellX;
       ctx.fillStyle = "rgba(0,0,0,0.07)";
       ctx.beginPath();
-      ctx.moveTo(cx, cellY + GAP);
+      ctx.moveTo(cx, cellY - EDGE_OVERLAP);
       ctx.lineTo(sgx, sgy);
       ctx.lineTo(sgx2, cellY + cellH);
-      ctx.lineTo(cx, cellY + cellH - GAP);
+      ctx.lineTo(cx, cellY + cellH + EDGE_OVERLAP);
       ctx.closePath();
       ctx.fill();
 
@@ -346,7 +305,7 @@ function drawVectorBraidSurface(ctx, sheet, width, height, close, grid, renderSt
     }
   }
 
-  // PASS B: Top carrier diamonds (INSET — üstteki iplik aynı boyutta diamond)
+  // PASS B: Top carrier diamonds
   for (const crown of crowns) {
     if (!crown.top) continue;
     const cellX = crown.col * cellW;
@@ -356,10 +315,10 @@ function drawVectorBraidSurface(ctx, sheet, width, height, close, grid, renderSt
 
     ctx.save();
     ctx.beginPath();
-    ctx.moveTo(cx, cellY + TOP_INSET);
-    ctx.lineTo(cellX + cellW - TOP_INSET, cy);
-    ctx.lineTo(cx, cellY + cellH - TOP_INSET);
-    ctx.lineTo(cellX + TOP_INSET, cy);
+    ctx.moveTo(cx, cellY - EDGE_OVERLAP);
+    ctx.lineTo(cellX + cellW + EDGE_OVERLAP, cy);
+    ctx.lineTo(cx, cellY + cellH + EDGE_OVERLAP);
+    ctx.lineTo(cellX - EDGE_OVERLAP, cy);
     ctx.closePath();
     ctx.clip();
 

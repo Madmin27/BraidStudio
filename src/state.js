@@ -1,4 +1,5 @@
 import { findMachineProfile } from "./machineProfiles.js";
+import { buildBraidWalkMap } from "./engine/braidWalkMap.js";
 
 export const initialRecipeState = {
   ai_analysis_result: null,
@@ -108,7 +109,7 @@ export function generateRecipe(state) {
       braid_walk_type: finalSelection.braid_walk_type,
       color_sequence: colorSequence,
       carrierMap: carrierLayout,
-      walkMap: buildWalkMap(carrierLayout, finalSelection.braid_walk_type, machineProfile, finalSelection.direction),
+      walkMap: buildWalkMap(machineProfile),
       colorSequence,
       patternPreviewData: {
         pattern_type: finalSelection.pattern_type,
@@ -219,44 +220,9 @@ function markerCarrierPositions(carrierCount, patternType) {
   return Array.from({ length: count }, (_, index) => Math.round(((index + 0.5) * carrierCount) / count));
 }
 
-function buildWalkMap(carrierLayout, walkType, machineProfile, direction = "clockwise") {
-  const count = carrierLayout.length;
-  if (machineProfile.status === "shop_measured" && machineProfile.observedCarrierPaths?.length) {
-    return {
-      status: "shop_measured",
-      machineProfileId: machineProfile.machineProfileId,
-      walkType,
-      direction,
-      observedCarrierPaths: machineProfile.observedCarrierPaths
-    };
-  }
-  const clockwise = new Set(machineProfile.carrierGroups.clockwise || machineProfile.carrierGroups.trackA || []);
-  const counterClockwise = new Set(machineProfile.carrierGroups.counterClockwise || machineProfile.carrierGroups.trackB || []);
-  const steps = Math.min(8, Math.max(4, Math.ceil(count / 3)));
-  return {
-    status: "generic_candidate",
-    machineProfileId: machineProfile.machineProfileId,
-    trackModel: machineProfile.trackModel,
-    walkType,
-    direction,
-    validationRequired: true,
-    steps: Array.from({ length: steps }, (_, stepIndex) => ({
-      step: stepIndex + 1,
-      moves: carrierLayout.map((carrier, index) => {
-        const carrierDirection = clockwise.has(carrier.carrier_no) ? "clockwise" : counterClockwise.has(carrier.carrier_no) ? "counterClockwise" : "unknown";
-        const delta = carrierDirection === "clockwise" ? 2 : -2;
-        const from = index + 1;
-        const to = ((from - 1 + delta + count) % count) + 1;
-        return {
-          carrier_no: carrier.carrier_no,
-          from,
-          to,
-          direction: carrierDirection,
-          quarter_turn: stepIndex + 1
-        };
-      })
-    }))
-  };
+function buildWalkMap(machineProfile) {
+  const ticks = Math.min(16, Math.max(4, Number(machineProfile.carriersPerHead || machineProfile.carrierCount || 0)));
+  return buildBraidWalkMap({ machineProfile, head: 1, ticks });
 }
 
 function buildRecipeSteps(finalSelection, carrierCount) {

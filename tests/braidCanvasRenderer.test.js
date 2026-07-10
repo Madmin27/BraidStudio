@@ -162,6 +162,9 @@ test("16 carrier recipe with 1 and 9 black reaches renderer as same-direction ma
     "beyaz",
     "beyaz"
   ]);
+  assert.equal(sheet.walkMap.machineProfileId, "mp_16_std");
+  assert.equal(sheet.walkMap.frames.length, 16);
+  assert.ok(sheet.walkMap.frames.every((frame) => frame.validation.valid));
 
   const crowns = buildParallelTracerCrowns({
     carrierLayout: sheet.carrier_layout,

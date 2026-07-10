@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { buildBraidMatrix, getCarrierDirection, topDirectionAt } from "../src/utils/braidMatrix.js";
+import { findMachineProfile } from "../src/machineProfiles.js";
 
 const mp16 = {
   machineProfileId: "mp_16_std",
@@ -67,11 +68,11 @@ test("adjacent marker carriers 1 and 2 create opposing maypole paths", () => {
   assert.deepEqual(carrier2.points.map((point) => point.column), [1, 0, 15, 14, 13]);
 });
 
-test("two over two top direction changes every two cells", () => {
+test("two over two keeps the column phase and advances it every two time steps", () => {
   assert.equal(topDirectionAt({ time: 0, column: 0, braidLogic: "2_over_2" }), "clockwise");
-  assert.equal(topDirectionAt({ time: 0, column: 1, braidLogic: "2_over_2" }), "clockwise");
-  assert.equal(topDirectionAt({ time: 0, column: 2, braidLogic: "2_over_2" }), "counterClockwise");
-  assert.equal(topDirectionAt({ time: 0, column: 3, braidLogic: "2_over_2" }), "counterClockwise");
+  assert.equal(topDirectionAt({ time: 0, column: 1, braidLogic: "2_over_2" }), "counterClockwise");
+  assert.equal(topDirectionAt({ time: 0, column: 2, braidLogic: "2_over_2" }), "clockwise");
+  assert.equal(topDirectionAt({ time: 2, column: 0, braidLogic: "2_over_2" }), "counterClockwise");
 });
 
 test("standard walk is one-over-one top alternation", () => {
@@ -84,4 +85,22 @@ test("counter rotating walk mirrors the standard top phase", () => {
   assert.equal(topDirectionAt({ time: 0, column: 0, braidLogic: "counter-rotating" }), "counterClockwise");
   assert.equal(topDirectionAt({ time: 0, column: 1, braidLogic: "counter-rotating" }), "clockwise");
   assert.equal(topDirectionAt({ time: 0, column: 2, braidLogic: "counter-rotating" }), "counterClockwise");
+});
+
+test("calibrated Tres profile builds one-over-one crossings from its walk map", () => {
+  const matrix = buildBraidMatrix({
+    carrierLayout: layoutWithBlue([1, 9]),
+    machineProfile: findMachineProfile("tres_16x2_calibrated", 16),
+    braidLogic: "1_over_1",
+    steps: 4
+  });
+
+  assert.equal(matrix.walkMap.machineProfileId, "tres_16x2_calibrated");
+  assert.equal(matrix.cells.length, 4);
+  assert.equal(matrix.carrierCount, 8);
+  assert.ok(matrix.cells.every((row) => row.length === 8));
+  assert.ok(matrix.cells.every((row) => new Set(row.map((cell) => cell.crossingId)).size === 8));
+  assert.ok(matrix.cells.every((row) => row.every((cell) => cell.walkMapVersion === 1)));
+  assert.ok(matrix.cells.every((row) => row.every((cell) => cell.topCarrier && cell.underCarrier)));
+  assert.ok(matrix.cells.every((row) => row.every((cell) => cell.topCarrier.carrier_no !== cell.underCarrier.carrier_no)));
 });

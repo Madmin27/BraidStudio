@@ -1,3 +1,5 @@
+import { buildBraidWalkMap } from "../engine/braidWalkMap.js";
+
 export function getCarrierDirection(carrierNo, machineProfile = null) {
   const groups = machineProfile?.carrierGroups || {};
   if ((groups.clockwise || groups.trackA || []).includes(carrierNo)) return "clockwise";
@@ -32,6 +34,9 @@ export function buildBraidMatrix({
   }
 
   const normalizedSteps = Math.max(1, Number(steps || 30));
+  if (usesWalkMap(machineProfile, braidLogic)) {
+    return buildWalkMapMatrix({ carriers, machineProfile, braidLogic, steps: normalizedSteps });
+  }
   const cells = [];
   const carrierPaths = carriers.map((carrier) => ({ carrier, points: [] }));
 
@@ -92,6 +97,66 @@ export function buildBraidMatrix({
     braidLogic,
     cells,
     carrierPaths
+  };
+}
+
+function usesWalkMap(machineProfile, braidLogic) {
+  const walkType = String(machineProfile?.walkType || "").toLowerCase();
+  const logic = String(braidLogic || "").toLowerCase();
+  return walkType === "pair_swap_provisional"
+    && (logic.includes("1_over_1") || logic.includes("one-over-one") || logic.includes("standard"));
+}
+
+function buildWalkMapMatrix({ carriers, machineProfile, braidLogic, steps }) {
+  const walkMap = buildBraidWalkMap({ machineProfile, head: 1, ticks: steps });
+  const carriersByNo = new Map(carriers.map((carrier) => [carrier.carrier_no, carrier]));
+  const carrierPaths = carriers.map((carrier) => ({ carrier, points: [] }));
+  const pathsByCarrierNo = new Map(carrierPaths.map((path) => [path.carrier.carrier_no, path]));
+  const cells = walkMap.frames.map((frame) => {
+    const crossings = new Map();
+    for (const transition of frame.transitions) {
+      const crossing = crossings.get(transition.crossingId) || [];
+      crossing.push(transition);
+      crossings.set(transition.crossingId, crossing);
+      pathsByCarrierNo.get(transition.carrierNo)?.points.push({
+        time: frame.tick,
+        column: transition.fromSlot,
+        slot: transition.fromSlot,
+        crossingId: transition.crossingId,
+        layer: transition.layer
+      });
+    }
+    return [...crossings.values()]
+      .sort((left, right) => Math.min(...left.map((item) => item.fromSlot)) - Math.min(...right.map((item) => item.fromSlot)))
+      .map((crossing, column) => {
+      const topTransition = crossing.find((transition) => transition.layer === "top");
+      const underTransition = crossing.find((transition) => transition.layer === "under");
+      const topCarrier = carriersByNo.get(topTransition.carrierNo);
+      const underCarrier = carriersByNo.get(underTransition.carrierNo);
+      return {
+        time: frame.tick,
+        column,
+        topDirection: topCarrier.direction,
+        cwCarrier: topCarrier.direction === "clockwise" ? topCarrier : underCarrier,
+        ccwCarrier: topCarrier.direction === "counterClockwise" ? topCarrier : underCarrier,
+        topCarrier,
+        underCarrier,
+        visibleColor: topCarrier.color,
+        crossingId: topTransition.crossingId,
+        sourceTick: frame.tick,
+        walkMapVersion: walkMap.walkMapVersion,
+        slots: crossing.map((transition) => transition.fromSlot).sort((left, right) => left - right)
+      };
+    });
+  });
+
+  return {
+    carrierCount: Math.max(1, carriers.length / 2),
+    steps,
+    braidLogic,
+    cells,
+    carrierPaths,
+    walkMap
   };
 }
 

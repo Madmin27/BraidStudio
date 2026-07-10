@@ -33,6 +33,50 @@ function maypoleProfile(count) {
 }
 
 export const machineProfiles = [
+  {
+    machineProfileId: "tres_16x2_calibrated",
+    status: "provisional",
+    machineFamily: "maypole_circular",
+    manufacturer: "Tres",
+    headCount: 2,
+    carriersPerHead: 16,
+    carrierCount: 16,
+    walkMapVersion: 1,
+    walkType: "pair_swap_provisional",
+    carrierGroups: {
+      clockwise: oddNumbers(16),
+      counterClockwise: evenNumbers(16)
+    },
+    heads: [
+      { head: 1, slotPhase: 0 },
+      { head: 2, slotPhase: 0 }
+    ],
+    trackModel: "calibrated_pair_swap_16_slot",
+    walkProgram: {
+      slotCount: 16,
+      phases: [
+        { pairOffset: 0, clockwiseOnTop: true },
+        { pairOffset: 1, clockwiseOnTop: false }
+      ]
+    },
+    assumptions: [
+      "16 carriers are installed on each head.",
+      "Both heads use the same 16-slot walk program.",
+      "Pair transitions must be calibrated against the physical horn-gear track."
+    ],
+    limitations: [
+      "This profile is not a manufacturer-validated horn-gear map.",
+      "Head phase and crossing layers require shop verification."
+    ],
+    validationRequired: true,
+    requiredShopMeasurements: [
+      "manufacturer model and serial plate",
+      "per-head carrier count",
+      "one complete carrier movement cycle",
+      "head phase offset",
+      "crossing order at each horn intersection"
+    ]
+  },
   maypoleProfile(8),
   maypoleProfile(12),
   maypoleProfile(16),
