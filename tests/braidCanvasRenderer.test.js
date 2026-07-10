@@ -7,6 +7,7 @@ import {
   calculateMarkerPitch,
   calculatePatternRepeatModel,
   classifyMarkerCarrierDirections,
+  diamondCellOrigin,
   expectedMarkerCoverage
 } from "../src/utils/braidCanvasRenderer.js";
 import { applyUserSelection, generateRecipe, initialRecipeState } from "../src/state.js";
@@ -48,6 +49,16 @@ test("close grid shows multiple carrier cycles without tiling", () => {
   assert.equal(grid.rows, 16);
   assert.equal(grid.steps, 48);
   assert.ok(grid.cellWidth > grid.cellHeight);
+});
+
+test("diamond tessellation offsets alternating rows to avoid unowned white gaps", () => {
+  const cellWidth = 40;
+  const cellHeight = 20;
+  const evenOrigin = diamondCellOrigin({ col: 3, row: 2 }, cellWidth, cellHeight);
+  const oddOrigin = diamondCellOrigin({ col: 3, row: 3 }, cellWidth, cellHeight);
+
+  assert.deepEqual(evenOrigin, { x: 120, y: 20 });
+  assert.deepEqual(oddOrigin, { x: 140, y: 30 });
 });
 
 test("marker pitch scales with carrier count instead of using a fixed repeat", () => {

@@ -260,8 +260,7 @@ function drawVectorBraidSurface(ctx, sheet, width, height, close, grid, renderSt
     }
     for (const key in underMap) {
       const c = underMap[key];
-      const cellX = c.col * cellW;
-      const cellY = c.row * cellH;
+      const { x: cellX, y: cellY } = diamondCellOrigin(c, cellW, cellH);
       const cx = cellX + cellW / 2;
       const cy = cellY + cellH / 2;
 
@@ -308,8 +307,7 @@ function drawVectorBraidSurface(ctx, sheet, width, height, close, grid, renderSt
   // PASS B: Top carrier diamonds
   for (const crown of crowns) {
     if (!crown.top) continue;
-    const cellX = crown.col * cellW;
-    const cellY = crown.row * cellH;
+    const { x: cellX, y: cellY } = diamondCellOrigin(crown, cellW, cellH);
     const cx = cellX + cellW / 2;
     const cy = cellY + cellH / 2;
 
@@ -374,8 +372,9 @@ function drawVectorBraidSurface(ctx, sheet, width, height, close, grid, renderSt
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     for (const crown of crowns) {
-      const cx = crown.col * cellW + cellW / 2;
-      const cy = crown.row * cellH + cellH / 2;
+      const { x, y } = diamondCellOrigin(crown, cellW, cellH);
+      const cx = x + cellW / 2;
+      const cy = y + cellH / 2;
       ctx.fillStyle = "rgba(0,0,0,0.7)";
       ctx.fillText(String(crown.topCarrierNo), cx + 0.5, cy + 0.5);
       ctx.fillStyle = "rgba(255,255,255,0.85)";
@@ -385,6 +384,13 @@ function drawVectorBraidSurface(ctx, sheet, width, height, close, grid, renderSt
   }
 
   ctx.restore();
+}
+
+export function diamondCellOrigin(crown, cellW, cellH) {
+  return {
+    x: crown.col * cellW + (crown.row % 2 ? cellW / 2 : 0),
+    y: crown.row * cellH / 2
+  };
 }
 
 function drawRopeShading(ctx, width, height, close) {
