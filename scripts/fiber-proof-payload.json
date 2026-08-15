@@ -1,0 +1,31 @@
+{
+  "engine": "weave2d",
+  "carrierCount": 16,
+  "diameterMm": 16,
+  "braidAngle": 34,
+  "strandWidthScale": 1,
+  "filamentCount": 20,
+  "denier": 1000,
+  "visibleRows": 24,
+  "crossingMode": "diamond",
+  "flip": false,
+  "baseColor": "#f2f2ee",
+  "carriers": [
+    {"no": 1, "color": "#d81912"},
+    {"no": 2, "color": "#f2f2ee"},
+    {"no": 3, "color": "#d81912"},
+    {"no": 4, "color": "#f2f2ee"},
+    {"no": 5, "color": "#f2f2ee"},
+    {"no": 6, "color": "#f2f2ee"},
+    {"no": 7, "color": "#f2f2ee"},
+    {"no": 8, "color": "#f2f2ee"},
+    {"no": 9, "color": "#f2f2ee"},
+    {"no": 10, "color": "#f2f2ee"},
+    {"no": 11, "color": "#f2f2ee"},
+    {"no": 12, "color": "#f2f2ee"},
+    {"no": 13, "color": "#f2f2ee"},
+    {"no": 14, "color": "#f2f2ee"},
+    {"no": 15, "color": "#f2f2ee"},
+    {"no": 16, "color": "#f2f2ee"}
+  ]
+}

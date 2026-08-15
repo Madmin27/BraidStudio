@@ -5,3 +5,16 @@ overlap-test-*.png
 debug-*.png
 debug-*.json
 paint-face-*.png
+
+# Generated braid renders and local validation artifacts
+data/polyester-renders/
+data/validation/
+proofs/
+legacy_backups/
+scripts/checkpoints/
+.skill-build/
+
+# Python and Blender caches
+__pycache__/
+*.py[cod]
+*.blend1
