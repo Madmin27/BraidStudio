@@ -1095,7 +1095,7 @@ async function handleTexGenBraid(req, res) {
 function polyesterRenderId(payload) {
   return createHash("sha256")
     .update(JSON.stringify(payload))
-    .update("fiber-cycles-v42-gemini-soft-polyester-optics")
+    .update("fiber-cycles-v43-carrier-frame-balanced-polyester")
     .digest("hex")
     .slice(0, 24);
 }

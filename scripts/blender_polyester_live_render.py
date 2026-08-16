@@ -175,40 +175,46 @@ def carrier_color(carrier_number: int) -> str:
     return "#e11912" if carrier_number in {1, 3} else "#f6f5ee"
 
 
-def polyester_display_color(rgb: tuple[float, float, float]) -> tuple[float, float, float]:
-    """Normalize near-white/red UI colors to clean opaque textile pigments."""
-    r, g, b = rgb
-    if min(rgb) > 0.88 and max(rgb) - min(rgb) < 0.10:
-        return hex_color("#f2f4f7")
-    if r > 0.65 and g < 0.22 and b < 0.20:
-        return hex_color("#d60c18")
-    return rgb
-
-
 def tune_live_polyester(material: bpy.types.Material) -> None:
     """Keep fibers opaque while adding controlled satin/polyester response."""
     nodes = material.node_tree.nodes
     bsdf = nodes.get("Principled BSDF")
     if bsdf is not None:
-        gate.set_input(bsdf, "Roughness", 0.32)
-        gate.set_input(bsdf, "Specular IOR Level", 0.055)
-        gate.set_input(bsdf, "Anisotropic", 0.88)
-        gate.set_input(bsdf, "Anisotropic Rotation", 0.25)
+        gate.set_input(bsdf, "Specular IOR Level", 0.035)
+        gate.set_input(bsdf, "Anisotropic", 0.82)
+        gate.set_input(bsdf, "Anisotropic Rotation", 0.18)
         gate.set_input(bsdf, "Transmission Weight", 0.0)
-        gate.set_input(bsdf, "Subsurface Weight", 0.025)
-        gate.set_input(bsdf, "Subsurface Scale", 0.035)
-        gate.set_input(bsdf, "Subsurface Radius", (0.10, 0.05, 0.03))
-        gate.set_input(bsdf, "Sheen Roughness", 0.34)
+        gate.set_input(bsdf, "Subsurface Weight", 0.0)
+        gate.set_input(bsdf, "Subsurface Scale", 0.0)
+        gate.set_input(bsdf, "Sheen Roughness", 0.42)
 
     hair = next(
         (node for node in nodes if node.bl_idname == "ShaderNodeBsdfHairPrincipled"),
         None,
     )
     if hair is not None:
-        gate.set_input(hair, "Roughness", 0.30)
-        gate.set_input(hair, "Radial Roughness", 0.42)
-        gate.set_input(hair, "Secondary Reflection", 0.10)
+        gate.set_input(hair, "Roughness", 0.36)
+        gate.set_input(hair, "Radial Roughness", 0.48)
+        gate.set_input(hair, "Secondary Reflection", 0.06)
         gate.set_input(hair, "Transmission", 0.0)
+
+
+def normalize3(vector: tuple[float, float, float]) -> tuple[float, float, float]:
+    length = math.sqrt(sum(component * component for component in vector))
+    if length <= 1e-12:
+        return (1.0, 0.0, 0.0)
+    return tuple(component / length for component in vector)
+
+
+def cross3(
+    a: tuple[float, float, float],
+    b: tuple[float, float, float],
+) -> tuple[float, float, float]:
+    return (
+        a[1] * b[2] - a[2] * b[1],
+        a[2] * b[0] - a[0] * b[2],
+        a[0] * b[1] - a[1] * b[0],
+    )
 
 
 def create_carrier(carrier_number: int, family_direction: int, family_index: int,
@@ -299,13 +305,30 @@ def create_carrier(carrier_number: int, family_direction: int, family_index: int
                     (outward_center + local_outward) * compression
                     + irregular * 0.0015
                 )
-                radius = base_radius + layer_wave - transition_recess + outward
-
+                center_radius = base_radius + layer_wave - transition_recess
                 sin_theta = math.sin(theta)
                 cos_theta = math.cos(theta)
-                world_x = x - family_direction * math.sin(angle) * across
-                world_y = radius * cos_theta - math.cos(angle) * sin_theta * across
-                world_z = Z_SHIFT + radius * sin_theta + math.cos(angle) * cos_theta * across
+
+                # Gemini'nin de işaret ettiği hiyerarşi: over-under kararı
+                # taşıyıcı merkez eğrisinde çözülür; lifler bu merkeze bağlı
+                # yerel frame offsetleridir. Böylece 20 lif tek blok olarak
+                # üstten/alttan geçer, denye yalnızca yerel kalınlığı etkiler.
+                center = (
+                    x,
+                    center_radius * cos_theta,
+                    Z_SHIFT + center_radius * sin_theta,
+                )
+                radial = (0.0, cos_theta, sin_theta)
+                tangent = normalize3((
+                    1.0,
+                    -center_radius * family_direction * helix_rate * sin_theta,
+                    center_radius * family_direction * helix_rate * cos_theta,
+                ))
+                across_axis = normalize3(cross3(tangent, radial))
+
+                world_x = center[0] + across_axis[0] * across + radial[0] * outward
+                world_y = center[1] + across_axis[1] * across + radial[1] * outward
+                world_z = center[2] + across_axis[2] * across + radial[2] * outward
 
                 coordinate_cursor = point_cursor * 3
                 positions[coordinate_cursor:coordinate_cursor + 3] = (world_x, world_y, world_z)
@@ -342,12 +365,12 @@ def main() -> None:
         color_hex = carrier_color(carrier_number)
         material = material_cache.get(color_hex)
         if material is None:
-            rgb = polyester_display_color(hex_color(color_hex))
+            rgb = hex_color(color_hex)
             lightness = max(rgb)
             # Keep the accepted fiber geometry, but let the highlights spread
             # along the polyester tangent instead of forming a hard hot spot.
-            roughness = 0.32
-            sheen = 0.92 if lightness > 0.75 else 0.88
+            roughness = 0.38 if lightness > 0.75 else 0.40
+            sheen = 0.94 if lightness > 0.75 else 0.96
             material = gate.polyester_material(
                 f"Opaque HT polyester {color_hex}", rgb, roughness, sheen
             )
@@ -365,27 +388,26 @@ def main() -> None:
     target = (0.0, 0.0, Z_SHIFT)
     studio_length = max(120.0, GEOMETRY_LENGTH * 1.35)
     gate.add_area(
-        "Long textile softbox", (0.0, -18.0, Z_SHIFT + 16.0), 2650.0,
-        studio_length * 1.08, (1.0, 0.985, 0.955), target=target,
-        size_y=18.0,
+        "Uniform metre key", (0.0, -16.0, Z_SHIFT + 15.0), 2400.0,
+        studio_length, (1.0, 0.985, 0.95), target=target,
+        size_y=14.0,
     )
     gate.add_area(
-        "Wide front silk fill", (0.0, -16.0, Z_SHIFT + 4.0), 760.0,
-        studio_length * 1.08, (1.0, 1.0, 1.0), target=target,
-        size_y=16.0,
-    )
-    gate.add_area(
-        "Soft top fiber sheen", (0.0, -3.0, Z_SHIFT + 22.0), 1420.0,
-        studio_length * 1.12, (0.965, 0.98, 1.0), target=target,
+        "Uniform front fill", (0.0, -14.0, Z_SHIFT + 2.0), 1100.0,
+        studio_length, (1.0, 1.0, 1.0), target=target,
         size_y=10.0,
+    )
+    gate.add_area(
+        "Uniform top sheen", (0.0, 1.0, Z_SHIFT + 19.0), 1900.0,
+        studio_length, (0.94, 0.97, 1.0), target=target,
+        size_y=5.0,
     )
     world_background = scene.world.node_tree.nodes.get("Background")
     if world_background is not None:
-        world_background.inputs["Color"].default_value = (0.96, 0.965, 0.97, 1.0)
-        world_background.inputs["Strength"].default_value = 0.88
+        world_background.inputs["Color"].default_value = (0.89, 0.90, 0.91, 1.0)
+        world_background.inputs["Strength"].default_value = 0.66
     scene.cycles.sample_clamp_indirect = 10.0
-    scene.view_settings.look = "AgX - Medium High Contrast"
-    scene.view_settings.exposure = 0.30
+    scene.view_settings.exposure = 0.16
     floor = bpy.data.objects.get("Studio floor")
     if floor is not None:
         floor.location.z = 0.0
@@ -432,6 +454,7 @@ def main() -> None:
         "crossing_spacing_mm": CROSSING_SPACING,
         "contact_half_length_mm": CONTACT_HALF_LENGTH,
         "layer_control": "volumetric_yarn_end_bundle",
+        "carrier_frame_model": "centerline_radial_across_offsets_v43",
         "curve_sample_count": SAMPLE_COUNT,
         "carrier_shell_meshes": 0,
         "repeat_length_mm": LENGTH,

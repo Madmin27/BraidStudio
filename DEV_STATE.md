@@ -59,6 +59,9 @@ Tres/maypole makinesinde seçilen kukla renkleri, halat çapı, örgü açısı,
 - Kaynak tekrarda kısa ve noktasal ışıklar kaldırıldı. Geometrinin tamamından uzun üç softbox, `0,38` pürüzlülük, yüksek polyester sheen, temiz AgX düşük kontrast ve yükseltilmiş ortam pozlamasıyla tekrar boyunca yönlü fakat kesintisiz lif aydınlatması sağlar.
 - Canlı lif malzemesi `v41` ile kabul edilen geometri korunur; SSS ve transmisyon sıfırlıdır. v40 bol ışık denemesi görüntüyü fazla yıkadığı için geri alındı; dengeli v39 softbox değerleri tekrar canlı cache anahtarıyla yayınlandı.
 - Gemini teknik danışmanlık önerileri doğrultusunda `v42` optik denemesi yapıldı: carrier geometri ve üst-alt algoritması değiştirilmeden nötr beyaz/kırmızı tekstil pigmentleri, daha yüksek anizotropi, çok düşük SSS, indirect clamp ve geniş softbox ayarı denendi. `proofs/default-16mm-34deg-v42-gemini-optics.png` görsel olarak incelendi; renkler daha temiz fakat polyester ipeksi parlama etkisi hâlâ sınırlı kabul edildi.
+- Gemini'nin hiyerarşik taşıyıcı önerisi `v43` olarak uygulandı: üst-alt dalgası taşıyıcı merkez eğrisinde çözülür, 20 lif aynı taşıyıcı frame'ine bağlı yerel offset olarak taşınır. Lifler artık bağımsız örgü elemanı gibi üst-alt yapmaz; denye ve tel sayısı taşıyıcı içi yerel doku/kalınlık olarak kalır.
+- `proofs/default-16mm-34deg-v43-carrier-frame.png` ve `proofs/variant-16mm-35deg-v43-carrier-frame.png` görsel olarak incelendi. Son canlıdaki aşırı yıkanmış/kirli plastik görüntüye göre daha dengeli çıktı verdi; ancak hedef fotoğrafa göre kırmızı-beyaz sınırlarında küçük taşma, uçta gri açıklıklar ve temas-gölge kusurları hâlâ var.
+- Canlı render cache anahtarı `fiber-cycles-v43-carrier-frame-balanced-polyester` olarak değiştirildi; eski v42 görsellerin tarayıcı/cache üzerinden gelmesi engellenmelidir.
 - Kabul edilen `45 derece / 14x800D` reçete yeni motorla yeniden üretildi; aynı 31 mm fiziksel kadraja alındığında hücre sırası ve üst-alt yapısı kabul görüntüsüyle eşleşti.
 - `v38` varsayılan 16 mm / 34 derece / 20x1000D Cycles renderı normal ve yakın ölçekte `v37` ile karşılaştırıldı. Optik fark sınırlı fakat temizdir; lif ayrımı ve renk sınırları korunurken sert parlama yumuşamıştır.
 - Canlı servis etkin, HTTPS adresi HTTP 200 veriyor.
@@ -70,6 +73,7 @@ Tres/maypole makinesinde seçilen kukla renkleri, halat çapı, örgü açısı,
 - 45 derece/yüzde 85 çıktısı büyük kanca hatasını çözdü; fakat polyester parlaklığı, hücre köşeleri ve temas ezilmesi hedef fotoğrafla ölçülü yan yana kalibrasyonu henüz tamamlamadı.
 - 1 metre çıktı, bir fiziksel üretim tekrarının kesintisiz döşenmesiyle oluşturulur; Blender tek seferde bir metre geometri render etmez.
 - Ortadaki 40 cm ışık son 1 metre birleştirme aşamasında uygulanır; kaynak Blender tekrarındaki stüdyo ışığından ayrıdır.
+- v43 ile taşıyıcı hiyerarşisi düzeltilmiş olsa da temas modeli hâlâ gerçek ip basıncı kadar fiziksel değil. Kalan ana mühendislik işi, renk/material ayarı değil; taşıyıcıların temas sınırında kırpma, gölge ve paket kenarı davranışının ayrı bir geometri testiyle izole edilmesidir.
 - Çalışma ağacı çok sayıda eski proof, render, checkpoint ve değişiklik içeriyor; henüz temiz bir sürüm commit'i yoktur. İlgisiz dosyalar geri alınmamalıdır.
 
 ## Başarısız ve tekrar edilmemesi gereken yaklaşımlar
