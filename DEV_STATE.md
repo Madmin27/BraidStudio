@@ -56,8 +56,11 @@ Tres/maypole makinesinde seçilen kukla renkleri, halat çapı, örgü açısı,
 - Python unit testleri: 19/19 geçti.
 - Varsayılan 34 derece renderı ve 45 derece/yüzde 85 doğrulama renderı görsel olarak incelendi.
 - Düzeltilmiş varsayılan 16 mm / 34 derece / 20x1000D renderı hem kaynak PNG hem canlı 1 metre panorama olarak incelendi. Panel 4,87 mm paket / 4,87 mm gereken genişlik ve yüzde 100 doluluk gösterdi.
-- Kaynak tekrarda kısa ve noktasal ışıklar kaldırıldı. Geometrinin tamamından uzun üç softbox, daha düşük plastik speküler ve daha yüksek polyester sheen ile tekrar boyunca yönlü fakat kesintisiz lif aydınlatması sağlandı.
+- Kaynak tekrarda kısa ve noktasal ışıklar kaldırıldı. Geometrinin tamamından uzun üç softbox, `0,38` pürüzlülük, yüksek polyester sheen, temiz AgX düşük kontrast ve yükseltilmiş ortam pozlamasıyla tekrar boyunca yönlü fakat kesintisiz lif aydınlatması sağlar.
+- Canlı lif malzemesi `v41` ile kabul edilen geometri korunur; SSS ve transmisyon sıfırlıdır. v40 bol ışık denemesi görüntüyü fazla yıkadığı için geri alındı; dengeli v39 softbox değerleri tekrar canlı cache anahtarıyla yayınlandı.
+- Gemini teknik danışmanlık önerileri doğrultusunda `v42` optik denemesi yapıldı: carrier geometri ve üst-alt algoritması değiştirilmeden nötr beyaz/kırmızı tekstil pigmentleri, daha yüksek anizotropi, çok düşük SSS, indirect clamp ve geniş softbox ayarı denendi. `proofs/default-16mm-34deg-v42-gemini-optics.png` görsel olarak incelendi; renkler daha temiz fakat polyester ipeksi parlama etkisi hâlâ sınırlı kabul edildi.
 - Kabul edilen `45 derece / 14x800D` reçete yeni motorla yeniden üretildi; aynı 31 mm fiziksel kadraja alındığında hücre sırası ve üst-alt yapısı kabul görüntüsüyle eşleşti.
+- `v38` varsayılan 16 mm / 34 derece / 20x1000D Cycles renderı normal ve yakın ölçekte `v37` ile karşılaştırıldı. Optik fark sınırlı fakat temizdir; lif ayrımı ve renk sınırları korunurken sert parlama yumuşamıştır.
 - Canlı servis etkin, HTTPS adresi HTTP 200 veriyor.
 
 ## Bilinen sınırlar ve açık sorunlar
