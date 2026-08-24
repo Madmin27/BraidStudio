@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { buildYarnProfile, buildYarnProfileCacheKey, resolveCarrierDenier } from "../src/physics/yarnProfile.js";
-import { clearYarnProfileCache, getCachedYarnProfile, yarnProfileCacheStats } from "../src/physics/yarnProfileCache.js";
+import { MAX_YARN_PROFILE_CACHE_ENTRIES, clearYarnProfileCache, getCachedYarnProfile, yarnProfileCacheStats } from "../src/physics/yarnProfileCache.js";
 
 test("1000D x 2 ends polyester converts to expected bundle area", () => {
   const profile = buildYarnProfile({
@@ -102,6 +102,45 @@ test("cache key ignores color and cache reuses identical yarn geometry", () => {
   const p2 = getCachedYarnProfile(b);
   assert.equal(p1, p2);
   assert.equal(yarnProfileCacheStats().size, 1);
+});
+
+test("implicit defaults and explicit equivalent defaults share one cache entry", () => {
+  const implicit = {
+    material: "PES",
+    linearDensityDenier: 1000,
+    endsPerCarrier: 2
+  };
+  const explicit = {
+    material: "polyester",
+    linearDensityDenier: 1000,
+    denierBasis: "per_end",
+    endsPerCarrier: 2,
+    pliesPerEnd: 1,
+    densityGcm3: 1.38,
+    packingFactor: 0.72,
+    baseAspectRatio: 1,
+    compressibility: 0.25
+  };
+
+  assert.equal(buildYarnProfileCacheKey(implicit), buildYarnProfileCacheKey(explicit));
+  clearYarnProfileCache();
+  const p1 = getCachedYarnProfile(implicit);
+  const p2 = getCachedYarnProfile(explicit);
+  assert.equal(p1, p2);
+  assert.equal(yarnProfileCacheStats().size, 1);
+});
+
+test("yarn profile cache is bounded", () => {
+  clearYarnProfileCache();
+  for (let index = 0; index < MAX_YARN_PROFILE_CACHE_ENTRIES + 25; index += 1) {
+    getCachedYarnProfile({
+      material: "polyester",
+      linearDensityDenier: 500 + index,
+      endsPerCarrier: 1
+    });
+  }
+  assert.equal(yarnProfileCacheStats().size, MAX_YARN_PROFILE_CACHE_ENTRIES);
+  clearYarnProfileCache();
 });
 
 test("invalid packing factor is rejected instead of silently clamped", () => {
