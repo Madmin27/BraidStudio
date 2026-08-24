@@ -155,18 +155,26 @@ export function buildYarnProfile(input = {}) {
 }
 
 export function buildYarnProfileCacheKey(input = {}) {
-  const material = normalizeMaterialName(input.material);
+  const material = resolveMaterialProfile(input.material, input.densityGcm3);
+  const denier = resolveCarrierDenier(input);
+  const packingFactor = effectiveNumber(input.packingFactor, DEFAULT_YARN_ASSUMPTIONS.packingFactor);
+  const baseAspectRatio = effectiveNumber(input.baseAspectRatio, DEFAULT_YARN_ASSUMPTIONS.baseAspectRatio);
+  const compressibility = effectiveNumber(input.compressibility, DEFAULT_YARN_ASSUMPTIONS.compressibility);
+  const filamentsPerEnd = input.filamentsPerEnd === null || input.filamentsPerEnd === undefined || input.filamentsPerEnd === ""
+    ? null
+    : Number(input.filamentsPerEnd);
+
   const values = [
-    `mat=${material}`,
-    `D=${numberKey(input.linearDensityDenier ?? input.denier ?? input.denierPerEnd)}`,
-    `basis=${normalizeDenierBasis(input.denierBasis)}`,
-    `ends=${numberKey(input.endsPerCarrier ?? 1)}`,
-    `plies=${numberKey(input.pliesPerEnd ?? 1)}`,
-    `fil=${numberKey(input.filamentsPerEnd)}`,
-    `rho=${numberKey(input.densityGcm3)}`,
-    `phi=${numberKey(input.packingFactor)}`,
-    `ar=${numberKey(input.baseAspectRatio)}`,
-    `cmp=${numberKey(input.compressibility)}`,
+    `mat=${normalizeMaterialName(material.material)}`,
+    `D=${numberKey(denier.linearDensityDenier)}`,
+    `basis=${denier.denierBasis}`,
+    `ends=${numberKey(denier.endsPerCarrier)}`,
+    `plies=${numberKey(denier.pliesPerEnd)}`,
+    `fil=${numberKey(filamentsPerEnd)}`,
+    `rho=${numberKey(material.densityGcm3)}`,
+    `phi=${numberKey(packingFactor)}`,
+    `ar=${numberKey(baseAspectRatio)}`,
+    `cmp=${numberKey(compressibility)}`,
     `mw=${numberKey(input.measuredWidthMm)}`,
     `mt=${numberKey(input.measuredThicknessMm)}`
   ];
@@ -317,6 +325,11 @@ function optionalPositiveInteger(value, name) {
 
 function ellipseArea(widthMm, thicknessMm) {
   return Math.PI * widthMm * thicknessMm / 4;
+}
+
+function effectiveNumber(value, fallback) {
+  if (value === null || value === undefined || value === "") return fallback;
+  return Number(value);
 }
 
 function numberKey(value) {
