@@ -63,7 +63,9 @@ Eliptik yaklaşım:
 A = pi * width * thickness / 4
 ```
 
-Measured width/thickness verilirse denier-tabanlı tahminin önüne geçer. Tek ölçü verilirse diğer boyut alan korunarak hesaplanır.
+Denier yalnız kesit alanını belirler; tek başına gerçek yarn genişliğini/yassılaşmasını belirlemez. Bu nedenle `baseAspectRatio` verilmemişse V1 nötr başlangıç olarak `1.0` (dairesel kesit) kullanır. Braid içindeki yassılaşma daha sonra deformation solver tarafından ele alınır. Böylece ölçülmemiş bir `2:1` veya benzeri yassılaşma değeri fiziksel gerçek gibi sisteme gömülmez.
+
+Measured width/thickness verilirse denier-tabanlı tahminin önüne geçer. Tek ölçü verilirse diğer boyut alan korunarak hesaplanır. Mümkün olduğunda gerçek carrier bundle genişliği/kalınlığı ölçülmüş veri olarak girilmelidir.
 
 `filamentsPerEnd` makro kesit alanını değiştirmez; daha sonra mikro doku/normal-map frekansı için kullanılır.
 
