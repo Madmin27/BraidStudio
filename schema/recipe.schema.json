@@ -38,6 +38,36 @@
         "floating": { "type": "boolean" }
       }
     },
+    "yarnConstruction": {
+      "type": "object",
+      "description": "Optional physical preview yarn construction. Canonical field names match physical-preview.schema.json.",
+      "properties": {
+        "material": { "type": "string" },
+        "linearDensityDenier": { "type": "number", "exclusiveMinimum": 0 },
+        "denierBasis": { "enum": ["per_end", "per_ply"] },
+        "endsPerCarrier": { "type": "integer", "minimum": 1 },
+        "pliesPerEnd": { "type": "integer", "minimum": 1 },
+        "filamentsPerEnd": { "type": ["integer", "null"], "minimum": 1 },
+        "densityGcm3": { "type": ["number", "null"], "exclusiveMinimum": 0 },
+        "packingFactor": { "type": ["number", "null"], "exclusiveMinimum": 0, "maximum": 1 },
+        "baseAspectRatio": { "type": ["number", "null"], "minimum": 1, "maximum": 12 },
+        "compressibility": { "type": ["number", "null"], "minimum": 0, "maximum": 1 },
+        "measuredWidthMm": { "type": ["number", "null"], "exclusiveMinimum": 0 },
+        "measuredThicknessMm": { "type": ["number", "null"], "exclusiveMinimum": 0 }
+      },
+      "additionalProperties": true
+    },
+    "braidGeometry": {
+      "type": "object",
+      "description": "Optional physical preview geometry. Braid angle is always measured from the rope longitudinal axis.",
+      "properties": {
+        "coreDiameterMm": { "type": "number", "exclusiveMinimum": 0 },
+        "braidAngleDegFromAxis": { "type": "number", "exclusiveMinimum": 0, "exclusiveMaximum": 90 },
+        "braidAngleMeasured": { "type": "boolean" },
+        "carrierCount": { "type": "integer", "minimum": 2, "multipleOf": 2 }
+      },
+      "additionalProperties": true
+    },
     "settings": { "type": "object" },
     "validation": {
       "type": "object",
