@@ -1,4 +1,5 @@
 import { buildBraidMatrix } from "../utils/braidMatrix.js";
+import { solvePhysicalPreview } from "../physics/physicalPreviewSolver.js";
 
 export function simulateBraidSurface({ recipe = {}, machineProfile = null, steps = 48 } = {}) {
   const carrierColorMap = recipe.carrierColorMap || recipe.carrier_color_map || {};
@@ -32,6 +33,13 @@ export function simulateBraidSurface({ recipe = {}, machineProfile = null, steps
     warnings.push("Tracer carriers are in same direction group; counter spiral unlikely.");
   }
 
+  const physicalPreview = buildPhysicalPreviewIfPossible({
+    recipe,
+    machineProfile,
+    carrierCount,
+    warnings
+  });
+
   return {
     expectedVisualSignature,
     surfaceGrid,
@@ -40,6 +48,8 @@ export function simulateBraidSurface({ recipe = {}, machineProfile = null, steps
     isReliable: isReliable({ warnings, expectedVisualSignature }),
     analysis: {
       carrierCount,
+      physicalCarrierCount: carrierCount,
+      crossingsPerIdealTick: carrierCount ? carrierCount / 2 : 0,
       braidLogic,
       requestedSteps: Number(steps || 48),
       steps: normalizedSteps,
@@ -47,9 +57,38 @@ export function simulateBraidSurface({ recipe = {}, machineProfile = null, steps
       accentCarriers,
       accentDirections: Array.from(accentDirections),
       crossingSchedule,
-      modelSource: walkMapDriven ? "tres_walk_map" : "legacy_slot_schedule"
+      modelSource: walkMapDriven ? "tres_walk_map" : "legacy_slot_schedule",
+      physicalPreview
     }
   };
+}
+
+function buildPhysicalPreviewIfPossible({ recipe, machineProfile, carrierCount, warnings }) {
+  const yarnConstruction = recipe.yarnConstruction
+    || recipe.yarn_construction
+    || recipe.construction?.yarnConstruction
+    || null;
+  const braidGeometry = recipe.braidGeometry
+    || recipe.braid_geometry
+    || recipe.settings?.braidGeometry
+    || null;
+
+  if (!yarnConstruction || !braidGeometry) return null;
+  const coreDiameter = braidGeometry.coreDiameterMm ?? braidGeometry.core_diameter_mm;
+  if (coreDiameter === null || coreDiameter === undefined || coreDiameter === "") return null;
+
+  try {
+    return solvePhysicalPreview({
+      yarnConstruction,
+      braidGeometry,
+      carrierCount,
+      machineProfile,
+      deformationCalibration: recipe.deformationCalibration || recipe.deformation_calibration || null
+    });
+  } catch (error) {
+    warnings.push(`physical_preview_skipped:${error.message}`);
+    return null;
+  }
 }
 
 function usesWalkMap(machineProfile, braidLogic) {
