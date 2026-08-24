@@ -21,6 +21,19 @@ test("1000D x 2 ends polyester converts to expected bundle area", () => {
   assert.equal(profile.surface.totalFilamentsPerCarrier, 384);
 });
 
+test("unknown flattening defaults to neutral circular section", () => {
+  const profile = buildYarnProfile({
+    material: "polyester",
+    linearDensityDenier: 1000,
+    endsPerCarrier: 2
+  });
+
+  assert.equal(profile.crossSection.aspectRatio, 1);
+  assert.ok(Math.abs(profile.crossSection.widthMm - profile.crossSection.thicknessMm) < 1e-12);
+  assert.ok(profile.assumptions.includes("neutral_circular_aspect_ratio"));
+  assert.ok(profile.confidence.reasons.some((reason) => reason.includes("neutral circular")));
+});
+
 test("per_ply denier basis multiplies plies and ends exactly once", () => {
   const result = resolveCarrierDenier({
     linearDensityDenier: 1000,
