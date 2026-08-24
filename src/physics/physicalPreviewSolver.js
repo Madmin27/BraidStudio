@@ -27,10 +27,16 @@ export function solvePhysicalPreview({
 } = {}) {
   const physicalCarrierCount = resolveCarrierCount(carrierCount, braidGeometry, machineProfile);
   const yarnProfile = getCachedYarnProfile(yarnConstruction || {});
-  const coreDiameterMm = positiveNumber(
+  const coreDiameterMm = nonNegativeNumber(
     braidGeometry.coreDiameterMm ?? braidGeometry.core_diameter_mm,
     "braidGeometry.coreDiameterMm"
   );
+  const corePresent = braidGeometry.corePresent === undefined
+    ? coreDiameterMm > 0
+    : Boolean(braidGeometry.corePresent);
+  if (corePresent && coreDiameterMm === 0) {
+    throw new Error("corePresent=true requires coreDiameterMm > 0");
+  }
   const braidAngleDegFromAxis = resolveBraidAngle(braidGeometry, machineProfile);
 
   const coreRadiusMm = coreDiameterMm / 2;
@@ -63,7 +69,7 @@ export function solvePhysicalPreview({
   const predictedOuterDiameterMm = 2 * (
     estimatedYarnCenterlineRadiusMm + deformation.crossingThicknessMm / 2
   );
-  const diagnostics = buildDiagnostics(initialCoverage, relaxedCoverage, diagnosticThresholds);
+  const diagnostics = buildDiagnostics(initialCoverage, relaxedCoverage, diagnosticThresholds, corePresent);
   const confidence = buildConfidence({ yarnProfile, deformation, machineProfile, braidGeometry });
 
   return {
@@ -73,12 +79,14 @@ export function solvePhysicalPreview({
     inputs: {
       physicalCarrierCount,
       crossingsPerIdealTick: physicalCarrierCount / 2,
+      corePresent,
       coreDiameterMm,
       braidAngleDegFromAxis,
       machineProfileId: machineProfile?.machineProfileId || null
     },
     yarnProfile,
     geometry: {
+      corePresent,
       coreRadiusMm,
       nominalYarnCenterlineRadiusMm,
       estimatedYarnCenterlineRadiusMm,
@@ -94,6 +102,8 @@ export function solvePhysicalPreview({
     rendererContract: {
       physicalCarrierCount,
       crossingsPerTick: physicalCarrierCount / 2,
+      corePresent,
+      coreDiameterMm,
       yarnWidthMm: yarnProfile.crossSection.widthMm,
       yarnFreeThicknessMm: yarnProfile.crossSection.thicknessMm,
       yarnCrossingThicknessMm: deformation.crossingThicknessMm,
@@ -138,26 +148,23 @@ function resolveBraidAngle(braidGeometry, machineProfile) {
   return value;
 }
 
-function buildDiagnostics(initialCoverage, relaxedCoverage, thresholds = {}) {
+function buildDiagnostics(initialCoverage, relaxedCoverage, thresholds = {}, corePresent = true) {
   const cfg = {
     ...DEFAULT_DIAGNOSTIC_THRESHOLDS,
     ...(thresholds || {})
   };
   const optical = relaxedCoverage.opticalCoverageFraction;
   const overfill = initialCoverage.overfillRatio;
+  const openingRisk = optical < cfg.coreBleedHighBelowCoverage
+    ? "high"
+    : optical < cfg.coreBleedMediumBelowCoverage
+      ? "medium"
+      : "low";
 
   return {
     modelClass: "geometric_heuristic",
-    coreBleedRisk: optical < cfg.coreBleedHighBelowCoverage
-      ? "high"
-      : optical < cfg.coreBleedMediumBelowCoverage
-        ? "medium"
-        : "low",
-    surfaceOpeningRisk: optical < cfg.coreBleedHighBelowCoverage
-      ? "high"
-      : optical < cfg.coreBleedMediumBelowCoverage
-        ? "medium"
-        : "low",
+    coreBleedRisk: corePresent ? openingRisk : "not_applicable",
+    surfaceOpeningRisk: openingRisk,
     jammingRisk: overfill > cfg.jammingHighAboveOverfill
       ? "high"
       : overfill > cfg.jammingMediumAboveOverfill
@@ -225,5 +232,11 @@ function collectWarnings({ yarnProfile, initialCoverage, deformation, machinePro
 function positiveNumber(value, name) {
   const number = Number(value);
   if (!Number.isFinite(number) || number <= 0) throw new Error(`${name} must be a positive number`);
+  return number;
+}
+
+function nonNegativeNumber(value, name) {
+  const number = Number(value);
+  if (!Number.isFinite(number) || number < 0) throw new Error(`${name} must be a non-negative number`);
   return number;
 }
