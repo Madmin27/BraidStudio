@@ -58,6 +58,32 @@ test("larger core reduces crowding for same yarn construction", () => {
   assert.ok(largeCore.coverage.initial.crowdingRatio < smallCore.coverage.initial.crowdingRatio);
 });
 
+test("coreless braid is supported and core bleed is not applicable", () => {
+  const result = solvePhysicalPreview({
+    ...baseInput,
+    braidGeometry: {
+      ...baseInput.braidGeometry,
+      corePresent: false,
+      coreDiameterMm: 0
+    }
+  });
+  assert.equal(result.inputs.corePresent, false);
+  assert.equal(result.rendererContract.corePresent, false);
+  assert.equal(result.diagnostics.coreBleedRisk, "not_applicable");
+  assert.ok(result.geometry.predictedOuterDiameterMm > 0);
+});
+
+test("corePresent true rejects a zero core diameter", () => {
+  assert.throws(() => solvePhysicalPreview({
+    ...baseInput,
+    braidGeometry: {
+      ...baseInput.braidGeometry,
+      corePresent: true,
+      coreDiameterMm: 0
+    }
+  }), /requires coreDiameterMm/);
+});
+
 test("crowded construction reports radial relief and estimated crown", () => {
   const crowded = solvePhysicalPreview({
     ...baseInput,
