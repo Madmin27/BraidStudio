@@ -1,0 +1,86 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://braidstudio.local/schema/physical-preview.schema.json",
+  "title": "BraidStudio Physical Preview Input",
+  "type": "object",
+  "required": ["yarnConstruction", "braidGeometry"],
+  "properties": {
+    "carrierCount": {
+      "type": "integer",
+      "minimum": 2,
+      "multipleOf": 2,
+      "description": "Physical carrier count. Do not substitute crossings-per-tick."
+    },
+    "machineProfileId": { "type": "string" },
+    "yarnConstruction": {
+      "$ref": "#/$defs/yarnConstruction"
+    },
+    "braidGeometry": {
+      "$ref": "#/$defs/braidGeometry"
+    },
+    "deformationCalibration": {
+      "$ref": "#/$defs/deformationCalibration"
+    }
+  },
+  "$defs": {
+    "yarnConstruction": {
+      "type": "object",
+      "required": ["material", "linearDensityDenier", "denierBasis", "endsPerCarrier"],
+      "properties": {
+        "material": { "type": "string", "minLength": 1 },
+        "linearDensityDenier": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "description": "Supplier-declared denier value. Interpretation is controlled by denierBasis."
+        },
+        "denierBasis": {
+          "enum": ["per_end", "per_ply"],
+          "description": "per_end means linearDensityDenier already includes all plies in one end; per_ply multiplies by pliesPerEnd."
+        },
+        "endsPerCarrier": { "type": "integer", "minimum": 1 },
+        "pliesPerEnd": { "type": "integer", "minimum": 1, "default": 1 },
+        "filamentsPerEnd": {
+          "type": ["integer", "null"],
+          "minimum": 1,
+          "description": "Micro-texture input only; it does not multiply denier or bundle area."
+        },
+        "densityGcm3": { "type": ["number", "null"], "exclusiveMinimum": 0 },
+        "packingFactor": { "type": ["number", "null"], "exclusiveMinimum": 0, "maximum": 1 },
+        "baseAspectRatio": { "type": ["number", "null"], "minimum": 1, "maximum": 12 },
+        "compressibility": { "type": ["number", "null"], "minimum": 0, "maximum": 1 },
+        "measuredWidthMm": { "type": ["number", "null"], "exclusiveMinimum": 0 },
+        "measuredThicknessMm": { "type": ["number", "null"], "exclusiveMinimum": 0 }
+      },
+      "additionalProperties": true
+    },
+    "braidGeometry": {
+      "type": "object",
+      "required": ["coreDiameterMm", "braidAngleDegFromAxis"],
+      "properties": {
+        "coreDiameterMm": { "type": "number", "exclusiveMinimum": 0 },
+        "braidAngleDegFromAxis": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "exclusiveMaximum": 90,
+          "description": "Angle between braid yarn and the longitudinal rope axis."
+        },
+        "braidAngleMeasured": { "type": "boolean", "default": false },
+        "carrierCount": { "type": "integer", "minimum": 2, "multipleOf": 2 }
+      },
+      "additionalProperties": true
+    },
+    "deformationCalibration": {
+      "type": "object",
+      "properties": {
+        "source": { "enum": ["generic_estimate", "shop_calibrated"] },
+        "baseCrossingCompressionRatio": { "type": "number", "minimum": 0, "maximum": 0.6 },
+        "overfillCompressionGain": { "type": "number", "minimum": 0, "maximum": 3 },
+        "maxCrossingCompressionRatio": { "type": "number", "minimum": 0, "maximum": 0.8 },
+        "crownResponse": { "type": "number", "minimum": 0, "maximum": 2 },
+        "targetCrowdingRatio": { "type": "number", "exclusiveMinimum": 0 }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": true
+}
