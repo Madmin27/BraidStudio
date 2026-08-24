@@ -2,7 +2,10 @@ import { normalizeMaterialName, resolveMaterialProfile } from "./materialProfile
 
 export const DEFAULT_YARN_ASSUMPTIONS = Object.freeze({
   packingFactor: 0.72,
-  baseAspectRatio: 2.0,
+  // Denier determines area, not flattening. Without measured width/thickness or
+  // an explicit aspect ratio, use a neutral circular section instead of
+  // inventing braid flattening before the deformation solver runs.
+  baseAspectRatio: 1.0,
   compressibility: 0.25
 });
 
@@ -48,7 +51,7 @@ export function buildYarnProfile(input = {}) {
     name: "baseAspectRatio",
     warnings,
     assumptions,
-    fallbackLabel: "generic_ellipse_aspect_ratio"
+    fallbackLabel: "neutral_circular_aspect_ratio"
   });
   const compressibility = resolveRange({
     value: input.compressibility,
@@ -248,6 +251,7 @@ function geometryConfidence({ measuredWidthMm, measuredThicknessMm, explicitPack
   else reasons.push("packingFactor uses generic estimate");
   if (explicitDensity) score += 0.02;
   if (explicitAspectRatio && !measuredWidthMm && !measuredThicknessMm) score += 0.04;
+  else if (!measuredWidthMm && !measuredThicknessMm) reasons.push("aspect ratio defaults to neutral circular section until measured or calibrated");
   return {
     level: score >= 0.8 ? "measured_input" : score >= 0.6 ? "constrained_estimate" : "estimated",
     score: Number(Math.min(0.95, score).toFixed(2)),
