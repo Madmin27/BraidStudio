@@ -1,6 +1,5 @@
 import { createServer } from "node:http";
 import { spawn } from "node:child_process";
-import { createHash } from "node:crypto";
 import { existsSync, readFileSync } from "node:fs";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { extname, join, normalize } from "node:path";
@@ -17,13 +16,8 @@ const publicDir = join(__dirname, "public");
 const srcDir = join(__dirname, "src");
 const dataDir = join(__dirname, "data");
 const texgenScript = join(__dirname, "scripts", "texgen_braid_mesh.py");
-const polyesterRenderScript = join(__dirname, "scripts", "blender_polyester_live_render.py");
-const polyesterRenderDir = join(dataDir, "polyester-renders");
 const analysisCacheFile = join(dataDir, "analysis-cache.json");
 const analysisPromptVersion = "hybrid-v1";
-const polyesterRenderJobs = new Map();
-const polyesterRenderQueue = [];
-let activePolyesterRenderId = null;
 
 loadEnvFile(join(__dirname, ".env"));
 
@@ -1057,13 +1051,10 @@ function normalizeTexgenPayload(body = {}) {
     diameterMm: Math.max(4, Math.min(80, Number(body.diameterMm || 16))),
     braidAngle: Math.max(24, Math.min(68, Number(body.braidAngle || 34))),
     strandWidthScale: Math.max(.75, Math.min(2.2, Number(body.strandWidthScale || 1.0))),
-    filamentCount: Math.max(8, Math.min(40, Number(body.filamentCount || 20))),
-    denier: Math.max(300, Math.min(3000, Number(body.denier || 1000))),
+    filamentCount: Math.max(8, Math.min(40, Number(body.filamentCount || 30))),
+    denier: Math.max(300, Math.min(3000, Number(body.denier || 1300))),
     crossingMode: ["diamond", "regular", "hercules"].includes(body.crossingMode) ? body.crossingMode : "diamond",
     flip: Boolean(body.flip),
-    renderNonce: /^[a-z0-9-]{8,96}$/i.test(String(body.renderNonce || ""))
-      ? String(body.renderNonce)
-      : "shared",
     carriers: Array.from({ length: carrierCount }, (_, index) => {
       const carrier = Array.isArray(body.carriers) ? body.carriers[index] : null;
       return {
@@ -1089,183 +1080,6 @@ async function handleTexGenBraid(req, res) {
       error: error.message || "texgen_braid_failed",
       details: error.details || null
     });
-  }
-}
-
-function polyesterRenderId(payload) {
-  return createHash("sha256")
-    .update(JSON.stringify(payload))
-    .update("fiber-cycles-v43-carrier-frame-balanced-polyester")
-    .digest("hex")
-    .slice(0, 24);
-}
-
-function polyesterRenderPaths(id) {
-  return {
-    config: join(polyesterRenderDir, `${id}.config.json`),
-    image: join(polyesterRenderDir, `${id}.png`),
-    metadata: join(polyesterRenderDir, `${id}.json`)
-  };
-}
-
-function publicPolyesterJob(job) {
-  const queueIndex = polyesterRenderQueue.indexOf(job.id);
-  let renderMetadata = null;
-  if (job.status === "complete") {
-    const metadataPath = polyesterRenderPaths(job.id).metadata;
-    if (existsSync(metadataPath)) {
-      try {
-        renderMetadata = JSON.parse(readFileSync(metadataPath, "utf8"));
-      } catch {
-        renderMetadata = null;
-      }
-    }
-  }
-  return {
-    id: job.id,
-    status: job.status,
-    queuePosition: job.status === "queued" ? queueIndex + 1 : 0,
-    imageUrl: job.status === "complete" ? `/renders/${job.id}.png` : null,
-    createdAt: job.createdAt,
-    startedAt: job.startedAt || null,
-    completedAt: job.completedAt || null,
-    error: job.error || null,
-    repeatLengthMm: renderMetadata?.repeat_length_mm || null,
-    orthoScaleMm: renderMetadata?.ortho_scale_mm || null,
-    renderAspect: renderMetadata?.render_aspect || null
-  };
-}
-
-function startNextPolyesterRender() {
-  if (activePolyesterRenderId || polyesterRenderQueue.length === 0) return;
-  const id = polyesterRenderQueue.shift();
-  const job = polyesterRenderJobs.get(id);
-  if (!job || job.status !== "queued") {
-    startNextPolyesterRender();
-    return;
-  }
-
-  activePolyesterRenderId = id;
-  job.status = "rendering";
-  job.startedAt = new Date().toISOString();
-  const paths = polyesterRenderPaths(id);
-  const child = spawn(
-    "/usr/bin/blender",
-    ["-b", "--python", polyesterRenderScript, "--", paths.config, paths.image],
-    { cwd: __dirname, stdio: ["ignore", "ignore", "pipe"] }
-  );
-  let stderr = "";
-  const timeout = setTimeout(() => child.kill("SIGKILL"), 12 * 60 * 1000);
-  child.stderr.setEncoding("utf8");
-  child.stderr.on("data", (chunk) => {
-    stderr = (stderr + chunk).slice(-8000);
-  });
-  child.on("error", (error) => {
-    clearTimeout(timeout);
-    job.status = "failed";
-    job.error = error.message || "render_start_failed";
-    job.completedAt = new Date().toISOString();
-    activePolyesterRenderId = null;
-    startNextPolyesterRender();
-  });
-  child.on("close", (code, signal) => {
-    clearTimeout(timeout);
-    if (activePolyesterRenderId !== id) return;
-    if (code === 0 && existsSync(paths.image)) {
-      job.status = "complete";
-    } else {
-      job.status = "failed";
-      job.error = signal === "SIGKILL"
-        ? "Yüksek kaliteli render zaman aşımına uğradı."
-        : `Blender render başarısız (${code ?? signal ?? "unknown"}). ${stderr.slice(-500)}`;
-    }
-    job.completedAt = new Date().toISOString();
-    activePolyesterRenderId = null;
-    startNextPolyesterRender();
-  });
-}
-
-async function handlePolyesterRenderStart(req, res) {
-  try {
-    const body = await readRequestJson(req, 256 * 1024);
-    const payload = normalizeTexgenPayload(body);
-    const id = polyesterRenderId(payload);
-    const paths = polyesterRenderPaths(id);
-    await mkdir(polyesterRenderDir, { recursive: true });
-
-    if (existsSync(paths.image)) {
-      const complete = polyesterRenderJobs.get(id) || {
-        id,
-        status: "complete",
-        createdAt: new Date().toISOString(),
-        completedAt: new Date().toISOString()
-      };
-      complete.status = "complete";
-      polyesterRenderJobs.set(id, complete);
-      jsonResponse(res, 200, publicPolyesterJob(complete));
-      return;
-    }
-
-    let job = polyesterRenderJobs.get(id);
-    if (!job || job.status === "failed") {
-      await writeFile(paths.config, JSON.stringify(payload, null, 2));
-      job = {
-        id,
-        status: "queued",
-        createdAt: new Date().toISOString(),
-        startedAt: null,
-        completedAt: null,
-        error: null
-      };
-      polyesterRenderJobs.set(id, job);
-      polyesterRenderQueue.push(id);
-      startNextPolyesterRender();
-    }
-    jsonResponse(res, 202, publicPolyesterJob(job));
-  } catch (error) {
-    jsonResponse(res, error.statusCode || 500, {
-      error: error.message || "polyester_render_failed"
-    });
-  }
-}
-
-function handlePolyesterRenderStatus(req, res, id) {
-  if (!/^[a-f0-9]{24}$/.test(id)) {
-    jsonResponse(res, 400, { error: "invalid_render_id" });
-    return;
-  }
-  const paths = polyesterRenderPaths(id);
-  let job = polyesterRenderJobs.get(id);
-  if (!job && existsSync(paths.image)) {
-    job = {
-      id,
-      status: "complete",
-      createdAt: null,
-      completedAt: null
-    };
-    polyesterRenderJobs.set(id, job);
-  }
-  if (!job) {
-    jsonResponse(res, 404, { error: "render_not_found" });
-    return;
-  }
-  jsonResponse(res, 200, publicPolyesterJob(job));
-}
-
-async function handlePolyesterRenderImage(req, res, id) {
-  if (!/^[a-f0-9]{24}$/.test(id)) {
-    jsonResponse(res, 400, { error: "invalid_render_id" });
-    return;
-  }
-  try {
-    const data = await readFile(polyesterRenderPaths(id).image);
-    res.writeHead(200, {
-      "content-type": "image/png",
-      "cache-control": "public, max-age=31536000, immutable"
-    });
-    res.end(req.method === "HEAD" ? undefined : data);
-  } catch {
-    jsonResponse(res, 404, { error: "render_not_found" });
   }
 }
 
@@ -1307,23 +1121,6 @@ const server = createServer(async (req, res) => {
 
   if (req.url === "/api/texgen-braid" && req.method === "POST") {
     await handleTexGenBraid(req, res);
-    return;
-  }
-
-  if (req.url === "/api/polyester-render" && req.method === "POST") {
-    await handlePolyesterRenderStart(req, res);
-    return;
-  }
-
-  const polyesterStatusMatch = req.url?.match(/^\/api\/polyester-render\/([a-f0-9]{24})$/);
-  if (polyesterStatusMatch && req.method === "GET") {
-    handlePolyesterRenderStatus(req, res, polyesterStatusMatch[1]);
-    return;
-  }
-
-  const polyesterImageMatch = req.url?.match(/^\/renders\/([a-f0-9]{24})\.png(?:\?.*)?$/);
-  if (polyesterImageMatch && ["GET", "HEAD"].includes(req.method || "")) {
-    await handlePolyesterRenderImage(req, res, polyesterImageMatch[1]);
     return;
   }
 

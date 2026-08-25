@@ -38,10 +38,6 @@ def clamp(value, low, high):
     return max(low, min(high, value))
 
 
-def calibrated_denier(denier):
-    return denier / 3.0
-
-
 def normalize_hex(value, fallback):
     text = str(value or "").strip()
     if not text.startswith("#") or len(text) != 7:
@@ -60,12 +56,6 @@ def carrier_direction(index, flip=False):
 
 def crossing_span(mode):
     return {"diamond": 1, "regular": 2, "hercules": 3}.get(mode, 1)
-
-
-def plus_family_is_over(plus_global_index, minus_global_index, span):
-    """Resolve one physical S/Z crossing from its periodic event index."""
-    event_index = minus_global_index - plus_global_index
-    return ((event_index // max(1, span)) % 2) == 0
 
 
 def build_centerline(index, params, radius, length, steps):
@@ -173,13 +163,12 @@ def build_mesh(params):
     braid_angle = float(clamp(float(params.get("braidAngle", 34)), 24, 68))
     strand_width_scale = float(clamp(float(params.get("strandWidthScale", 1.25)), 0.75, 2.2))
     denier = float(clamp(float(params.get("denier", 1000)), 300, 3000))
-    effective_denier = calibrated_denier(denier)
-    denier_scale = math.sqrt(effective_denier / 1000.0)
+    denier_scale = math.sqrt(denier / 1000.0)
     radius = clamp(0.8 + diameter_mm * 0.03, 0.92, 2.35)
     length = 6.2
     lane_width = (2 * math.pi * radius / carrier_count)
     yarn_width = clamp(lane_width * 2.28 * strand_width_scale, 0.24, 0.9)
-    yarn_thickness = clamp(yarn_width * 0.28 * denier_scale, 0.025, 0.23)
+    yarn_thickness = clamp(yarn_width * 0.28 * denier_scale, 0.08, 0.23)
     steps = 180
     ring_segments = 16
     default_base = "#59ee78"
@@ -191,7 +180,6 @@ def build_mesh(params):
 
     textile = CTextile()
     yarns = []
-    include_mesh = params.get("geometryMode") != "surface"
     for index in range(carrier_count):
         centerline = build_centerline(
             index,
@@ -239,7 +227,6 @@ def build_mesh(params):
 
 
 def build_2d_weave_mesh(params):
-    include_mesh = params.get("geometryMode") != "surface"
     carrier_count = int(clamp(int(params.get("carrierCount", 16)), 8, 48))
     family_count = max(4, carrier_count // 2)
     diameter_mm = float(clamp(float(params.get("diameterMm", 16)), 4, 80))
@@ -247,12 +234,11 @@ def build_2d_weave_mesh(params):
     cells_y = int(clamp(int(params.get("cellsY", family_count)), 3, 12))
     braid_angle = float(clamp(float(params.get("braidAngle", 34)), 24, 68))
     strand_width_scale = float(clamp(float(params.get("strandWidthScale", 1.0)), 0.75, 2.2))
-    filament_count = float(clamp(float(params.get("filamentCount", 20)), 8, 40))
-    denier = float(clamp(float(params.get("denier", 1000)), 300, 3000))
-    effective_denier = calibrated_denier(denier)
-    denier_scale = math.sqrt(effective_denier / 1300.0)
+    filament_count = float(clamp(float(params.get("filamentCount", 30)), 8, 40))
+    denier = float(clamp(float(params.get("denier", 1300)), 300, 3000))
+    denier_scale = math.sqrt(denier / 1300.0)
     filament_scale = math.sqrt(filament_count / 30.0)
-    filament_diameter_scale = clamp(0.5 * (effective_denier / 1000.0), 0.05, 0.5)
+    filament_diameter_scale = clamp(0.5 * (denier / 1000.0), 0.15, 1.5)
     angle_rad = math.radians(braid_angle)
     slope = math.tan(angle_rad)
     pitch_width = 0.84
@@ -263,13 +249,11 @@ def build_2d_weave_mesh(params):
     target_radius = diameter_mm * 0.162678544
     diameter_scale = target_radius / cylinder_radius
     material_scale = denier_scale * (0.92 + 0.08 * filament_scale)
-    width = clamp(pitch_width * 1.10 * strand_width_scale * material_scale, 0.50, 1.64)
+    width = clamp(pitch_width * strand_width_scale * material_scale, 0.46, 1.52)
     thickness = clamp(
-        width
-        * (0.095 + 0.022 * denier_scale + 0.012 * filament_scale)
-        * math.sqrt(filament_diameter_scale / 0.65),
-        0.018,
-        0.36,
+        width * (0.09 + 0.025 * denier_scale + 0.015 * filament_scale) * filament_diameter_scale,
+        0.03,
+        0.24,
     )
     spacing = vertical_pitch
     textile = CTextileWeave2D(cells_x, cells_y, spacing, thickness, False, True)
@@ -304,10 +288,10 @@ def build_2d_weave_mesh(params):
     xmax = length_x / 2
     ymin = -length_y / 2
     ymax = length_y / 2
-    z_lift = thickness * 0.65
-    z_low = -thickness * 0.52
-    segments_long = max(76, int(visible_rows * (2.4 if carrier_count > 32 else 2.8)))
-    ring_segments = 12 if carrier_count <= 16 else 10
+    z_lift = thickness * 0.92
+    z_low = -thickness * 0.56
+    segments_long = max(72, int(visible_rows * (4.0 if carrier_count > 32 else 5.5)))
+    ring_segments = 12 if carrier_count <= 16 else (10 if carrier_count <= 32 else 8)
     span = crossing_span(params.get("crossingMode", "diamond"))
 
     plus_carriers = [
@@ -339,52 +323,22 @@ def build_2d_weave_mesh(params):
                 slope, line, is_plus, opposite_lines, xmin, xmax, ymin, ymax,
                 segments_long, z_lift, z_low, span
             )
-            yarn_entry = {
+            yarns.append({
                 "carrierNo": carrier["no"],
                 "color": carrier["color"],
                 "direction": direction_name,
                 "repeat": line["repeat"],
-                "fiberPath": wrap_centerline_on_cylinder(
-                    centerline,
-                    cylinder_radius,
-                    diameter_scale,
-                ),
-            }
-            if include_mesh:
-                yarn_entry["mesh"] = wrap_mesh_on_cylinder(
+                "mesh": wrap_mesh_on_cylinder(
                     mesh_flat_path(centerline, width, thickness, ring_segments),
                     cylinder_radius,
                     diameter_scale,
-                )
-            yarns.append(yarn_entry)
+                ),
+            })
 
     direction_counts = {
         "S": len({yarn["carrierNo"] for yarn in yarns if yarn["direction"] == "S"}),
         "Z": len({yarn["carrierNo"] for yarn in yarns if yarn["direction"] == "Z"}),
     }
-    crossing_transitions = [
-        sum(
-            1 for index in range(1, len(yarn["fiberPath"]))
-            if yarn["fiberPath"][index]["over"] != yarn["fiberPath"][index - 1]["over"]
-        )
-        for yarn in yarns
-    ]
-    full_path_transitions = [
-        transitions for yarn, transitions in zip(yarns, crossing_transitions)
-        if abs(yarn["repeat"]) == 0
-    ]
-    if not full_path_transitions or min(full_path_transitions) < 2:
-        raise RuntimeError("carrier_paths_missing_over_under_transitions")
-
-    response_yarns = yarns if include_mesh else [
-        {
-            "carrierNo": yarn["carrierNo"],
-            "color": yarn["color"],
-            "direction": yarn["direction"],
-            "repeat": yarn["repeat"],
-        }
-        for yarn in yarns
-    ]
 
     return {
         "engine": "TexGen CTextileWeave2D baseline + BraidStudio mesh bridge",
@@ -395,10 +349,6 @@ def build_2d_weave_mesh(params):
         "surfacePieceCount": len(yarns),
         "repeatCount": math.ceil(visible_rows / family_count),
         "directionCounts": direction_counts,
-        "crossingTransitions": {
-            "minimumFullPath": min(full_path_transitions),
-            "maximumFullPath": max(full_path_transitions),
-        },
         "radius": target_radius,
         "circumference": length_y,
         "length": length_x,
@@ -407,13 +357,7 @@ def build_2d_weave_mesh(params):
         "strandWidthScale": strand_width_scale,
         "filamentCount": int(round(filament_count)),
         "denier": int(round(denier)),
-        "effectiveDenier": effective_denier,
         "filamentDiameterScale": filament_diameter_scale,
-        "fiberGeometry": {
-            "representation": "mesh" if include_mesh else "continuous_surface_heightfield",
-            "filamentsPerCarrier": int(round(filament_count)),
-            "followsCarrierOverUnderPath": True,
-        },
         "yarnWidth": width,
         "yarnThickness": thickness,
         "braidAngle": braid_angle,
@@ -422,7 +366,7 @@ def build_2d_weave_mesh(params):
         "repeatOffset": family_count,
         "flatWeave": False,
         "cylindricalWeave": True,
-        "yarns": response_yarns,
+        "yarns": yarns,
     }
 
 
@@ -478,18 +422,11 @@ def periodic_diagonal_centerline(slope, line, is_plus, opposite_lines, xmin, xma
                 nearest_line = opposite_line
                 nearest_dx = dx
         local = min(1.0, nearest_dx / half_window)
-        crown = max(0.0, math.cos(local * math.pi * 0.5)) ** 1.2
-        if is_plus:
-            plus_over = plus_family_is_over(
-                line["globalIndex"], nearest_line["globalIndex"], span
-            )
-        else:
-            plus_over = plus_family_is_over(
-                nearest_line["globalIndex"], line["globalIndex"], span
-            )
+        crown = 0.5 + 0.5 * math.cos(local * math.pi)
+        plus_over = ((line["globalIndex"] + nearest_line["globalIndex"]) % (span * 2)) < span
         over = plus_over if is_plus else not plus_over
         z = (z_lift if over else z_low) * crown
-        centerline.append({"x": x, "y": y, "z": z, "t": t, "over": over, "crown": crown})
+        centerline.append({"x": x, "y": y, "z": z, "t": t})
     return centerline
 
 
@@ -516,7 +453,6 @@ def mesh_flat_path(centerline, width, thickness, ring_segments):
     uvs = []
     indices = []
     up = (0, 0, 1)
-    section_power = 2.45
     for i, point in enumerate(centerline):
         prev_point = centerline[max(0, i - 1)]
         next_point = centerline[min(len(centerline) - 1, i + 1)]
@@ -526,30 +462,18 @@ def mesh_flat_path(centerline, width, thickness, ring_segments):
         tx /= tlen
         ty /= tlen
         lateral = (-ty, tx, 0)
-        crown = float(point.get("crown", 0.0))
-        local_width = width * (1.0 + crown * 0.04)
-        local_thickness = thickness * (1.0 - crown * 0.46)
         for j in range(ring_segments):
             a = 2 * math.pi * j / ring_segments
-            cos_a = math.cos(a)
-            sin_a = math.sin(a)
-            lx_norm = math.copysign(abs(cos_a) ** (2.0 / section_power), cos_a)
-            uz_norm = math.copysign(abs(sin_a) ** (2.0 / section_power), sin_a)
-            lx = lx_norm * local_width * 0.5
-            uz = uz_norm * local_thickness * 0.5
+            lx = math.cos(a) * width * 0.5
+            uz = math.sin(a) * thickness * 0.5
             vertices.extend([
                 point["x"] + lateral[0] * lx + up[0] * uz,
                 point["y"] + lateral[1] * lx + up[1] * uz,
                 point["z"] + lateral[2] * lx + up[2] * uz,
             ])
-            grad_lateral = math.copysign(abs(lx_norm) ** (section_power - 1), lx_norm) / max(local_width * 0.5, 1e-6)
-            grad_up = math.copysign(abs(uz_norm) ** (section_power - 1), uz_norm) / max(local_thickness * 0.5, 1e-6)
-            grad_length = math.hypot(grad_lateral, grad_up) or 1
-            grad_lateral /= grad_length
-            grad_up /= grad_length
-            nx = lateral[0] * grad_lateral + up[0] * grad_up
-            ny = lateral[1] * grad_lateral + up[1] * grad_up
-            nz = lateral[2] * grad_lateral + up[2] * grad_up
+            nx = lateral[0] * math.cos(a) + up[0] * math.sin(a)
+            ny = lateral[1] * math.cos(a) + up[1] * math.sin(a)
+            nz = lateral[2] * math.cos(a) + up[2] * math.sin(a)
             normals.extend([nx, ny, nz])
             uvs.extend([j / ring_segments, i / max(1, len(centerline) - 1)])
     for i in range(len(centerline) - 1):
@@ -604,21 +528,6 @@ def wrap_mesh_on_cylinder(mesh, radius, radial_scale=1.0):
         "uvs": mesh["uvs"],
         "indices": mesh["indices"],
     }
-
-
-def wrap_centerline_on_cylinder(centerline, radius, radial_scale=1.0):
-    path = []
-    for point in centerline:
-        theta = point["y"] / radius
-        surface = (radius + point["z"]) * radial_scale
-        path.append({
-            "x": point["x"],
-            "y": math.cos(theta) * surface,
-            "z": math.sin(theta) * surface,
-            "over": bool(point.get("over", False)),
-            "crown": float(point.get("crown", 0.0)),
-        })
-    return path
 
 
 def main():

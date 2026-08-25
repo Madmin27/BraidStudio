@@ -1,4 +1,4 @@
-import { evaluateProductionFit } from "/src/utils/braidProductionPhysics.js";
+import * as THREE from "/vendor/three.module.js";
 
 const $ = (selector) => document.querySelector(selector);
 
@@ -15,7 +15,6 @@ const ui = {
   denier: $("#denier"),
   denierValue: $("#denierValue"),
   crossingMode: $("#crossingMode"),
-  productionFit: $("#productionFit"),
   generateBraid: $("#generateBraid"),
   carrierGrid: $("#carrierGrid"),
   carrierPopover: $("#carrierPopover"),
@@ -25,15 +24,12 @@ const ui = {
   resetColors: $("#resetColors"),
   invertFlow: $("#invertFlow"),
   repeatBadge: $("#repeatBadge"),
+  sceneMeta: $("#sceneMeta"),
   summary: $("#summary"),
   carrierTable: $("#carrierTable"),
   patternCanvas: $("#patternCanvas"),
-  photoRender: $("#photoRender"),
-  photoRenderState: $("#photoRenderState"),
-  renderStage: $(".render-stage"),
-  meterPosition: $("#meterPosition"),
-  meterWindowLabel: $("#meterWindowLabel"),
-  diameterRulers: [$("#diameterRulerLeft"), $("#diameterRulerRight")],
+  threeMount: $("#threeMount"),
+  toggleSpin: $("#toggleSpin"),
   downloadPng: $("#downloadPng"),
   statusPill: $("#statusPill"),
   imageModal: $("#imageModal"),
@@ -46,7 +42,6 @@ const defaultBase = "#59ee78";
 const defaultMarker = "#e11912";
 const defaultGround = "#f6f5ee";
 const preferenceKey = "braidstudio.preferences.v1";
-const denierGeometryCalibration = 1 / 3;
 const fixedColors = [
   ["#59ee78", "yesil"],
   ["#151718", "siyah"],
@@ -88,10 +83,6 @@ const state = {
   lastResult: null,
   texgenRequestId: 0,
   texgenMesh: null,
-  photoRenderUrl: null,
-  photoRenderObjectUrl: null,
-  polyesterReference: null,
-  renderNonce: null,
   simulationDirty: false,
   generating: false
 };
@@ -104,19 +95,15 @@ function validHexColor(value) {
   return /^#[0-9a-f]{6}$/i.test(String(value || ""));
 }
 
-function effectiveDenier(denier) {
-  return Math.max(1, Number(denier) * denierGeometryCalibration);
-}
-
 function loadPreferences() {
   try {
     const value = JSON.parse(localStorage.getItem(preferenceKey) || "null");
     if (!value || typeof value !== "object") return null;
-    if (value.schemaVersion !== 3) {
+    if (value.schemaVersion !== 2) {
       if (Number(value.strandWidth) === 130) value.strandWidth = 100;
-      if (Number(value.filamentCount) === 30) value.filamentCount = 20;
-      if (Number(value.denier) === 1300) value.denier = 1000;
-      value.schemaVersion = 3;
+      if (Number(value.filamentCount) === 20) value.filamentCount = 30;
+      if (Number(value.denier) === 1000) value.denier = 1300;
+      value.schemaVersion = 2;
     }
     return value;
   } catch {
@@ -152,7 +139,7 @@ function applySavedPreferences(preferences) {
 function savePreferences() {
   try {
     localStorage.setItem(preferenceKey, JSON.stringify({
-      schemaVersion: 3,
+      schemaVersion: 2,
       carrierCount: Number(ui.carrierCount.value),
       diameter: Number(ui.diameter.value),
       braidAngle: Number(ui.braidAngle.value),
@@ -202,7 +189,7 @@ function calculateBraid() {
   const strandWidthScale = Number(ui.strandWidth.value) / 100;
   const filamentCount = Number(ui.filamentCount.value);
   const denier = Number(ui.denier.value);
-  const denierScale = Math.sqrt(effectiveDenier(denier) / 1000);
+  const denierScale = Math.sqrt(denier / 1000);
   const radiusMm = diameterMm / 2;
   const angleRad = angleDeg * Math.PI / 180;
   const angleRad2d = clamp(angleRad * .92, .44, 1.08);
@@ -216,14 +203,6 @@ function calculateBraid() {
   const turns = lengthMm / pitchMm;
   const rowMm = lengthMm / rows;
   const visible = [];
-  const productionFit = evaluateProductionFit({
-    diameterMm,
-    carrierCount,
-    angleDeg,
-    filamentCount,
-    denier,
-    strandWidthScale
-  });
 
   for (let row = 0; row < rows; row += 1) {
     for (let index = 0; index < carrierCount; index += 1) {
@@ -273,7 +252,6 @@ function calculateBraid() {
     visibleRows,
     rows,
     visible,
-    productionFit,
     carriers: state.carriers.map((carrier, index) => ({
       ...carrier,
       direction: directionFor(index) > 0 ? "saat yonu" : "ters yon",
@@ -444,242 +422,84 @@ function makeBraidSurfaceTexture(result, width, height) {
   const heightMap = document.createElement("canvas");
   heightMap.width = width;
   heightMap.height = height;
-  const roughnessMap = document.createElement("canvas");
-  roughnessMap.width = width;
-  roughnessMap.height = height;
-  const normalMap = document.createElement("canvas");
-  normalMap.width = width;
-  normalMap.height = height;
   const cctx = color.getContext("2d");
   const hctx = heightMap.getContext("2d");
-  const rctx = roughnessMap.getContext("2d");
-  const nctx = normalMap.getContext("2d");
   const colorImage = cctx.createImageData(width, height);
   const heightImage = hctx.createImageData(width, height);
-  const roughnessImage = rctx.createImageData(width, height);
-  const normalImage = nctx.createImageData(width, height);
   const lanes = result.carrierCount / 2;
-  const sCarriers = result.carriers.filter((carrier) => carrier.group === "S");
-  const zCarriers = result.carriers.filter((carrier) => carrier.group === "Z");
-  const rgbCache = new Map(result.carriers.map((carrier) => [carrier.color, cssToRgb(carrier.color)]));
-  const baseRgb = cssToRgb(mostCommonCarrierColor(result));
-  const angleSlope = Math.tan(result.angleDeg * Math.PI / 180);
-  const axialAdvance = result.lengthMm * angleSlope / result.laneWidth;
-  const materialFill = Math.pow(result.denier / 1300, .12) * Math.pow(result.filamentCount / 30, .08);
-  const bandHalf = clamp(.525 * result.strandWidthScale * materialFill, .45, .64);
+  const angleFactor = Math.tan(result.angleDeg * Math.PI / 180) / Math.tan(34 * Math.PI / 180);
+  const longitudinalScale = clamp(.58 / angleFactor, .42, .78);
+  const bandHalf = clamp(.38 * result.strandWidthScale * Math.pow(result.denierScale, .18), .3, .48);
+  const base = mostCommonCarrierColor(result);
+  const baseRgb = cssToRgb(base);
   const span = Math.max(1, crossingSpan());
 
   for (let y = 0; y < height; y += 1) {
-    const axial = ((y + .5) / height) * axialAdvance;
+    const z = y / (width / lanes) * longitudinalScale;
+    const row = Math.floor(z * 1.02);
     for (let x = 0; x < width; x += 1) {
-      const circumferential = ((x + .5) / width) * lanes;
-      const sValue = circumferential - axial;
-      const zValue = circumferential + axial + .5;
-      const sLine = Math.round(sValue);
-      const zLine = Math.round(zValue);
-      const sSigned = sValue - sLine;
-      const zSigned = zValue - zLine;
-      const sDistance = Math.abs(sSigned);
-      const zDistance = Math.abs(zSigned);
-      const inS = sDistance <= bandHalf;
-      const inZ = zDistance <= bandHalf;
-      const sOver = mod(sLine + zLine, span * 2) < span;
+      const u = (x / width) * lanes;
+      const aValue = u - z;
+      const bValue = u + z + .5;
+      const aRound = Math.round(aValue);
+      const bRound = Math.round(bValue);
+      const aDist = Math.abs(aValue - aRound);
+      const bDist = Math.abs(bValue - bRound);
+      const inA = aDist < bandHalf;
+      const inB = bDist < bandHalf;
+      const topA = mod(row + aRound + bRound, span * 2) < span;
 
       let family = "base";
-      let signedDistance = 0;
+      let dist = 1;
+      let carrierIndex = 0;
       let visibleRgb = baseRgb;
-      let crossingAmount = 0;
-      let underDistance = 1;
-      if (inS && (!inZ || sOver)) {
-        family = "S";
-        signedDistance = sSigned;
-        underDistance = zDistance / bandHalf;
-        const carrier = sCarriers[mod(sLine, sCarriers.length)];
-        visibleRgb = rgbCache.get(carrier?.color) || baseRgb;
-      } else if (inZ) {
-        family = "Z";
-        signedDistance = zSigned;
-        underDistance = sDistance / bandHalf;
-        const carrier = zCarriers[mod(zLine, zCarriers.length)];
-        visibleRgb = rgbCache.get(carrier?.color) || baseRgb;
-      }
-      if (inS && inZ) {
-        crossingAmount = Math.pow(Math.max(0, 1 - underDistance * underDistance), .36);
+      let heightProfile = .16;
+      let crossingShadow = 0;
+
+      if (inA || inB) {
+        if (inA && (!inB || topA)) {
+          family = "a";
+          dist = aDist / bandHalf;
+          carrierIndex = mod(aRound * 2 + row * 2, result.carrierCount);
+        } else {
+          family = "b";
+          dist = bDist / bandHalf;
+          carrierIndex = mod(bRound * 2 + 1 - row * 2, result.carrierCount);
+        }
+        visibleRgb = cssToRgb(result.carriers[carrierIndex]?.color || base);
+        heightProfile = Math.sin((1 - clamp(dist, 0, 1)) * Math.PI * .5);
+        crossingShadow = inA && inB ? 18 * (1 - heightProfile) : 0;
+        if (isVeryDarkRgb(visibleRgb)) {
+          const tracerWindow = fract(z * .72 + carrierIndex * .19 + (family === "a" ? .08 : .31));
+          if (tracerWindow > .42) {
+            visibleRgb = baseRgb;
+            heightProfile *= .86;
+            crossingShadow = 0;
+          }
+        }
       }
 
-      let heightValue = 34;
-      let roughnessValue = 236;
-      let rgb;
-      if (family === "base") {
-        const recess = .61 + .035 * Math.sin((circumferential + axial) * Math.PI * 2);
-        rgb = shadeRgb(baseRgb, recess);
-      } else {
-        const rawNormalized = clamp(signedDistance / bandHalf, -1, 1);
-        const compressionSpread = 1 + crossingAmount * .07;
-        const normalized = clamp(rawNormalized / compressionSpread, -1, 1);
-        const crownBase = Math.max(0, 1 - normalized * normalized);
-        const crown = Math.pow(crownBase, .31 + crossingAmount * .055);
-        const along = family === "S" ? axial + circumferential : axial - circumferential;
-        const filaments = Math.max(8, result.filamentCount);
-        const familySign = family === "S" ? 1 : -1;
-        const lightCenter = family === "S" ? -.24 : .14;
-        const directionalLobe = Math.exp(-Math.pow((normalized - lightCenter) / .25, 2));
-        const material = samplePolyesterReference(
-          along * (.72 + result.denier / 4200),
-          (normalized * .5 + .5) * .42 * (filaments / 30) * Math.sqrt(1300 / result.denier),
-          familySign
-        );
-        const bundleDrift = (hash2(Math.floor(along * 2.2), familySign + 7) - .5) * .34
-          + Math.sin(along * Math.PI * 1.35 + familySign) * .11;
-        const filamentPosition = (normalized * .5 + .5) * filaments + bundleDrift;
-        const filamentWave = Math.cos(fract(filamentPosition) * Math.PI * 2);
-        const filamentCrown = Math.sign(filamentWave) * Math.pow(Math.abs(filamentWave), 1.65);
-        const filamentCluster = .78 + .22 * Math.sin(
-          along * Math.PI * 3.4 + Math.floor(filamentPosition) * .91
-        );
-        const filamentGlint = Math.pow(Math.max(0, filamentWave), 7)
-          * filamentCluster
-          * (.68 + .32 * hash2(Math.floor(along * 19), Math.floor(filamentPosition)));
-        const fiberRelief = material.relief * (11 + result.denier / 390)
-          + filamentCrown * (7 + result.denier / 520);
-        const satinRibbon = material.highlight * Math.pow(crown, 1.1);
-        const silkGlint = material.sparkle * (.72 + .28 * directionalLobe);
-        const lightBias = .06 * (1 - Math.abs(normalized + .22));
-        const edgeRoll = Math.pow(Math.abs(normalized), 3.2) * .14;
-        const crossingEdge = Math.exp(-Math.pow((underDistance - .92) / .062, 2));
-        const contactShadow = crossingEdge * (.145 + .055 * Math.max(0, normalized * familySign));
-        const crossingCompression = crossingAmount * Math.pow(crown, .72);
-        const crossingHighlight = crossingCompression * directionalLobe * .11;
-        const shoulderLight = directionalLobe * crown * (.045 + crossingAmount * .03);
-        const shadeValue = .72 + crown * .25 + material.relief * .055
-          + filamentCrown * .024 + filamentGlint * .055
-          + satinRibbon * .075 + silkGlint * .045
-          + lightBias + crossingHighlight + shoulderLight - edgeRoll - contactShadow;
-        rgb = polyesterShadeRgb(
-          visibleRgb,
-          shadeValue,
-          satinRibbon * .09 + silkGlint * .065 + filamentGlint * .085
-        );
-        heightValue = 58 + crown * (166 - crossingCompression * 9) + crossingCompression * 32
-          + directionalLobe * crossingCompression * 11
-          + fiberRelief + material.highlight * 8;
-        roughnessValue = 190 - material.highlight * 68 - material.sparkle * 28
-          - filamentGlint * 112 - Math.max(0, filamentCrown) * 20
-          + Math.pow(Math.abs(normalized), 2.4) * 32;
-      }
-
+      const fiber = sampleSurfaceFiber(u, z, dist, family, result);
+      const yarnShade = .76 + heightProfile * .32 + fiber;
+      const rgb = shadeRgb(visibleRgb, yarnShade);
+      const recess = family === "base" ? 38 : 0;
       const idx = (y * width + x) * 4;
-      colorImage.data[idx] = clampByte(rgb[0]);
-      colorImage.data[idx + 1] = clampByte(rgb[1]);
-      colorImage.data[idx + 2] = clampByte(rgb[2]);
+      colorImage.data[idx] = clampByte(rgb[0] - recess - crossingShadow);
+      colorImage.data[idx + 1] = clampByte(rgb[1] - recess - crossingShadow);
+      colorImage.data[idx + 2] = clampByte(rgb[2] - recess - crossingShadow);
       colorImage.data[idx + 3] = 255;
-      const h = clampByte(heightValue);
+
+      const h = clampByte(70 + heightProfile * 150);
       heightImage.data[idx] = h;
       heightImage.data[idx + 1] = h;
       heightImage.data[idx + 2] = h;
       heightImage.data[idx + 3] = 255;
-      const rough = clampByte(roughnessValue);
-      roughnessImage.data[idx] = rough;
-      roughnessImage.data[idx + 1] = rough;
-      roughnessImage.data[idx + 2] = rough;
-      roughnessImage.data[idx + 3] = 255;
-    }
-  }
-
-  for (let y = 0; y < height; y += 1) {
-    const yBefore = Math.max(0, y - 1);
-    const yAfter = Math.min(height - 1, y + 1);
-    for (let x = 0; x < width; x += 1) {
-      const xBefore = mod(x - 1, width);
-      const xAfter = mod(x + 1, width);
-      const offset = (y * width + x) * 4;
-      const left = heightImage.data[(y * width + xBefore) * 4];
-      const right = heightImage.data[(y * width + xAfter) * 4];
-      const up = heightImage.data[(yBefore * width + x) * 4];
-      const down = heightImage.data[(yAfter * width + x) * 4];
-      let nx = (left - right) * .055;
-      let ny = (up - down) * .055;
-      const inverseLength = 1 / Math.hypot(nx, ny, 1);
-      nx *= inverseLength;
-      ny *= inverseLength;
-      const nz = inverseLength;
-      normalImage.data[offset] = clampByte(128 + nx * 127);
-      normalImage.data[offset + 1] = clampByte(128 + ny * 127);
-      normalImage.data[offset + 2] = clampByte(nz * 255);
-      normalImage.data[offset + 3] = 255;
     }
   }
 
   cctx.putImageData(colorImage, 0, 0);
   hctx.putImageData(heightImage, 0, 0);
-  rctx.putImageData(roughnessImage, 0, 0);
-  nctx.putImageData(normalImage, 0, 0);
-  return { color, height: heightMap, roughness: roughnessMap, normal: normalMap };
-}
-
-function samplePolyesterReference(along, across, direction) {
-  const source = state.polyesterReference;
-  if (!source) return { relief: 0, highlight: 0, sparkle: 0 };
-  const u = fract(direction > 0 ? along : -along);
-  const v = fract(across);
-  const x = Math.min(source.width - 1, Math.floor(u * source.width));
-  const y = Math.min(source.height - 1, Math.floor(v * source.height));
-  const yBefore = mod(y - 2, source.height);
-  const yAfter = mod(y + 2, source.height);
-  const index = (y * source.width + x) * 4;
-  const beforeIndex = (yBefore * source.width + x) * 4;
-  const afterIndex = (yAfter * source.width + x) * 4;
-  const luminance = polyesterLuminance(source.data, index);
-  const before = polyesterLuminance(source.data, beforeIndex);
-  const after = polyesterLuminance(source.data, afterIndex);
-  const localMean = (before + luminance + after) / 3;
-  const relief = clamp((luminance - 219) / 35, -1, 1);
-  const highlight = Math.pow(clamp((luminance - 229) / 24, 0, 1), 1.4);
-  const sparkle = Math.pow(clamp((luminance - localMean) / 13, 0, 1), 1.15);
-  return { relief, highlight, sparkle };
-}
-
-function polyesterLuminance(data, index) {
-  return (data[index] * 299 + data[index + 1] * 587 + data[index + 2] * 114) / 1000;
-}
-
-async function loadPolyesterReference() {
-  const image = new Image();
-  image.decoding = "async";
-  image.src = "/polyester-multifilament-v1.png?v=3";
-  await image.decode();
-  const canvas = document.createElement("canvas");
-  canvas.width = image.naturalWidth;
-  canvas.height = image.naturalHeight;
-  const ctx = canvas.getContext("2d", { willReadFrequently: true });
-  ctx.drawImage(image, 0, 0);
-  const pixels = ctx.getImageData(0, 0, canvas.width, canvas.height);
-  let luminanceSum = 0;
-  let luminanceSquaredSum = 0;
-  const pixelCount = pixels.width * pixels.height;
-  for (let index = 0; index < pixels.data.length; index += 4) {
-    const luminance = polyesterLuminance(pixels.data, index);
-    luminanceSum += luminance;
-    luminanceSquaredSum += luminance * luminance;
-  }
-  const mean = luminanceSum / pixelCount;
-  const variance = Math.max(1, luminanceSquaredSum / pixelCount - mean * mean);
-  state.polyesterReference = {
-    width: pixels.width,
-    height: pixels.height,
-    data: pixels.data,
-    mean,
-    deviation: Math.sqrt(variance)
-  };
-}
-
-function polyesterShadeRgb(rgb, amount, glint) {
-  const luminance = (rgb[0] * 299 + rgb[1] * 587 + rgb[2] * 114) / 1000;
-  const saturationBoost = luminance < 210 ? 1.08 : 1;
-  return rgb.map((channel) => {
-    const saturated = luminance + (channel - luminance) * saturationBoost;
-    return clampByte(saturated * amount + (255 - saturated) * glint);
-  });
+  return { color, height: heightMap };
 }
 
 function isVeryDarkRgb(rgb) {
@@ -1187,54 +1007,26 @@ function initThree() {
   state.camera.position.set(0, 2.8, 8.8);
   state.camera.lookAt(0, 0, 0);
 
-  state.renderer = new THREE.WebGLRenderer({
-    antialias: true,
-    alpha: true,
-    powerPreference: "high-performance"
-  });
-  state.renderer.setPixelRatio(Math.max(1.75, Math.min(window.devicePixelRatio || 1, 2)));
+  state.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+  state.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
   state.renderer.shadowMap.enabled = true;
   state.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   state.renderer.outputColorSpace = THREE.SRGBColorSpace;
   state.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  state.renderer.toneMappingExposure = .9;
+  state.renderer.toneMappingExposure = 1.08;
   ui.threeMount.appendChild(state.renderer.domElement);
 
-  state.scene.add(new THREE.HemisphereLight(0xffffff, 0xaeb9c0, .12));
-  const key = new THREE.DirectionalLight(0xfffbf5, 2.45);
+  state.scene.add(new THREE.HemisphereLight(0xffffff, 0x68716c, 1.35));
+  const key = new THREE.DirectionalLight(0xfff8ef, 3.6);
   key.position.set(4.5, 7, 6);
   key.castShadow = true;
-  key.shadow.mapSize.set(2048, 2048);
-  key.shadow.camera.left = -34;
-  key.shadow.camera.right = 34;
-  key.shadow.camera.top = 16;
-  key.shadow.camera.bottom = -16;
-  key.shadow.camera.near = .1;
-  key.shadow.camera.far = 70;
-  key.shadow.bias = -.00025;
-  key.shadow.normalBias = .018;
   state.scene.add(key);
-  const fill = new THREE.DirectionalLight(0xeaf3ff, .2);
+  const fill = new THREE.DirectionalLight(0xddeaff, 1.05);
   fill.position.set(-5, 1.5, 4);
   state.scene.add(fill);
-  const rim = new THREE.DirectionalLight(0xffffff, 1.65);
+  const rim = new THREE.DirectionalLight(0xffffff, 2.15);
   rim.position.set(-2, 5, -6);
   state.scene.add(rim);
-  const lowerFill = new THREE.DirectionalLight(0xf8fbff, .14);
-  lowerFill.position.set(1, -5, 5);
-  state.scene.add(lowerFill);
-  const cameraFlash = new THREE.PointLight(0xffffff, 42, 36, 2);
-  cameraFlash.position.set(0, 2.2, 9);
-  state.scene.add(cameraFlash);
-  const fiberKey = new THREE.RectAreaLight(0xffffff, 5.4, 12, .62);
-  fiberKey.position.set(-1.5, 4.6, 5.4);
-  fiberKey.lookAt(0, 0, 0);
-  state.scene.add(fiberKey);
-  const fiberRim = new THREE.RectAreaLight(0xe8f3ff, 3.2, 9, .38);
-  fiberRim.position.set(3.8, 2.4, -4.5);
-  fiberRim.lookAt(0, 0, 0);
-  state.scene.add(fiberRim);
-  installSatinEnvironment();
 
   state.ropeGroup = new THREE.Group();
   state.scene.add(state.ropeGroup);
@@ -1242,36 +1034,6 @@ function initThree() {
   resizeThree();
   window.addEventListener("resize", resizeThree);
   animate();
-}
-
-function installSatinEnvironment() {
-  const canvas = document.createElement("canvas");
-  canvas.width = 1024;
-  canvas.height = 512;
-  const ctx = canvas.getContext("2d");
-  const base = ctx.createLinearGradient(0, 0, 0, canvas.height);
-  base.addColorStop(0, "#dfe7ec");
-  base.addColorStop(.38, "#ffffff");
-  base.addColorStop(.64, "#cad5dc");
-  base.addColorStop(1, "#f7f8f7");
-  ctx.fillStyle = base;
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-  for (const [x, width, alpha] of [[80, 86, .96], [315, 34, .72], [572, 118, .9], [876, 46, .8]]) {
-    const strip = ctx.createLinearGradient(x, 0, x + width, 0);
-    strip.addColorStop(0, "rgba(255,255,255,0)");
-    strip.addColorStop(.5, `rgba(255,255,255,${alpha})`);
-    strip.addColorStop(1, "rgba(255,255,255,0)");
-    ctx.fillStyle = strip;
-    ctx.fillRect(x, 0, width, canvas.height);
-  }
-  const texture = new THREE.CanvasTexture(canvas);
-  texture.mapping = THREE.EquirectangularReflectionMapping;
-  texture.colorSpace = THREE.SRGBColorSpace;
-  const pmrem = new THREE.PMREMGenerator(state.renderer);
-  state.scene.environment = pmrem.fromEquirectangular(texture).texture;
-  state.scene.environmentIntensity = .28;
-  texture.dispose();
-  pmrem.dispose();
 }
 
 function renderThree(result) {
@@ -1344,7 +1106,6 @@ function clearRopeGroup() {
 function texgenPayload(result) {
   return {
     engine: "weave2d",
-    geometryMode: "mesh",
     cellsX: 8,
     cellsY: 7,
     visibleRows: result.visibleRows,
@@ -1356,7 +1117,6 @@ function texgenPayload(result) {
     denier: result.denier,
     crossingMode: ui.crossingMode.value,
     flip: state.flip,
-    renderNonce: state.renderNonce,
     baseColor: mostCommonCarrierColor(result),
     accentColor: state.activeColor,
     carriers: result.carriers.map((carrier) => ({
@@ -1378,24 +1138,33 @@ function drawTexgenWaiting(text = "TexGen geometri hesaplaniyor") {
   ctx.fillText(text, canvas.width / 2, canvas.height / 2);
 }
 
-async function requestProductionRender(result) {
+async function requestTexgenMesh(result) {
   const requestId = ++state.texgenRequestId;
   state.generating = true;
   refreshGenerateButton();
-  ui.patternCanvas.hidden = true;
-  ui.photoRender.hidden = true;
-  ui.renderStage.classList.add("is-rendering");
-  showPhotoRenderState("Yeni üretim hazırlanıyor...");
-  ui.statusPill.textContent = "Polyester renderı hazırlanıyor";
+  drawTexgenWaiting();
+  clearRopeGroup();
+  ui.statusPill.textContent = "TexGen hesapliyor";
 
   try {
-    await requestPolyesterRender(result, requestId);
-    ui.statusPill.textContent = state.simulationDirty ? "Değişiklikler hazır" : "Üretim yüzeyi";
+    const response = await fetch("/api/texgen-braid", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(texgenPayload(result))
+    });
+    const mesh = await response.json();
+    if (requestId !== state.texgenRequestId) return;
+    if (!response.ok || mesh.error) {
+      throw new Error(mesh.error || "texgen_failed");
+    }
+    state.texgenMesh = mesh;
+    renderTexgenThree(mesh);
+    renderCanvasFromThree();
+    ui.statusPill.textContent = state.simulationDirty ? "Değişiklikler hazır" : "TexGen mesh";
   } catch (error) {
     if (requestId !== state.texgenRequestId) return;
-    ui.renderStage.classList.remove("is-rendering");
-    showPhotoRenderState("Yüksek kaliteli lif renderı tamamlanamadı.");
-    ui.statusPill.textContent = "Lif render hatası";
+    drawTexgenWaiting("TexGen geometri hatasi");
+    ui.statusPill.textContent = "TexGen hata";
     console.error(error);
   } finally {
     if (requestId === state.texgenRequestId) {
@@ -1405,344 +1174,17 @@ async function requestProductionRender(result) {
   }
 }
 
-function wait(milliseconds) {
-  return new Promise((resolve) => setTimeout(resolve, milliseconds));
-}
-
-function showPhotoRenderState(text) {
-  ui.photoRenderState.textContent = text;
-  ui.photoRenderState.hidden = false;
-}
-
-const meterOutputLengthMm = 1000;
-const meterPixelsPerMm = 16;
-const rulerRangeMm = 50;
-const meterLightCenterMm = 500;
-const meterLightSpanMm = 700;
-
-function updateDiameterRulers(diameterMm, imageHeight) {
-  document.querySelector(".rope-measurement").style.setProperty("--meter-render-height", `${imageHeight}px`);
-  ui.diameterRulers.forEach((ruler) => {
-    ruler.style.setProperty("--meter-render-height", `${imageHeight}px`);
-    ruler.style.setProperty("--mm-px", `${meterPixelsPerMm}px`);
-    const labels = [0, 10, 20, 30, 40, 50]
-      .map((millimeter) => `<span class="ruler-label" style="top:${millimeter * meterPixelsPerMm}px">${millimeter}${millimeter === rulerRangeMm ? " mm" : ""}</span>`)
-      .join("");
-    const ropeTopMm = (rulerRangeMm - diameterMm) / 2;
-    ruler.innerHTML = `${labels}<span class="diameter-span" style="top:${ropeTopMm * meterPixelsPerMm}px;height:${diameterMm * meterPixelsPerMm}px" title="${diameterMm} mm çap"></span>`;
-  });
-}
-
-function updateMeterNavigation(requestedStartMm = null) {
-  const visibleMm = Math.min(
-    meterOutputLengthMm,
-    ui.renderStage.clientWidth / meterPixelsPerMm
-  );
-  const maxStartMm = Math.max(0, meterOutputLengthMm - visibleMm);
-  if (requestedStartMm !== null) {
-    ui.renderStage.scrollLeft = clamp(requestedStartMm, 0, maxStartMm) * meterPixelsPerMm;
-  }
-  const startMm = clamp(ui.renderStage.scrollLeft / meterPixelsPerMm, 0, maxStartMm);
-  const endMm = Math.min(meterOutputLengthMm, startMm + visibleMm);
-  ui.meterPosition.max = `${Math.ceil(maxStartMm)}`;
-  ui.meterPosition.value = `${Math.round(startMm)}`;
-  ui.meterWindowLabel.textContent = `${Math.round(startMm)}-${Math.round(endMm)} mm / 1000 mm`;
-}
-
-async function buildMeterPanorama(source, result) {
-  const diameterMm = Number(result.diameterMm || result.diameter || 16);
-  const sourceAspect = Number(result.renderAspect) || source.naturalWidth / source.naturalHeight;
-  const orthoScaleMm = Number(result.orthoScaleMm) || 50;
-  const sourceHorizontalMm = orthoScaleMm;
-  const sourceVerticalMm = orthoScaleMm / sourceAspect;
-  const sourceLengthMm = Math.min(
-    sourceHorizontalMm,
-    Number(result.repeatLengthMm) || Math.max(48, diameterMm * 3.5)
-  );
-  const cropWidth = Math.min(
-    source.naturalWidth,
-    Math.max(1, source.naturalWidth * sourceLengthMm / sourceHorizontalMm)
-  );
-  const cropHeightMm = Math.min(rulerRangeMm, sourceVerticalMm);
-  const cropHeight = Math.min(
-    source.naturalHeight,
-    Math.max(1, source.naturalHeight * cropHeightMm / sourceVerticalMm)
-  );
-  const cropX = (source.naturalWidth - cropWidth) / 2;
-  const cropY = (source.naturalHeight - cropHeight) / 2;
-  const outputWidth = meterOutputLengthMm * meterPixelsPerMm;
-  const outputHeight = rulerRangeMm * meterPixelsPerMm;
-  const tileContentHeight = Math.round(cropHeightMm * meterPixelsPerMm);
-  const tileContentY = Math.round((outputHeight - tileContentHeight) / 2);
-  const tileWidth = Math.round(sourceLengthMm * meterPixelsPerMm);
-  const canvas = document.createElement("canvas");
-  canvas.width = outputWidth;
-  canvas.height = outputHeight;
-  const context = canvas.getContext("2d", { alpha: false });
-  context.imageSmoothingEnabled = true;
-  context.imageSmoothingQuality = "high";
-
-  const tile = document.createElement("canvas");
-  tile.width = tileWidth;
-  tile.height = outputHeight;
-  const tileContext = tile.getContext("2d", { alpha: false });
-  tileContext.imageSmoothingEnabled = true;
-  tileContext.imageSmoothingQuality = "high";
-  tileContext.fillStyle = "#c6c8c8";
-  tileContext.fillRect(0, 0, tileWidth, outputHeight);
-  tileContext.drawImage(
-    source,
-    cropX,
-    cropY,
-    cropWidth,
-    cropHeight,
-    0,
-    tileContentY,
-    tileWidth,
-    tileContentHeight
-  );
-
-  for (let x = 0; x < outputWidth; x += tileWidth) {
-    const width = Math.min(tileWidth, outputWidth - x);
-    context.drawImage(tile, 0, 0, width, outputHeight, x, 0, width, outputHeight);
-  }
-
-  const lightLayer = document.createElement("canvas");
-  lightLayer.width = outputWidth;
-  lightLayer.height = outputHeight;
-  const lightContext = lightLayer.getContext("2d");
-  const lightCenterX = meterLightCenterMm * meterPixelsPerMm;
-  const lightHalfWidth = meterLightSpanMm * meterPixelsPerMm / 2;
-  const horizontalLight = lightContext.createLinearGradient(
-    lightCenterX - lightHalfWidth,
-    0,
-    lightCenterX + lightHalfWidth,
-    0
-  );
-  horizontalLight.addColorStop(0, "rgba(255,255,255,0)");
-  horizontalLight.addColorStop(.20, "rgba(255,252,246,.34)");
-  horizontalLight.addColorStop(.80, "rgba(255,252,246,.34)");
-  horizontalLight.addColorStop(1, "rgba(255,255,255,0)");
-  lightContext.fillStyle = horizontalLight;
-  lightContext.fillRect(lightCenterX - lightHalfWidth, 0, lightHalfWidth * 2, outputHeight);
-
-  const ropeCenterY = outputHeight / 2;
-  const lightHalfHeight = (diameterMm / 2 + 5) * meterPixelsPerMm;
-  lightContext.globalCompositeOperation = "destination-in";
-  const verticalMask = lightContext.createLinearGradient(
-    0,
-    ropeCenterY - lightHalfHeight,
-    0,
-    ropeCenterY + lightHalfHeight
-  );
-  verticalMask.addColorStop(0, "rgba(0,0,0,0)");
-  verticalMask.addColorStop(.25, "rgba(0,0,0,.82)");
-  verticalMask.addColorStop(.5, "rgba(0,0,0,1)");
-  verticalMask.addColorStop(.75, "rgba(0,0,0,.82)");
-  verticalMask.addColorStop(1, "rgba(0,0,0,0)");
-  lightContext.fillStyle = verticalMask;
-  lightContext.fillRect(0, 0, outputWidth, outputHeight);
-
-  context.save();
-  context.globalCompositeOperation = "screen";
-  context.drawImage(lightLayer, 0, 0);
-  context.restore();
-
-  const blob = await new Promise((resolve, reject) => {
-    canvas.toBlob((value) => value ? resolve(value) : reject(new Error("meter_panorama_failed")), "image/png");
-  });
-  updateDiameterRulers(diameterMm, outputHeight);
-  return URL.createObjectURL(blob);
-}
-
-async function displayPhotoRender(imageUrl, requestId, result) {
-  const source = await new Promise((resolve, reject) => {
-    const image = new Image();
-    image.onload = () => resolve(image);
-    image.onerror = reject;
-    image.src = imageUrl;
-  });
-  if (requestId !== state.texgenRequestId) return;
-  const meterUrl = await buildMeterPanorama(source, result);
-  if (requestId !== state.texgenRequestId) {
-    URL.revokeObjectURL(meterUrl);
-    return;
-  }
-  if (state.photoRenderObjectUrl) URL.revokeObjectURL(state.photoRenderObjectUrl);
-  state.photoRenderObjectUrl = meterUrl;
-  state.photoRenderUrl = meterUrl;
-  ui.photoRender.src = meterUrl;
-  ui.photoRender.classList.add("meter-render");
-  ui.photoRender.hidden = false;
-  ui.patternCanvas.hidden = true;
-  ui.renderStage.classList.add("has-meter-render");
-  ui.renderStage.classList.remove("is-rendering");
-  ui.photoRenderState.hidden = true;
-  const centerMeterView = () => requestAnimationFrame(() => {
-    const visibleMm = ui.renderStage.clientWidth / meterPixelsPerMm;
-    ui.renderStage.scrollLeft = (meterLightCenterMm - visibleMm / 2) * meterPixelsPerMm;
-    updateMeterNavigation();
-  });
-  if (ui.photoRender.complete && ui.photoRender.naturalWidth) {
-    centerMeterView();
-  } else {
-    ui.photoRender.addEventListener("load", centerMeterView, { once: true });
-  }
-}
-
-async function requestPolyesterRender(result, requestId) {
-  ui.patternCanvas.hidden = true;
-  ui.photoRender.hidden = true;
-  ui.photoRender.classList.remove("meter-render");
-  ui.renderStage.classList.remove("has-meter-render");
-  ui.renderStage.classList.add("is-rendering");
-  state.photoRenderUrl = null;
-  showPhotoRenderState("Polyester lif renderı hazırlanıyor...");
-  ui.statusPill.textContent = "Lif renderı sırada";
-
-  const response = await fetch("/api/polyester-render", {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify(texgenPayload(result))
-  });
-  let job = await response.json();
-  if (!response.ok || job.error) {
-    throw new Error(job.error || "polyester_render_failed");
-  }
-
-  const deadline = Date.now() + 12 * 60 * 1000;
-  const fibersPerEnd = Math.max(12, Math.round((result.denier / 2.25) / 12) * 12);
-  const physicalFiberCount = fibersPerEnd * result.filamentCount * result.carrierCount;
-  const fiberLabel = new Intl.NumberFormat("tr-TR").format(physicalFiberCount);
-  while (job.status !== "complete") {
-    if (requestId !== state.texgenRequestId) return;
-    if (job.status === "failed") throw new Error(job.error || "polyester_render_failed");
-    if (Date.now() > deadline) throw new Error("polyester_render_timeout");
-    if (job.status === "queued") {
-      const suffix = job.queuePosition > 1 ? ` (${job.queuePosition}. sıra)` : "";
-      showPhotoRenderState(`Yüksek kaliteli render sırada${suffix}`);
-      ui.statusPill.textContent = "Render sırasında";
-    } else {
-      showPhotoRenderState(`${fiberLabel} lif, ışık ve temas gölgeleri hesaplanıyor...`);
-      ui.statusPill.textContent = "Polyester lifleri işleniyor";
-    }
-    await wait(2000);
-    const statusResponse = await fetch(`/api/polyester-render/${job.id}`);
-    job = await statusResponse.json();
-    if (!statusResponse.ok || job.error && job.status !== "failed") {
-      throw new Error(job.error || "polyester_render_status_failed");
-    }
-  }
-  await displayPhotoRender(`${job.imageUrl}?v=${job.id}`, requestId, {
-    ...result,
-    repeatLengthMm: job.repeatLengthMm,
-    orthoScaleMm: job.orthoScaleMm,
-    renderAspect: job.renderAspect
-  });
-}
-
-function renderRealtimeSurfaceRope(result, mesh) {
-  clearRopeGroup();
-  state.renderer.localClippingEnabled = false;
-  state.surfaceTexture = makeBraidSurfaceTexture(result, 1536, 3072);
-  const map = new THREE.CanvasTexture(state.surfaceTexture.color);
-  const bumpMap = new THREE.CanvasTexture(state.surfaceTexture.height);
-  const roughnessMap = new THREE.CanvasTexture(state.surfaceTexture.roughness);
-  const normalMap = new THREE.CanvasTexture(state.surfaceTexture.normal);
-  for (const texture of [map, bumpMap, roughnessMap, normalMap]) {
-    texture.wrapS = THREE.RepeatWrapping;
-    texture.wrapT = THREE.ClampToEdgeWrapping;
-    texture.colorSpace = texture === map ? THREE.SRGBColorSpace : THREE.NoColorSpace;
-    texture.anisotropy = Math.min(12, state.renderer.capabilities.getMaxAnisotropy?.() || 1);
-  }
-
-  const radius = mesh.radius;
-  const length = mesh.length;
-  const body = new THREE.Mesh(
-    new THREE.CylinderGeometry(radius, radius, length, 256, 192, true),
-    new THREE.MeshPhysicalMaterial({
-      map,
-      bumpMap,
-      bumpScale: clamp(mesh.yarnThickness * mesh.diameterScale * .42, .05, .15),
-      normalMap,
-      normalScale: new THREE.Vector2(.46, .46),
-      displacementMap: bumpMap,
-      displacementScale: clamp(mesh.yarnThickness * mesh.diameterScale * .28, .035, .105),
-      displacementBias: -clamp(mesh.yarnThickness * mesh.diameterScale * .14, .0175, .0525),
-      color: 0xffffff,
-      roughnessMap,
-      roughness: .54,
-      metalness: 0,
-      sheen: .9,
-      sheenRoughness: .18,
-      sheenColor: new THREE.Color(0xffffff),
-      specularIntensity: .82,
-      clearcoat: .1,
-      clearcoatRoughness: .22,
-      anisotropy: 1,
-      anisotropyRotation: Math.PI * .25
-    })
-  );
-  body.rotation.z = Math.PI / 2;
-  body.castShadow = true;
-  body.receiveShadow = true;
-  state.ropeGroup.add(body);
-
-  const base = new THREE.Color(mostCommonCarrierColor(result));
-  const coreMaterial = new THREE.MeshPhysicalMaterial({
-    color: 0xc3c8c2,
-    roughness: .86,
-    metalness: 0
-  });
-  const rimMaterial = new THREE.MeshPhysicalMaterial({
-    color: base.clone().multiplyScalar(.88),
-    roughness: .6,
-    sheen: .42,
-    side: THREE.DoubleSide
-  });
-  for (const x of [-length / 2, length / 2]) {
-    const core = new THREE.Mesh(new THREE.CircleGeometry(radius * .73, 96), coreMaterial);
-    core.rotation.y = Math.PI / 2;
-    core.position.x = x;
-    state.ropeGroup.add(core);
-    const rim = new THREE.Mesh(new THREE.RingGeometry(radius * .73, radius, 96, 2), rimMaterial);
-    rim.rotation.y = Math.PI / 2;
-    rim.position.x = x + (x < 0 ? -.003 : .003);
-    state.ropeGroup.add(rim);
-  }
-
-  state.viewRotation = { x: -.08, y: -.16, z: 0 };
-  state.autoRotation = 0;
-  state.zoom = clamp(length * 1.35, 27, 42);
-  state.camera.position.set(0, 0, state.zoom);
-  state.camera.lookAt(0, 0, 0);
-  state.ropeGroup.position.set(0, 0, 0);
-}
-
 function renderTexgenThree(mesh) {
   clearRopeGroup();
   state.renderer.localClippingEnabled = false;
   for (const yarn of mesh.yarns || []) {
-    if (!yarn.mesh) continue;
-    const color = yarn.color || defaultBase;
-    const geometry = yarn.fiberPath?.length > 3
-      ? geometryFromFiberShell(yarn, mesh)
-      : geometryFromTexgenMesh(yarn.mesh);
-    const material = getTexgenYarnMaterial(color, mesh);
+    const geometry = geometryFromTexgenMesh(yarn.mesh);
+    const material = getTexgenYarnMaterial(yarn.color || defaultBase, mesh);
     material.clippingPlanes = null;
     const object = new THREE.Mesh(geometry, material);
     object.castShadow = true;
     object.receiveShadow = true;
     state.ropeGroup.add(object);
-    if (yarn.fiberPath?.length > 3) {
-      const glintFibers = new THREE.Mesh(
-        geometryFromFiberGlints(yarn, mesh),
-        getFiberGlintMaterial(color, mesh)
-      );
-      glintFibers.castShadow = true;
-      glintFibers.receiveShadow = true;
-      state.ropeGroup.add(glintFibers);
-    }
   }
 
   if (mesh.cylindricalWeave) {
@@ -1757,7 +1199,7 @@ function renderTexgenThree(mesh) {
     }
 
     const sheathMaterial = new THREE.MeshStandardMaterial({
-      color: new THREE.Color(mostCommonCarrierColor(state.lastResult)).multiplyScalar(.94),
+      color: new THREE.Color(mostCommonCarrierColor(state.lastResult)).multiplyScalar(.82),
       roughness: .88,
       metalness: 0,
       side: THREE.DoubleSide
@@ -1802,7 +1244,7 @@ function renderTexgenThree(mesh) {
     }
 
     state.viewRotation = { x: -0.08, y: -0.24, z: -0.08 };
-    state.zoom = clamp(mesh.length * 1.16, 24, 38);
+    state.zoom = clamp(mesh.length * 1.35, 28, 44);
     state.camera.position.set(0, 0, state.zoom);
     state.camera.lookAt(0, 0, 0);
     state.ropeGroup.position.set(0, 0, 0);
@@ -1836,416 +1278,32 @@ function renderTexgenThree(mesh) {
   state.ropeGroup.add(core);
 }
 
-function getFiberBundleCoreMaterial(color, mesh) {
-  const filamentCount = Math.round(mesh.filamentCount || 20);
-  const denier = Math.round(mesh.denier || 1000);
-  const key = `${color.toLowerCase()}:fiber-bundle-core-v4:${filamentCount}:${denier}`;
+function getTexgenYarnMaterial(color, mesh) {
+  const filamentCount = Math.round(mesh.filamentCount || state.lastResult?.filamentCount || 30);
+  const denier = Math.round(mesh.denier || state.lastResult?.denier || 1300);
+  const materialScale = Math.sqrt(denier / 1300);
+  const filamentDiameterScale = mesh.filamentDiameterScale
+    ?? clamp(.5 * (denier / 1000), .15, 1.5);
+  const key = `${color.toLowerCase()}:texgen-polyester-satin-v3:${filamentCount}:${denier}`;
   if (state.materialCache.has(key)) return state.materialCache.get(key);
   const fiberMaps = makePolyesterFiberMaps(filamentCount, denier);
   const material = new THREE.MeshPhysicalMaterial({
     color: new THREE.Color(color),
     map: fiberMaps.color,
-    normalMap: fiberMaps.normal,
-    normalScale: new THREE.Vector2(.12, .03),
-    roughnessMap: fiberMaps.roughness,
-    roughness: .72,
-    metalness: 0,
-    sheen: .28,
-    sheenRoughness: .56,
-    sheenColor: new THREE.Color(color).lerp(new THREE.Color(0xffffff), .24),
-    specularIntensity: .28,
-    anisotropy: .72,
-    anisotropyRotation: Math.PI / 2,
-    side: THREE.DoubleSide
-  });
-  material.userData.sharedBraidMaterial = true;
-  state.materialCache.set(key, material);
-  return material;
-}
-
-function geometryFromFiberShell(yarn, mesh) {
-  const sourcePoints = yarn.fiberPath.map((point) => new THREE.Vector3(point.x, point.y, point.z));
-  const centerCurve = new THREE.CatmullRomCurve3(sourcePoints, false, "centripetal", .35);
-  const pathSegments = clamp(Math.round(mesh.visibleRows * 2.65), 76, 96);
-  const ringSegments = clamp(Math.round((mesh.filamentCount || 20) * 2), 24, 72);
-  const physicalRidgeCount = Math.max(8, Math.round(mesh.filamentCount || 20));
-  const centers = centerCurve.getSpacedPoints(pathSegments);
-  const bundleWidth = mesh.yarnWidth * mesh.diameterScale;
-  const bundleDepth = Math.max(mesh.yarnThickness * mesh.diameterScale, bundleWidth * .045);
-  const sectionPower = 2.45;
-  const positions = [];
-  const uvs = [];
-  const indices = [];
-  const tangent = new THREE.Vector3();
-  const radial = new THREE.Vector3();
-  const lateral = new THREE.Vector3();
-  const sectionUp = new THREE.Vector3();
-  const vertex = new THREE.Vector3();
-  const phaseSeed = (yarn.carrierNo || 1) * .371 + (yarn.repeat || 0) * .113;
-  const ringSize = ringSegments + 1;
-
-  for (let step = 0; step <= pathSegments; step += 1) {
-    const t = step / pathSegments;
-    const center = centers[step];
-    tangent.copy(centerCurve.getTangent(t)).normalize();
-    radial.set(0, center.y, center.z).normalize();
-    lateral.crossVectors(radial, tangent).normalize();
-    sectionUp.crossVectors(tangent, lateral).normalize();
-    if (sectionUp.dot(radial) < 0) sectionUp.negate();
-    const metadata = sampleFiberPathMetadata(yarn.fiberPath, t);
-    const localWidth = bundleWidth * (1 + metadata.crown * .04);
-    const localDepth = bundleDepth * (1 - metadata.crown * .46);
-    const phaseWander = Math.sin(step * .11 + phaseSeed) * .065
-      + Math.sin(step * .031 + phaseSeed * 2.7) * .035;
-
-    for (let side = 0; side <= ringSegments; side += 1) {
-      const angle = side / ringSegments * Math.PI * 2;
-      const cos = Math.cos(angle);
-      const sin = Math.sin(angle);
-      const lxNorm = Math.sign(cos) * Math.pow(Math.abs(cos), 2 / sectionPower);
-      const uzNorm = Math.sign(sin) * Math.pow(Math.abs(sin), 2 / sectionPower);
-      const lx = lxNorm * localWidth * .5;
-      let uz = uzNorm * localDepth * .5;
-      if (sin > 0) {
-        const across = (lxNorm + 1) * .5;
-        const ridge = Math.cos((across * physicalRidgeCount + phaseWander) * Math.PI * 2);
-        const edgeFade = Math.max(0, 1 - Math.pow(Math.abs(lxNorm), 7));
-        uz += localDepth * .006 * ridge * edgeFade * (1 - metadata.crown * .2);
-      }
-      vertex.copy(center)
-        .addScaledVector(lateral, lx)
-        .addScaledVector(sectionUp, uz);
-      positions.push(vertex.x, vertex.y, vertex.z);
-      uvs.push(side / ringSegments, t);
-    }
-  }
-
-  for (let step = 0; step < pathSegments; step += 1) {
-    const row = step * ringSize;
-    const nextRow = row + ringSize;
-    for (let side = 0; side < ringSegments; side += 1) {
-      const a = row + side;
-      const b = a + 1;
-      const c = nextRow + side;
-      const d = c + 1;
-      indices.push(a, c, b, b, c, d);
-    }
-  }
-
-  const geometry = new THREE.BufferGeometry();
-  geometry.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
-  geometry.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
-  geometry.setIndex(indices);
-  geometry.computeVertexNormals();
-  geometry.computeTangents();
-  geometry.computeBoundingSphere();
-  return geometry;
-}
-
-function getFiberGlintMaterial(color, mesh) {
-  const denier = Math.round(mesh.denier || 1000);
-  const key = `${color.toLowerCase()}:polyester-glint-fibers-v3:${denier}`;
-  if (state.materialCache.has(key)) return state.materialCache.get(key);
-  const base = new THREE.Color(color);
-  const material = new THREE.MeshPhysicalMaterial({
-    color: base.clone().lerp(new THREE.Color(0xffffff), isLightColor(color) ? .24 : .16),
-    vertexColors: true,
-    roughness: .22,
-    metalness: 0,
-    ior: 1.57,
-    sheen: .66,
-    sheenRoughness: .12,
-    sheenColor: base.clone().lerp(new THREE.Color(0xffffff), .7),
-    specularIntensity: 1,
-    specularColor: new THREE.Color(0xffffff),
-    anisotropy: 1,
-    anisotropyRotation: 0,
-    side: THREE.FrontSide
-  });
-  material.userData.sharedBraidMaterial = true;
-  state.materialCache.set(key, material);
-  return material;
-}
-
-function geometryFromFiberGlints(yarn, mesh) {
-  const sourcePoints = yarn.fiberPath.map((point) => new THREE.Vector3(point.x, point.y, point.z));
-  const curve = new THREE.CatmullRomCurve3(sourcePoints, false, "centripetal", .35);
-  const pathSegments = clamp(Math.round(mesh.visibleRows * 2.35), 70, 86);
-  const centers = curve.getSpacedPoints(pathSegments);
-  const filamentCount = clamp(Math.round(mesh.filamentCount || 20), 8, 40);
-  const glintCount = filamentCount;
-  const bundleWidth = mesh.yarnWidth * mesh.diameterScale;
-  const bundleDepth = Math.max(mesh.yarnThickness * mesh.diameterScale, bundleWidth * .045);
-  const denierScale = clamp(Math.sqrt(effectiveDenier(mesh.denier || 1000) / 1300), .24, .86);
-  const fiberRadius = clamp(bundleWidth / filamentCount * .30 * denierScale, .0015, .012);
-  const radialSegments = 5;
-  const ringSize = radialSegments + 1;
-  const positions = [];
-  const normals = [];
-  const uvs = [];
-  const colors = [];
-  const indices = [];
-  const tangent = new THREE.Vector3();
-  const radial = new THREE.Vector3();
-  const lateral = new THREE.Vector3();
-  const sectionUp = new THREE.Vector3();
-  const center = new THREE.Vector3();
-  const vertex = new THREE.Vector3();
-  const normal = new THREE.Vector3();
-
-  for (let fiber = 0; fiber < glintCount; fiber += 1) {
-    const xNorm = (glintCount <= 1 ? 0 : fiber / (glintCount - 1) * 2 - 1) * .91;
-    const phase = fiber * 2.3999632297 + (yarn.carrierNo || 1) * .41;
-    const tone = .94 + fract(Math.sin((fiber + 1) * 43.17 + phase) * 43758.5453) * .1;
-    const vertexBase = positions.length / 3;
-    for (let step = 0; step <= pathSegments; step += 1) {
-      const t = step / pathSegments;
-      center.copy(centers[step]);
-      tangent.copy(curve.getTangent(t)).normalize();
-      radial.set(0, center.y, center.z).normalize();
-      lateral.crossVectors(radial, tangent).normalize();
-      sectionUp.crossVectors(tangent, lateral).normalize();
-      if (sectionUp.dot(radial) < 0) sectionUp.negate();
-      const metadata = sampleFiberPathMetadata(yarn.fiberPath, t);
-      const localWidth = bundleWidth * (1 + metadata.crown * .04);
-      const localDepth = bundleDepth * (1 - metadata.crown * .46);
-      const surfaceHeight = localDepth * .5 * Math.pow(
-        Math.max(0, 1 - Math.pow(Math.abs(xNorm), 2.45)),
-        1 / 2.45
-      );
-      const wander = Math.sin(step * .17 + phase) * fiberRadius * .22
-        + Math.sin(step * .047 + phase * 1.7) * fiberRadius * .14;
-      center.addScaledVector(lateral, xNorm * localWidth * .5 + wander);
-      center.addScaledVector(sectionUp, surfaceHeight - fiberRadius * .08);
-      for (let side = 0; side <= radialSegments; side += 1) {
-        const angle = side / radialSegments * Math.PI * 2;
-        normal.copy(lateral).multiplyScalar(Math.cos(angle))
-          .addScaledVector(sectionUp, Math.sin(angle))
-          .normalize();
-        vertex.copy(center).addScaledVector(normal, fiberRadius);
-        positions.push(vertex.x, vertex.y, vertex.z);
-        normals.push(normal.x, normal.y, normal.z);
-        uvs.push(t * 2.6 + fiber * .19, side / radialSegments);
-        colors.push(tone, tone, tone);
-      }
-    }
-    for (let step = 0; step < pathSegments; step += 1) {
-      const row = vertexBase + step * ringSize;
-      const nextRow = row + ringSize;
-      for (let side = 0; side < radialSegments; side += 1) {
-        const a = row + side;
-        const b = a + 1;
-        const c = nextRow + side;
-        const d = c + 1;
-        indices.push(a, c, b, b, c, d);
-      }
-    }
-  }
-
-  const geometry = new THREE.BufferGeometry();
-  geometry.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
-  geometry.setAttribute("normal", new THREE.Float32BufferAttribute(normals, 3));
-  geometry.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
-  geometry.setAttribute("color", new THREE.Float32BufferAttribute(colors, 3));
-  geometry.setIndex(indices);
-  geometry.computeTangents();
-  geometry.computeBoundingSphere();
-  return geometry;
-}
-
-function geometryFromTexgenMeshInset(sourceMesh, mesh) {
-  const geometry = geometryFromTexgenMesh(sourceMesh);
-  const positions = geometry.getAttribute("position");
-  const inset = Math.max(mesh.yarnThickness * mesh.diameterScale * .20, .012);
-  const point = new THREE.Vector3();
-  const radial = new THREE.Vector3();
-  for (let index = 0; index < positions.count; index += 1) {
-    point.fromBufferAttribute(positions, index);
-    radial.set(0, point.y, point.z);
-    if (radial.lengthSq() > 1e-8) {
-      radial.normalize();
-      point.addScaledVector(radial, -inset);
-      positions.setXYZ(index, point.x, point.y, point.z);
-    }
-  }
-  positions.needsUpdate = true;
-  geometry.computeVertexNormals();
-  geometry.computeBoundingSphere();
-  return geometry;
-}
-
-function getExplicitFiberMaterial(color, mesh) {
-  const denier = Math.round(mesh.denier || state.lastResult?.denier || 1000);
-  const key = `${color.toLowerCase()}:explicit-polyester-fibers-v4:${denier}`;
-  if (state.materialCache.has(key)) return state.materialCache.get(key);
-  const base = new THREE.Color(color);
-  const fiberBase = base.clone().multiplyScalar(isLightColor(color) ? .91 : .82);
-  const material = new THREE.MeshPhysicalMaterial({
-    color: fiberBase,
-    vertexColors: true,
-    roughness: .3,
-    metalness: 0,
-    ior: 1.57,
-    sheen: .44,
-    sheenRoughness: .2,
-    sheenColor: base.clone().lerp(new THREE.Color(0xffffff), .48),
-    specularIntensity: 1,
-    specularColor: new THREE.Color(0xffffff),
-    anisotropy: 1,
-    anisotropyRotation: 0,
-    side: THREE.FrontSide
-  });
-  material.userData.sharedBraidMaterial = true;
-  state.materialCache.set(key, material);
-  return material;
-}
-
-function geometryFromFiberBundle(yarn, mesh) {
-  const sourcePoints = yarn.fiberPath.map((point) => new THREE.Vector3(point.x, point.y, point.z));
-  const centerCurve = new THREE.CatmullRomCurve3(sourcePoints, false, "centripetal", .35);
-  const pathSegments = clamp(Math.round(mesh.visibleRows * 3.1), 78, 104);
-  const centers = centerCurve.getSpacedPoints(pathSegments);
-  const filamentCount = clamp(Math.round(mesh.filamentCount || 20), 8, 40);
-  const bundleWidth = mesh.yarnWidth * mesh.diameterScale;
-  const bundleDepth = Math.max(mesh.yarnThickness * mesh.diameterScale, bundleWidth * .045);
-  const denierDiameter = clamp(Math.sqrt(effectiveDenier(mesh.denier || 1000) / 1300), .24, .86);
-  const spacing = bundleWidth * .9 / Math.max(1, filamentCount - 1);
-  const lateralRadius = clamp(spacing * .57, .009, .055);
-  const verticalRadius = clamp(bundleDepth * .11 * denierDiameter, .006, .027);
-  const offsets = packedFiberOffsets(filamentCount);
-  const positions = [];
-  const normals = [];
-  const uvs = [];
-  const colors = [];
-  const indices = [];
-  const radialSegments = 6;
-  const ringSize = radialSegments + 1;
-  const radial = new THREE.Vector3();
-  const tangent = new THREE.Vector3();
-  const lateral = new THREE.Vector3();
-  const sectionUp = new THREE.Vector3();
-  const center = new THREE.Vector3();
-  const vertex = new THREE.Vector3();
-  const normal = new THREE.Vector3();
-
-  for (let filament = 0; filament < filamentCount; filament += 1) {
-    const xNorm = offsets[filament];
-    const vertexBase = positions.length / 3;
-    const phase = filament * 2.3999632297;
-    const tone = .9 + fract(Math.sin((filament + 1) * 78.233) * 43758.5453) * .14;
-    for (let step = 0; step <= pathSegments; step += 1) {
-      center.copy(centers[step]);
-      tangent.copy(centerCurve.getTangent(step / pathSegments)).normalize();
-      radial.set(0, center.y, center.z).normalize();
-      lateral.crossVectors(radial, tangent).normalize();
-      sectionUp.crossVectors(tangent, lateral).normalize();
-      if (sectionUp.dot(radial) < 0) sectionUp.negate();
-      const metadata = sampleFiberPathMetadata(yarn.fiberPath, step / pathSegments);
-      const localWidth = bundleWidth * (1 + metadata.crown * .1);
-      const localDepth = bundleDepth * (1 - metadata.crown * .38);
-      const surfaceHeight = localDepth * .5 * Math.pow(
-        Math.max(0, 1 - Math.pow(Math.abs(xNorm), 2.45)),
-        1 / 2.45
-      );
-      const lateralOffset = xNorm * localWidth * .5;
-      const lateralWander = (
-        Math.sin(step * .29 + phase) * .055
-        + Math.sin(step * .073 + phase * 1.7) * .035
-      ) * lateralRadius;
-      const surfaceWander = Math.sin(step * .19 + phase * .83) * verticalRadius * .11;
-      center.addScaledVector(lateral, lateralOffset + lateralWander);
-      center.addScaledVector(sectionUp, surfaceHeight - verticalRadius * .54 + surfaceWander);
-
-      for (let side = 0; side <= radialSegments; side += 1) {
-        const angle = side / radialSegments * Math.PI * 2;
-        const cos = Math.cos(angle);
-        const sin = Math.sin(angle);
-        normal.copy(lateral).multiplyScalar(cos / lateralRadius)
-          .addScaledVector(sectionUp, sin / verticalRadius)
-          .normalize();
-        vertex.copy(center)
-          .addScaledVector(lateral, cos * lateralRadius)
-          .addScaledVector(sectionUp, sin * verticalRadius);
-        positions.push(vertex.x, vertex.y, vertex.z);
-        normals.push(normal.x, normal.y, normal.z);
-        uvs.push(step / pathSegments * 2.35 + filament * .173, side / radialSegments);
-        colors.push(tone, tone, tone);
-      }
-    }
-
-    for (let step = 0; step < pathSegments; step += 1) {
-      const row = vertexBase + step * ringSize;
-      const nextRow = row + ringSize;
-      for (let side = 0; side < radialSegments; side += 1) {
-        const a = row + side;
-        const b = a + 1;
-        const c = nextRow + side;
-        const d = c + 1;
-        indices.push(a, c, b, b, c, d);
-      }
-    }
-  }
-
-  const geometry = new THREE.BufferGeometry();
-  geometry.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
-  geometry.setAttribute("normal", new THREE.Float32BufferAttribute(normals, 3));
-  geometry.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
-  geometry.setAttribute("color", new THREE.Float32BufferAttribute(colors, 3));
-  geometry.setIndex(indices);
-  geometry.computeTangents();
-  geometry.computeBoundingSphere();
-  return geometry;
-}
-
-function packedFiberOffsets(count) {
-  const offsets = [];
-  for (let index = 0; index < count; index += 1) {
-    const xNorm = (count <= 1 ? 0 : index / (count - 1) * 2 - 1) * .92;
-    offsets.push(xNorm);
-  }
-  return offsets;
-}
-
-function sampleFiberPathMetadata(path, t) {
-  const scaled = clamp(t, 0, 1) * Math.max(0, path.length - 1);
-  const left = Math.floor(scaled);
-  const right = Math.min(path.length - 1, left + 1);
-  const mix = scaled - left;
-  return {
-    crown: THREE.MathUtils.lerp(path[left]?.crown || 0, path[right]?.crown || 0, mix)
-  };
-}
-
-function getTexgenYarnMaterial(color, mesh) {
-  const filamentCount = Math.round(mesh.filamentCount || state.lastResult?.filamentCount || 20);
-  const denier = Math.round(mesh.denier || state.lastResult?.denier || 1000);
-  const materialScale = Math.sqrt(effectiveDenier(denier) / 1300);
-  const filamentDiameterScale = mesh.filamentDiameterScale
-    ?? clamp(.5 * (effectiveDenier(denier) / 1000), .05, .5);
-  const key = `${color.toLowerCase()}:texgen-polyester-silk-v12:${filamentCount}:${denier}`;
-  if (state.materialCache.has(key)) return state.materialCache.get(key);
-  const fiberMaps = makePolyesterFiberMaps(filamentCount, denier);
-  const base = new THREE.Color(color);
-  const diffuse = base.clone().multiplyScalar(isLightColor(color) ? .84 : .92);
-  const material = new THREE.MeshPhysicalMaterial({
-    color: diffuse,
-    map: fiberMaps.color,
     bumpMap: fiberMaps.bump,
-    bumpScale: clamp(.0025 * materialScale * filamentDiameterScale, .00035, .0015),
+    bumpScale: clamp(.018 * materialScale * filamentDiameterScale, .006, .034),
     normalMap: fiberMaps.normal,
-    normalScale: new THREE.Vector2(.11, .018),
+    normalScale: new THREE.Vector2(.88, .16),
     roughnessMap: fiberMaps.roughness,
-    roughness: .25,
+    roughness: .78,
     metalness: 0,
-    ior: 1.57,
-    sheen: .84,
-    sheenRoughness: .1,
-    sheenRoughnessMap: fiberMaps.roughness,
-    sheenColor: base.clone().lerp(new THREE.Color(0xffffff), .76),
+    sheen: .96,
+    sheenRoughness: .4,
+    sheenColor: new THREE.Color(color).lerp(new THREE.Color(0xffffff), .72),
     specularIntensityMap: fiberMaps.specular,
-    specularIntensity: 1,
+    specularIntensity: .98,
     specularColor: new THREE.Color(0xffffff),
-    anisotropy: 1,
+    anisotropy: .96,
     anisotropyRotation: Math.PI / 2,
     side: THREE.DoubleSide
   });
@@ -2255,13 +1313,14 @@ function getTexgenYarnMaterial(color, mesh) {
 }
 
 function makePolyesterFiberMaps(filamentCount, denier) {
-  const mapKey = `filament-relief-v8:${filamentCount}:${denier}`;
+  const mapKey = `${filamentCount}:${denier}`;
   if (state.polyesterFiberMaps.has(mapKey)) return state.polyesterFiberMaps.get(mapKey);
-  const width = 512;
+  const width = 256;
   const height = 512;
-  const source = state.polyesterReference;
-  const denierScale = Math.sqrt(effectiveDenier(denier) / 1300);
-  const filamentDiameterScale = clamp(.5 * (effectiveDenier(denier) / 1000), .05, .5);
+  const strandCount = clamp(Math.round(filamentCount), 8, 40);
+  const strandSpacing = width / strandCount;
+  const denierScale = Math.sqrt(denier / 1300);
+  const filamentDiameterScale = clamp(.5 * (denier / 1000), .15, 1.5);
   const colorCanvas = document.createElement("canvas");
   const bumpCanvas = document.createElement("canvas");
   const normalCanvas = document.createElement("canvas");
@@ -2279,59 +1338,25 @@ function makePolyesterFiberMaps(filamentCount, denier) {
   const bumpImage = bumpCtx.createImageData(width, height);
   const roughnessImage = roughnessCtx.createImageData(width, height);
   const specularImage = specularCtx.createImageData(width, height);
-  const sourceMean = source?.mean || 226;
-  const sourceDeviation = Math.max(6, source?.deviation || 18);
-  const visibleFilaments = clamp(Math.round(filamentCount), 8, 40);
-  const sourceAcrossScale = clamp((filamentCount / 30) * Math.sqrt(1300 / effectiveDenier(denier)), .4, 4.2);
-
-  const sampleSource = (along, across) => {
-    if (!source) return sourceMean;
-    const sourceX = fract(along) * source.width;
-    const sourceY = fract(across) * source.height;
-    const x0 = Math.floor(sourceX) % source.width;
-    const y0 = Math.floor(sourceY) % source.height;
-    const x1 = (x0 + 1) % source.width;
-    const y1 = (y0 + 1) % source.height;
-    const tx = sourceX - Math.floor(sourceX);
-    const ty = sourceY - Math.floor(sourceY);
-    const luminanceAt = (x, y) => polyesterLuminance(source.data, (y * source.width + x) * 4);
-    const top = THREE.MathUtils.lerp(luminanceAt(x0, y0), luminanceAt(x1, y0), tx);
-    const bottom = THREE.MathUtils.lerp(luminanceAt(x0, y1), luminanceAt(x1, y1), tx);
-    return THREE.MathUtils.lerp(top, bottom, ty);
-  };
+  const bumpAmplitude = clamp(112 * denierScale * filamentDiameterScale, 36, 172);
 
   for (let y = 0; y < height; y += 1) {
-    const along = y / height;
+    const longitudinalGlint = Math.sin(y * .071) * 1.7 + Math.sin(y * .019) * 1.2;
     for (let x = 0; x < width; x += 1) {
-      const u = (x + .5) / width;
-      const across = u * sourceAcrossScale;
-      const sourceNoise = clamp(
-        (sampleSource(along * 1.7 + .09, across * .74 + .31) - sourceMean) / sourceDeviation,
-        -1,
-        1
-      );
-      const longNoise = clamp(
-        (sampleSource(along * 4.1 + .47, across * .23 + .17) - sourceMean) / sourceDeviation,
-        -1,
-        1
-      );
-      const wander = Math.sin(along * Math.PI * 2 * 2.15 + Math.floor(u * visibleFilaments) * 1.73)
-        * .035;
-      const phase = fract(u * visibleFilaments + wander + sourceNoise * .012);
-      const centered = (phase - .5) * 2;
-      const filamentCrown = Math.pow(Math.max(0, 1 - centered * centered), .62);
-      const groove = Math.pow(Math.abs(centered), 7.5);
-      const micro = Math.sin(along * Math.PI * 2 * (34 + visibleFilaments * .35)
-        + u * Math.PI * 3.2) * .5 + .5;
-      const relief = filamentCrown * .82 + sourceNoise * .11 + (micro - .5) * .055;
-      const highlight = Math.pow(filamentCrown, 4.2) * (.72 + micro * .28);
-      const colorValue = clampByte(218 + filamentCrown * 22 - groove * 5
-        + sourceNoise * 4 + longNoise * 3);
-      const bumpValue = clampByte(122 + relief * 22 * denierScale * filamentDiameterScale);
-      const roughnessValue = clampByte(168 - highlight * 68 + Math.abs(longNoise) * 7
-        + groove * 8);
-      const specularValue = clampByte(92 + highlight * 151 + filamentCrown * 18
-        - groove * 18);
+      const wave = Math.sin(y * .028 + x * .004) * strandSpacing * .075;
+      const wrappedX = mod(x + wave, width);
+      const strandPosition = wrappedX / strandSpacing;
+      const strandIndex = Math.floor(strandPosition);
+      const local = strandPosition - strandIndex;
+      const ridge = Math.pow(Math.sin(Math.PI * local), .72);
+      const fiberCore = Math.pow(Math.sin(Math.PI * local), 5.5);
+      const contactShadow = Math.pow(1 - ridge, 3);
+      const filamentTone = (fract(Math.sin((strandIndex + 1) * 91.713) * 43758.5453) - .5) * 7;
+      const silkGlint = fiberCore * (25 + longitudinalGlint * 1.8);
+      const colorValue = clampByte(198 + ridge * 31 - contactShadow * 22 + filamentTone + silkGlint);
+      const bumpValue = clampByte(62 + ridge * bumpAmplitude);
+      const roughnessValue = clampByte(236 - fiberCore * 164 - ridge * 18);
+      const specularValue = clampByte(54 + fiberCore * 198 + ridge * 20);
       const offset = (y * width + x) * 4;
 
       colorImage.data[offset] = colorValue;
@@ -2345,7 +1370,7 @@ function makePolyesterFiberMaps(filamentCount, denier) {
       roughnessImage.data[offset] = roughnessValue;
       roughnessImage.data[offset + 1] = roughnessValue;
       roughnessImage.data[offset + 2] = roughnessValue;
-      roughnessImage.data[offset + 3] = roughnessValue;
+      roughnessImage.data[offset + 3] = 255;
       specularImage.data[offset] = specularValue;
       specularImage.data[offset + 1] = specularValue;
       specularImage.data[offset + 2] = specularValue;
@@ -2367,7 +1392,7 @@ function makePolyesterFiberMaps(filamentCount, denier) {
       const down = bumpImage.data[(mod(y + 1, height) * width + x) * 4];
       const nx = (left - right) / 255;
       const ny = (up - down) / 255;
-      const nz = 1.65;
+      const nz = 1.45;
       const inverseLength = 1 / Math.hypot(nx, ny, nz);
       const offset = (y * width + x) * 4;
       normalImage.data[offset] = (nx * inverseLength * .5 + .5) * 255;
@@ -2386,7 +1411,7 @@ function makePolyesterFiberMaps(filamentCount, denier) {
   for (const texture of [colorTexture, bumpTexture, normalTexture, roughnessTexture, specularTexture]) {
     texture.wrapS = THREE.RepeatWrapping;
     texture.wrapT = THREE.RepeatWrapping;
-    texture.repeat.set(1, 1);
+    texture.repeat.set(2, 1.35);
     texture.anisotropy = Math.min(12, state.renderer.capabilities.getMaxAnisotropy?.() || 1);
   }
   colorTexture.colorSpace = THREE.SRGBColorSpace;
@@ -2408,7 +1433,6 @@ function geometryFromTexgenMesh(mesh) {
   geometry.setAttribute("uv", new THREE.Float32BufferAttribute(mesh.uvs, 2));
   geometry.setIndex(mesh.indices);
   geometry.computeVertexNormals();
-  geometry.computeTangents();
   geometry.computeBoundingSphere();
   return geometry;
 }
@@ -2431,7 +1455,7 @@ function renderCanvasFromThree() {
 
   const mountRect = ui.threeMount.getBoundingClientRect();
   if (state.texgenMesh?.cylindricalWeave) {
-    state.camera.position.z = clamp(state.texgenMesh.length * .9, 21, 32);
+    state.camera.position.z = clamp(state.texgenMesh.length * 1.05, 24, 36);
     state.ropeGroup.rotation.set(0, -.18, 0);
   }
   state.camera.aspect = canvas.width / canvas.height;
@@ -2759,14 +1783,7 @@ function renderSummary(result) {
   ui.filamentCountValue.textContent = `${result.filamentCount}`;
   ui.denierValue.textContent = `${result.denier}D`;
   ui.repeatBadge.textContent = `${result.repeatRows} sıra tekrar`;
-  const fit = result.productionFit;
-  ui.productionFit.className = `production-fit is-${fit.status}`;
-  ui.productionFit.innerHTML = `
-    <div><span>Fiziksel doluluk</span><strong>${fit.label}</strong></div>
-    <div class="production-fit-meter"><i style="width:${clamp(fit.fillPercent, 0, 140) / 1.4}%"></i><b></b></div>
-    <p><strong>%${fit.fillPercent.toFixed(0)}</strong> doluluk · paket ${fit.carrierWidthMm.toFixed(2)} mm · gereken ${fit.requiredWidthMm.toFixed(2)} mm</p>
-    <small>${productionFitAdvice(fit)}</small>
-  `;
+  ui.sceneMeta.textContent = `${result.carrierCount} kukla, ${result.diameterMm} mm, ${result.angleDeg}° örgü`;
   ui.summary.innerHTML = [
     ["Kukla", `${result.carrierCount} adet`],
     ["Gruplar", `${result.carrierCount / 2} S + ${result.carrierCount / 2} Z`],
@@ -2776,8 +1793,6 @@ function renderSummary(result) {
     ["Görünen tur", `${result.turns.toFixed(2)} tur`],
     ["Yüzey çevresi", `${result.circumference.toFixed(1)} mm`],
     ["Kukla aralığı", `${result.laneWidth.toFixed(2)} mm`],
-    ["İp paketi", `${fit.carrierWidthMm.toFixed(2)} x ${fit.carrierThicknessMm.toFixed(2)} mm`],
-    ["Fiziksel doluluk", `%${fit.fillPercent.toFixed(0)} - ${fit.label}`],
     ["Desen tekrarı", `${result.repeatRows} örgü sırası`],
     ["Görünen kesit", `${result.visibleRows} sıra`],
     ["Üst-alt", ui.crossingMode.options[ui.crossingMode.selectedIndex].textContent]
@@ -2792,43 +1807,17 @@ function renderSummary(result) {
   `).join("");
 }
 
-function productionFitAdvice(fit) {
-  if (fit.status === "ideal") return "Çap, açı ve ip paketi birbiriyle uyumlu.";
-  const suggestions = [];
-  if (fit.recommendedAngleDeg !== null) suggestions.push(`${fit.recommendedAngleDeg.toFixed(0)}° açı`);
-  suggestions.push(`${fit.recommendedWidthPercent.toFixed(0)}% ip genişliği`);
-  suggestions.push(`yaklaşık ${fit.recommendedFilamentCount.toFixed(0)} tel`);
-  suggestions.push(`${Math.round(fit.recommendedDenier / 100) * 100}D`);
-  suggestions.push(`${fit.recommendedDiameterMm.toFixed(1)} mm çap`);
-  return `Yakın üretim dengesi: ${suggestions.join(" veya ")}.`;
-}
-
 function updateControlReadouts() {
   ui.diameterValue.textContent = `${ui.diameter.value} mm`;
   ui.angleValue.textContent = `${ui.braidAngle.value}°`;
   ui.strandWidthValue.textContent = `${ui.strandWidth.value}%`;
   ui.filamentCountValue.textContent = ui.filamentCount.value;
   ui.denierValue.textContent = `${ui.denier.value}D`;
-  const fit = evaluateProductionFit({
-    diameterMm: Number(ui.diameter.value),
-    carrierCount: Number(ui.carrierCount.value),
-    angleDeg: Number(ui.braidAngle.value),
-    filamentCount: Number(ui.filamentCount.value),
-    denier: Number(ui.denier.value),
-    strandWidthScale: Number(ui.strandWidth.value) / 100
-  });
-  ui.productionFit.className = `production-fit is-${fit.status}`;
-  ui.productionFit.innerHTML = `
-    <div><span>Fiziksel doluluk</span><strong>${fit.label}</strong></div>
-    <div class="production-fit-meter"><i style="width:${clamp(fit.fillPercent, 0, 140) / 1.4}%"></i><b></b></div>
-    <p><strong>%${fit.fillPercent.toFixed(0)}</strong> doluluk · paket ${fit.carrierWidthMm.toFixed(2)} mm · gereken ${fit.requiredWidthMm.toFixed(2)} mm</p>
-    <small>${productionFitAdvice(fit)}</small>
-  `;
 }
 
 function refreshGenerateButton() {
   ui.generateBraid.disabled = state.generating;
-  ui.generateBraid.textContent = state.generating ? "Yüksek kalite üretiliyor..." : "Üret";
+  ui.generateBraid.textContent = state.generating ? "Üretiliyor..." : "Üret";
   ui.generateBraid.classList.toggle("is-dirty", state.simulationDirty && !state.generating);
 }
 
@@ -2842,14 +1831,13 @@ function markSimulationDirty() {
 
 function renderAll() {
   const result = calculateBraid();
-  state.renderNonce = `${Date.now().toString(36)}-${crypto.randomUUID?.() || Math.random().toString(36).slice(2)}`;
   state.lastResult = result;
   state.simulationDirty = false;
   updateControlReadouts();
   refreshGenerateButton();
   savePreferences();
   renderSummary(result);
-  requestProductionRender(result);
+  requestTexgenMesh(result);
 }
 
 function resizeThree() {
@@ -2990,7 +1978,7 @@ function clamp(value, min, max) {
 }
 
 function openImageModal() {
-  ui.modalImage.src = state.photoRenderUrl || ui.patternCanvas.toDataURL("image/png");
+  ui.modalImage.src = ui.patternCanvas.toDataURL("image/png");
   ui.imageModal.hidden = false;
   ui.closeImageModal.focus();
 }
@@ -3024,19 +2012,17 @@ ui.invertFlow.addEventListener("click", () => {
   renderCarrierControls();
   markSimulationDirty();
 });
+ui.toggleSpin.addEventListener("click", () => {
+  state.spin = !state.spin;
+  ui.toggleSpin.textContent = state.spin ? "Döndür" : "Sabit";
+});
 ui.downloadPng.addEventListener("click", () => {
   const a = document.createElement("a");
-  a.href = state.photoRenderUrl || ui.patternCanvas.toDataURL("image/png");
+  a.href = ui.patternCanvas.toDataURL("image/png");
   a.download = `braidstudio-${ui.carrierCount.value}-kukla.png`;
   a.click();
 });
-ui.meterPosition.addEventListener("input", () => {
-  updateMeterNavigation(Number(ui.meterPosition.value));
-});
-ui.renderStage.addEventListener("scroll", () => updateMeterNavigation(), { passive: true });
-window.addEventListener("resize", () => updateMeterNavigation());
 ui.patternCanvas.addEventListener("click", openImageModal);
-ui.photoRender.addEventListener("click", openImageModal);
 ui.closeImageModal.addEventListener("click", closeImageModal);
 ui.imageModal.addEventListener("click", (event) => {
   if (event.target.closest("[data-close-modal]")) closeImageModal();
@@ -3050,6 +2036,7 @@ document.addEventListener("click", (event) => {
   hideCarrierPopover();
 });
 
+initThree();
 const savedPreferences = loadPreferences();
 applySavedPreferences(savedPreferences);
 initCarriers(Number(ui.carrierCount.value), {

@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>BraidStudio</title>
-    <link rel="stylesheet" href="/styles.css?v=20260815-production-fit-1">
+    <link rel="stylesheet" href="/styles.css?v=20260809-rollback-satin-1">
   </head>
   <body>
     <main class="app-shell">
@@ -48,12 +48,12 @@
               <input id="strandWidth" type="range" min="80" max="190" step="5" value="100">
             </label>
             <label>
-              Tel sayısı <strong id="filamentCountValue">20</strong>
-              <input id="filamentCount" type="range" min="8" max="40" step="1" value="20">
+              Tel sayısı <strong id="filamentCountValue">30</strong>
+              <input id="filamentCount" type="range" min="8" max="40" step="1" value="30">
             </label>
             <label>
-              Denye <strong id="denierValue">1000D</strong>
-              <input id="denier" type="range" min="300" max="3000" step="100" value="1000">
+              Denye <strong id="denierValue">1300D</strong>
+              <input id="denier" type="range" min="300" max="3000" step="100" value="1300">
             </label>
             <label>
               Üst-alt düzeni
@@ -63,7 +63,6 @@
                 <option value="hercules">3 üst / 3 alt - Hercules</option>
               </select>
             </label>
-            <div id="productionFit" class="production-fit" aria-live="polite"></div>
             <button id="generateBraid" class="generate-button" type="button">Üret</button>
           </section>
 
@@ -87,26 +86,23 @@
           <div class="canvas-card">
             <div class="viewer-head">
               <div>
+                <h2>3D halat yüzeyi</h2>
+                <span id="sceneMeta">-</span>
+              </div>
+              <button id="toggleSpin" type="button">Döndür</button>
+            </div>
+            <div id="threeMount" class="three-mount"></div>
+          </div>
+
+          <div class="canvas-card">
+            <div class="viewer-head">
+              <div>
                 <h2>Üretilecek halat çıktısı</h2>
-                <span>Silindir yüzeyinde halat kesiti</span>
+                <span>Silindir yüzeyinde yakın plan desen</span>
               </div>
               <button id="downloadPng" type="button">PNG indir</button>
             </div>
-            <div class="meter-navigation">
-              <strong id="meterWindowLabel">0-0 mm / 1000 mm</strong>
-              <input id="meterPosition" type="range" min="0" max="1000" step="1" value="0" aria-label="Bir metrelik halat üzerinde konum">
-              <span>1 metre çıktı</span>
-            </div>
-            <div class="rope-measurement">
-              <div id="diameterRulerLeft" class="diameter-ruler" aria-label="Halat cap cetveli"></div>
-              <div class="render-stage">
-                <canvas id="patternCanvas" width="1400" height="780"></canvas>
-                <img id="photoRender" alt="Polyester liflerden olusan bir metre halat ciktisi" hidden>
-                <div id="photoRenderState" class="photo-render-state" hidden></div>
-              </div>
-              <div id="diameterRulerRight" class="diameter-ruler diameter-ruler-right" aria-hidden="true"></div>
-            </div>
-            <div class="meter-caption"><span>0 cm</span><strong>1 metre halat</strong><span>100 cm</span></div>
+            <canvas id="patternCanvas" width="1400" height="780"></canvas>
           </div>
         </section>
 
@@ -136,6 +132,6 @@
       </div>
     </div>
 
-    <script type="module" src="/app.js?v=20260815-production-fit-1"></script>
+    <script type="module" src="/app.js?v=20260809-rollback-satin-1"></script>
   </body>
 </html>
