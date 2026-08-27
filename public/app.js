@@ -14,6 +14,7 @@ const ui = {
   filamentCountValue: $("#filamentCountValue"),
   denier: $("#denier"),
   denierValue: $("#denierValue"),
+  materialProfile: $("#materialProfile"),
   crossingMode: $("#crossingMode"),
   generateBraid: $("#generateBraid"),
   carrierGrid: $("#carrierGrid"),
@@ -29,6 +30,7 @@ const ui = {
   carrierTable: $("#carrierTable"),
   patternCanvas: $("#patternCanvas"),
   threeMount: $("#threeMount"),
+  threeRuler: $("#threeRuler"),
   toggleSpin: $("#toggleSpin"),
   downloadPng: $("#downloadPng"),
   statusPill: $("#statusPill"),
@@ -72,6 +74,7 @@ const state = {
   scene: null,
   camera: null,
   renderer: null,
+  materialLights: null,
   ropeGroup: null,
   materialCache: new Map(),
   polyesterFiberMaps: new Map(),
@@ -127,6 +130,7 @@ function applySavedPreferences(preferences) {
   setSavedControl(ui.strandWidth, preferences.strandWidth);
   setSavedControl(ui.filamentCount, preferences.filamentCount);
   setSavedControl(ui.denier, preferences.denier);
+  setSavedControl(ui.materialProfile, preferences.materialProfile);
   setSavedControl(ui.crossingMode, preferences.crossingMode);
   state.flip = Boolean(preferences.flip);
   if (validHexColor(preferences.activeColor)) {
@@ -145,6 +149,7 @@ function savePreferences() {
       strandWidth: Number(ui.strandWidth.value),
       filamentCount: Number(ui.filamentCount.value),
       denier: Number(ui.denier.value),
+      materialProfile: ui.materialProfile.value,
       crossingMode: ui.crossingMode.value,
       flip: state.flip,
       activeColor: state.activeColor,
@@ -373,7 +378,8 @@ function initThree() {
   state.renderer.toneMappingExposure = 1.04;
   ui.threeMount.appendChild(state.renderer.domElement);
 
-  state.scene.add(new THREE.HemisphereLight(0xffffff, 0xaeb4b0, .92));
+  const hemisphere = new THREE.HemisphereLight(0xffffff, 0xaeb4b0, .92);
+  state.scene.add(hemisphere);
   const key = new THREE.DirectionalLight(0xfffaf4, .78);
   key.position.set(4.5, 7, 6);
   key.castShadow = true;
@@ -390,6 +396,7 @@ function initThree() {
   satinSoftbox.position.set(0, 7, 8);
   satinSoftbox.lookAt(0, 0, 0);
   state.scene.add(satinSoftbox);
+  state.materialLights = { hemisphere, key, fill, rim, softbox: satinSoftbox };
   state.ropeGroup = new THREE.Group();
   state.scene.add(state.ropeGroup);
   installThreeInteractions();
@@ -403,6 +410,17 @@ function clearRopeGroup() {
     const child = state.ropeGroup.children.pop();
     disposeObject(child);
   }
+}
+
+function applyMaterialLighting(profile) {
+  const lighting = profile?.lighting;
+  if (!lighting || !state.materialLights) return;
+  state.renderer.toneMappingExposure = Number(lighting.exposure);
+  state.materialLights.hemisphere.intensity = Number(lighting.hemisphere);
+  state.materialLights.key.intensity = Number(lighting.key);
+  state.materialLights.fill.intensity = Number(lighting.fill);
+  state.materialLights.rim.intensity = Number(lighting.rim);
+  state.materialLights.softbox.intensity = Number(lighting.softbox);
 }
 
 function geometryMode() {
@@ -421,6 +439,7 @@ function geometryPayload(result) {
     strandWidthScale: result.strandWidthScale,
     filamentCount: result.filamentCount,
     denier: result.denier,
+    materialProfileId: ui.materialProfile.value,
     ribbonShader: true,
     crossingMode: ui.crossingMode.value,
     flip: state.flip,
@@ -483,6 +502,7 @@ async function requestGeometryMesh(result) {
 
 function renderGeometryThree(mesh) {
   clearRopeGroup();
+  applyMaterialLighting(mesh.materialProfile);
   state.renderer.localClippingEnabled = false;
   for (const yarn of mesh.yarns || []) {
     const geometry = geometryFromCarrierMesh(yarn.mesh);
@@ -563,7 +583,7 @@ function renderGeometryThree(mesh) {
     }
 
     state.viewRotation = { x: 0, y: 0, z: 0 };
-    state.zoom = clamp(mesh.length * 1.35, 28, 44);
+    state.zoom = clamp(mesh.length * 2.15, 52, 80);
     state.camera.position.set(0, 0, state.zoom);
     state.camera.lookAt(0, 0, 0);
     state.ropeGroup.position.set(0, 0, 0);
@@ -598,33 +618,47 @@ function renderGeometryThree(mesh) {
 }
 
 function getCarrierMaterial(color, mesh) {
+  const profile = mesh.materialProfile || {};
+  const profileId = profile.materialProfileId || "polyester_satin";
+  const optics = profile.optics || {};
   const filamentCount = Math.round(mesh.filamentCount || state.lastResult?.filamentCount || 25);
-  const denier = Math.round(mesh.denier || state.lastResult?.denier || 1000);
+  const denier = Math.round(mesh.effectiveDenier || mesh.denier || state.lastResult?.denier || 1000);
   const materialScale = Math.sqrt(denier / 1000);
   const filamentDiameterScale = mesh.filamentDiameterScale
     ?? clamp(Math.sqrt(denier / 1000), .45, 1.75);
-  const key = `${color.toLowerCase()}:carrier-polyester-fiber-satin:${filamentCount}:${denier}`;
+  const key = `${color.toLowerCase()}:${profileId}:${filamentCount}:${denier}`;
   if (state.materialCache.has(key)) return state.materialCache.get(key);
-  const fiberMaps = makePolyesterFiberMaps(filamentCount, denier);
+  const fiberMaps = makePolyesterFiberMaps(filamentCount, denier, profile);
+  const normalScale = Array.isArray(optics.normalScale) ? optics.normalScale : [.012, .12];
   const material = new THREE.MeshPhysicalMaterial({
     color: new THREE.Color(color),
     emissive: new THREE.Color(color),
     emissiveIntensity: .012,
     map: fiberMaps.color,
     bumpMap: fiberMaps.bump,
-    bumpScale: clamp(.003 * materialScale * filamentDiameterScale, .0015, .005),
+    bumpScale: clamp(
+      Number(optics.bumpScale ?? .003) * materialScale * filamentDiameterScale,
+      Number(optics.bumpMin ?? .0015),
+      Number(optics.bumpMax ?? .005)
+    ),
     normalMap: fiberMaps.normal,
-    normalScale: new THREE.Vector2(.012, .12),
+    normalScale: new THREE.Vector2(Number(normalScale[0]), Number(normalScale[1])),
     roughnessMap: fiberMaps.roughness,
-    roughness: .50,
+    roughness: Number(optics.roughness ?? .50),
     metalness: 0,
-    sheen: .28,
-    sheenRoughness: .76,
-    sheenColor: new THREE.Color(color).lerp(new THREE.Color(0xffffff), .34),
+    sheen: Number(optics.sheen ?? .28),
+    sheenRoughness: Number(optics.sheenRoughness ?? .76),
+    sheenColor: new THREE.Color(color).lerp(
+      new THREE.Color(0xffffff),
+      Number(optics.sheenWhiteMix ?? .34)
+    ),
     specularIntensityMap: fiberMaps.specular,
-    specularIntensity: .52,
-    specularColor: new THREE.Color(color).lerp(new THREE.Color(0xffffff), .18),
-    anisotropy: .84,
+    specularIntensity: Number(optics.specularIntensity ?? .52),
+    specularColor: new THREE.Color(color).lerp(
+      new THREE.Color(0xffffff),
+      Number(optics.specularWhiteMix ?? .18)
+    ),
+    anisotropy: Number(optics.anisotropy ?? .84),
     anisotropyMap: fiberMaps.anisotropy,
     anisotropyRotation: 0,
     side: THREE.DoubleSide
@@ -634,8 +668,9 @@ function getCarrierMaterial(color, mesh) {
   return material;
 }
 
-function makePolyesterFiberMaps(filamentCount, denier) {
-  const mapKey = `carrier-polyester-fiber-satin:${filamentCount}:${denier}`;
+function makePolyesterFiberMaps(filamentCount, denier, profile = {}) {
+  const textureProfile = profile.texture || {};
+  const mapKey = `${profile.materialProfileId || "polyester_satin"}:${filamentCount}:${denier}`;
   if (state.polyesterFiberMaps.has(mapKey)) return state.polyesterFiberMaps.get(mapKey);
   const width = 512;
   const height = 256;
@@ -680,14 +715,27 @@ function makePolyesterFiberMaps(filamentCount, denier) {
         + .16 * Math.sin(x * .009 - strandIndex * .23);
       const colorValue = clampByte(
         235 + ridge * 6 - contactShadow * 3 + filamentTone * .16
-        + capillaryLine * 4 - capillaryGroove * 4 + satinBand * fiberCore * 8
+        + capillaryLine * 4 - capillaryGroove * 4
+        + satinBand * fiberCore * Number(textureProfile.colorSatinAmplitude ?? 8)
       );
       const bumpValue = clampByte(
         116 + ridge * bumpAmplitude + capillaryLine * 4 - capillaryGroove * 14
       );
-      const roughnessValue = clampByte(225 - fiberCore * (24 + satinBand * 12) - ridge * 4);
+      const roughnessValue = clampByte(
+        Number(textureProfile.roughnessBase ?? 225)
+        - fiberCore * (
+          Number(textureProfile.roughnessFiber ?? 24)
+          + satinBand * Number(textureProfile.roughnessSatin ?? 12)
+        )
+        - ridge * 4
+      );
       const specularValue = clampByte(
-        46 + fiberCore * (44 + satinBand * 24) + capillaryLine * 8
+        Number(textureProfile.specularBase ?? 46)
+        + fiberCore * (
+          Number(textureProfile.specularFiber ?? 44)
+          + satinBand * Number(textureProfile.specularSatin ?? 24)
+        )
+        + capillaryLine * 8
       );
       const offset = (y * width + x) * 4;
 
@@ -796,7 +844,7 @@ function renderCanvasFromThree() {
 
   const mountRect = ui.threeMount.getBoundingClientRect();
   if (state.geometryMesh?.cylindricalWeave) {
-    state.camera.position.z = clamp(state.geometryMesh.length * 1.24, 28, 44);
+    state.camera.position.z = clamp(state.geometryMesh.length * 2.15, 52, 80);
     state.ropeGroup.rotation.set(0, -.18, 0);
   }
   state.camera.aspect = canvas.width / canvas.height;
@@ -804,6 +852,7 @@ function renderCanvasFromThree() {
   state.renderer.setSize(canvas.width, canvas.height, false);
   state.renderer.render(state.scene, state.camera);
   ctx.drawImage(state.renderer.domElement, 0, 0, canvas.width, canvas.height);
+  drawMeasurementRulers(ctx, canvas.width, canvas.height, state.geometryMesh);
 
   state.ropeGroup.rotation.set(previewRotation.x, previewRotation.y, previewRotation.z);
   state.camera.position.z = previewZoom;
@@ -811,6 +860,65 @@ function renderCanvasFromThree() {
   state.camera.updateProjectionMatrix();
   state.renderer.setSize(mountRect.width, mountRect.height, false);
   state.renderer.render(state.scene, state.camera);
+}
+
+function projectedPixelsPerMillimeter(width, height, mesh) {
+  const diameterMm = Number(mesh?.diameterMm);
+  if (!(diameterMm > 0)) return 0;
+  const top = new THREE.Vector3(0, diameterMm / 2, 0).project(state.camera);
+  const bottom = new THREE.Vector3(0, -diameterMm / 2, 0).project(state.camera);
+  return Math.abs(top.y - bottom.y) * height * .5 / diameterMm;
+}
+
+function drawMeasurementRulers(ctx, width, height, mesh, { clear = false } = {}) {
+  if (clear) ctx.clearRect(0, 0, width, height);
+  if (!mesh?.cylindricalWeave) return;
+  const pxPerMm = projectedPixelsPerMillimeter(width, height, mesh);
+  if (!(pxPerMm >= 3)) return;
+
+  const topHeight = 30;
+  const leftWidth = 48;
+  const diameterMm = Number(mesh.diameterMm);
+  const ropeTop = height / 2 - diameterMm * pxPerMm / 2;
+  ctx.save();
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, width, topHeight);
+  ctx.fillRect(0, 0, leftWidth, height);
+  ctx.strokeStyle = "rgba(35,66,56,.78)";
+  ctx.fillStyle = "#234238";
+  ctx.lineWidth = 1;
+  ctx.font = "11px system-ui, sans-serif";
+  ctx.textBaseline = "top";
+
+  ctx.beginPath();
+  ctx.moveTo(leftWidth, topHeight - .5);
+  ctx.lineTo(width, topHeight - .5);
+  for (let mm = 0; leftWidth + mm * pxPerMm <= width; mm += 1) {
+    const x = leftWidth + mm * pxPerMm;
+    const major = mm % 5 === 0;
+    ctx.moveTo(x, topHeight);
+    ctx.lineTo(x, topHeight - (major ? 12 : 6));
+    if (major && x < width - 34) ctx.fillText(String(mm), x + 3, 3);
+  }
+  ctx.stroke();
+  ctx.fillText("mm", width - 22, 3);
+
+  ctx.beginPath();
+  ctx.moveTo(leftWidth - .5, topHeight);
+  ctx.lineTo(leftWidth - .5, height);
+  const firstMm = Math.floor((topHeight - ropeTop) / pxPerMm);
+  const lastMm = Math.ceil((height - ropeTop) / pxPerMm);
+  for (let mm = firstMm; mm <= lastMm; mm += 1) {
+    const y = ropeTop + mm * pxPerMm;
+    if (y < topHeight || y > height) continue;
+    const major = mm % 5 === 0;
+    ctx.moveTo(leftWidth, y);
+    ctx.lineTo(leftWidth - (major ? 12 : 6), y);
+    if (major && mm >= 0) ctx.fillText(String(mm), 4, y + 2);
+  }
+  ctx.stroke();
+  ctx.fillText("mm", 4, topHeight + 4);
+  ctx.restore();
 }
 
 function disposeObject(object) {
@@ -839,6 +947,7 @@ function renderSummary(result) {
     ["Gruplar", `${result.carrierCount / 2} S + ${result.carrierCount / 2} Z`],
     ["Çap", `${result.diameterMm} mm`],
     ["Tel / denye", `${result.filamentCount} tel x ${result.denier}D`],
+    ["Malzeme", ui.materialProfile.options[ui.materialProfile.selectedIndex].textContent],
     ["Bir tur adımı", `${result.pitchMm.toFixed(1)} mm`],
     ["Görünen tur", `${result.turns.toFixed(2)} tur`],
     ["Yüzey çevresi", `${result.circumference.toFixed(1)} mm`],
@@ -895,6 +1004,8 @@ function resizeThree() {
   state.camera.aspect = rect.width / Math.max(1, rect.height);
   state.camera.updateProjectionMatrix();
   state.renderer.setSize(rect.width, rect.height, false);
+  ui.threeRuler.width = Math.max(1, Math.round(rect.width));
+  ui.threeRuler.height = Math.max(1, Math.round(rect.height));
 }
 
 function installThreeInteractions() {
@@ -931,7 +1042,7 @@ function installThreeInteractions() {
   mount.addEventListener("pointercancel", endThreeDrag);
   mount.addEventListener("wheel", (event) => {
     event.preventDefault();
-    const maxZoom = state.geometryMesh?.flatWeave || state.geometryMesh?.cylindricalWeave ? 55 : 13;
+    const maxZoom = state.geometryMesh?.flatWeave || state.geometryMesh?.cylindricalWeave ? 90 : 13;
     state.zoom = clamp(state.zoom + event.deltaY * .006, 4.6, maxZoom);
     state.camera.position.z = state.zoom;
     state.camera.lookAt(0, 0, 0);
@@ -959,6 +1070,13 @@ function animate() {
   state.ropeGroup.rotation.y = state.viewRotation.y;
   state.ropeGroup.rotation.z = state.viewRotation.z + state.autoRotation;
   state.renderer.render(state.scene, state.camera);
+  drawMeasurementRulers(
+    ui.threeRuler.getContext("2d"),
+    ui.threeRuler.width,
+    ui.threeRuler.height,
+    state.geometryMesh,
+    { clear: true }
+  );
 }
 
 function resetDefaultColors() {
@@ -1018,6 +1136,7 @@ ui.braidAngle.addEventListener("input", markSimulationDirty);
 ui.strandWidth.addEventListener("input", markSimulationDirty);
 ui.filamentCount.addEventListener("input", markSimulationDirty);
 ui.denier.addEventListener("input", markSimulationDirty);
+ui.materialProfile.addEventListener("change", markSimulationDirty);
 ui.crossingMode.addEventListener("change", markSimulationDirty);
 ui.generateBraid.addEventListener("click", renderAll);
 ui.bulkColor.addEventListener("input", () => {

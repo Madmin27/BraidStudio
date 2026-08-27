@@ -29,9 +29,11 @@ Kaynaklar:
 - Tek tarayici mesh renderer'i: `renderGeometryThree()`
 - Tek API: `/api/braid-geometry`
 - Tek geometri testi: `tests/unifiedGeometry.test.js`
+- Tek malzeme kutuphanesi: `data/materials/*.json`
 
 `texgen_braid_mesh.py`, `carrier_render_envelope.py`, alternatif envelope matematigi,
-fallback geometri, malzeme varyantlari ve numarali motorlar bulunamaz.
+fallback geometri ve numarali motorlar bulunamaz. Malzeme secenekleri ayni renderer
+uzerinde yalnizca dogrulanan kutuphane profilleri olarak tutulur.
 
 ## Degismez Kurallar
 
@@ -73,3 +75,21 @@ UV tangent yonlu filament anisotropy, dusuk guclu filament specular haritasi,
 yumusak cloth sheen ve genis softbox ile polyester saten tepkisi uretir.
 32 ve 45 derece kanitlari `proofs/angle-32` ve `proofs/angle-45` altindadir.
 Malzeme adayi kullanici kabulunu bekler.
+
+## Malzeme Profilleri
+
+- `polip_rope`: 2026-08-27 tarihinde `KoseKabulPolip1` kontrol noktasi olarak
+  kullanici tarafindan kabul edilen optik ayarlar; denye olcegi `1.0`.
+- `polyester_satin`: daha canli ve ipeksi saten tepki adayi; denye olcegi `0.70`.
+- Profil zinciri: arayuz secimi -> `/api/braid-geometry` -> kutuphane dogrulamasi
+  -> etkin denye ile tek geometri cekirdegi -> ayni profil ile Three.js malzemesi.
+- Uretim kamerasi normal ve PNG goruntulerinde halati daha uzaktan cerceveler.
+
+## 2026-08-27 Runtime Temizligi
+
+- Canli sunucu yalnizca statik arayuz ve `POST /api/braid-geometry` yayinlar.
+- Eski AI analiz, recete cozumleme, tahmin ve yuzey simulasyonu rotalari kaldirildi.
+- Bu rotalara ait `src`, `server/lib`, tarif/makine/desen verileri ve ayrik testler
+  kaldirildi.
+- Uretim testi yalnizca `tests/unifiedGeometry.test.js` icinde tek mimariyi denetler.
+- Canli kanit `proofs/clean-live` altindadir; kullanici gorsel kabulunu bekler.

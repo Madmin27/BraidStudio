@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>BraidStudio</title>
-    <link rel="stylesheet" href="/styles.css?v=20260827-softbox-satin">
+    <link rel="stylesheet" href="/styles.css?v=20260827-material-library">
   </head>
   <body>
     <main class="app-shell">
@@ -36,8 +36,8 @@
               </select>
             </label>
             <label>
-              Halat çapı <strong id="diameterValue">16 mm</strong>
-              <input id="diameter" type="range" min="4" max="80" step="1" value="16">
+              Halat çapı <strong id="diameterValue">10 mm</strong>
+              <input id="diameter" type="range" min="4" max="80" step="1" value="10">
             </label>
             <label>
               Örgü açısı <strong id="angleValue">34°</strong>
@@ -48,12 +48,19 @@
               <input id="strandWidth" type="range" min="80" max="190" step="5" value="100">
             </label>
             <label>
-              Tel sayısı <strong id="filamentCountValue">30</strong>
+              Tel sayısı <strong id="filamentCountValue">25</strong>
               <input id="filamentCount" type="range" min="8" max="40" step="1" value="25">
             </label>
             <label>
-              Denye <strong id="denierValue">1300D</strong>
+              Denye <strong id="denierValue">1000D</strong>
               <input id="denier" type="range" min="300" max="3000" step="100" value="1000">
+            </label>
+            <label>
+              Halat malzemesi
+              <select id="materialProfile">
+                <option value="polyester_satin" selected>Polyester saten</option>
+                <option value="polip_rope">Polip halat</option>
+              </select>
             </label>
             <label>
               Üst-alt düzeni
@@ -91,7 +98,9 @@
               </div>
               <button id="toggleSpin" type="button">Döndür</button>
             </div>
-            <div id="threeMount" class="three-mount"></div>
+            <div id="threeMount" class="three-mount">
+              <canvas id="threeRuler" class="measurement-ruler" aria-hidden="true"></canvas>
+            </div>
           </div>
 
           <div class="canvas-card">
@@ -132,6 +141,6 @@
       </div>
     </div>
 
-    <script type="module" src="/app.js?v=20260827-softbox-satin"></script>
+    <script type="module" src="/app.js?v=20260827-mm-ruler"></script>
   </body>
 </html>

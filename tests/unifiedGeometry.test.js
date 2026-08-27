@@ -31,6 +31,7 @@ function basePayload() {
     strandWidthScale: 1,
     filamentCount: 25,
     denier: 1000,
+    denierScale: 0.7,
     crossingMode: "diamond",
     visibleRows: 8,
     carriers: Array.from({ length: 16 }, (_, index) => ({
@@ -100,6 +101,8 @@ test("every bobbin remains one continuous S or Z carrier", async () => {
   assert.ok(rope.surfaceBaseRadius < rope.radius);
   assert.equal(rope.filamentCount, 25);
   assert.equal(rope.denier, 1000);
+  assert.equal(rope.denierScale, 0.7);
+  assert.equal(rope.effectiveDenier, 700);
   assert.ok(rope.yarns.every((yarn) =>
     yarn.mesh.vertices.every(Number.isFinite) && yarn.mesh.indices.length > 0
   ));
@@ -107,6 +110,30 @@ test("every bobbin remains one continuous S or Z carrier", async () => {
     rope.yarns.filter((yarn) => yarn.color === "#e11912").map((yarn) => yarn.carrierNo),
     [1, 3]
   );
+});
+
+test("polyester denier calibration reduces package area without changing topology", async () => {
+  const [full, calibrated] = await Promise.all([
+    runGeometry({ ...basePayload(), mode: "rope", denierScale: 1 }),
+    runGeometry({ ...basePayload(), mode: "rope", denierScale: 0.7 })
+  ]);
+
+  assert.equal(calibrated.surfacePieceCount, full.surfacePieceCount);
+  assert.ok(Math.abs(calibrated.derivedDimensions.polymerAreaMm2 / full.derivedDimensions.polymerAreaMm2 - 0.7) < 1e-9);
+  assert.ok(calibrated.yarnThickness < full.yarnThickness);
+});
+
+test("material library preserves accepted Polip and calibrated Polyester profiles", async () => {
+  const [polip, polyester] = await Promise.all([
+    readFile("data/materials/polip_rope.json", "utf8").then(JSON.parse),
+    readFile("data/materials/polyester_satin.json", "utf8").then(JSON.parse)
+  ]);
+  assert.equal(polip.materialProfileId, "polip_rope");
+  assert.equal(polip.status, "user_accepted");
+  assert.equal(polip.denierScale, 1);
+  assert.equal(polyester.materialProfileId, "polyester_satin");
+  assert.equal(polyester.denierScale, 0.7);
+  assert.ok(polyester.optics.sheen > polip.optics.sheen);
 });
 
 test("diameter and braid angle change dimensions without changing topology", async () => {
@@ -133,14 +160,23 @@ test("server and browser expose only the unified geometry endpoint", async () =>
   assert.match(server, /scripts.*braid_geometry\.py/);
   assert.match(server, /\/api\/braid-geometry/);
   assert.doesNotMatch(server, /texgen_braid_mesh|\/api\/texgen-braid/);
+  assert.doesNotMatch(server, /analyze-image|pattern\/solve|pattern\/predict|pattern\/simulate/);
+  assert.doesNotMatch(server, /braidPredictor|braidSurfaceSimulator|patternSolver/);
+  assert.match(server, /materialProfileId/);
+  assert.match(server, /payload\.denierScale = materialProfile\.denierScale/);
+  assert.match(server, /materialProfile,/);
   assert.match(browser, /\/api\/braid-geometry/);
-  assert.match(browser, /new THREE\.RectAreaLight\(0xfffdf8, \.62, 18, 8\)/);
-  assert.match(browser, /roughness: \.50/);
+  assert.match(browser, /materialProfileId: ui\.materialProfile\.value/);
+  assert.match(browser, /applyMaterialLighting\(mesh\.materialProfile\)/);
+  assert.match(browser, /const optics = profile\.optics/);
+  assert.match(browser, /roughness: Number\(optics\.roughness/);
   assert.match(browser, /specularIntensityMap: fiberMaps\.specular/);
-  assert.match(browser, /specularIntensity: \.52/);
-  assert.match(browser, /anisotropy: \.84/);
+  assert.match(browser, /specularIntensity: Number\(optics\.specularIntensity/);
+  assert.match(browser, /anisotropy: Number\(optics\.anisotropy/);
   assert.match(browser, /rgb\(255,128,230\)/);
-  assert.match(browser, /geometryMesh\.length \* 1\.24, 28, 44/);
+  assert.match(browser, /geometryMesh\.length \* 2\.15, 52, 80/);
+  assert.match(browser, /drawMeasurementRulers/);
+  assert.match(browser, /projectedPixelsPerMillimeter/);
   assert.doesNotMatch(browser, /\/api\/texgen-braid|requestTexgenMesh/);
   assert.doesNotMatch(browser, /polyesterProofVariant|legacyMaterial|bundle-v\d+/);
 });

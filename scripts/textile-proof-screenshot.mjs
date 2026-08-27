@@ -4,6 +4,7 @@ import { chromium } from "playwright-core";
 const outputDir = process.env.OUTPUT_DIR || "proofs/current-rope";
 const baseUrl = process.env.BASE_URL || "http://127.0.0.1:3217/";
 const requestedBraidAngle = Number(process.env.BRAID_ANGLE || 0);
+const requestedMaterialProfile = process.env.MATERIAL_PROFILE || "";
 mkdirSync(outputDir, { recursive: true });
 
 const browser = await chromium.launch();
@@ -26,7 +27,11 @@ page.on("response", async (response) => {
     minimumCrossingEnvelopeClearance: mesh.minimumCrossingEnvelopeClearance,
     contactWidthConstraint: mesh.contactWidthConstraint,
     minimumContactAreaRetention: mesh.minimumContactAreaRetention,
-    ringSegments: mesh.ringSegments
+    ringSegments: mesh.ringSegments,
+    materialProfileId: mesh.materialProfile?.materialProfileId,
+    denier: mesh.denier,
+    denierScale: mesh.denierScale,
+    effectiveDenier: mesh.effectiveDenier
   };
 });
 await page.goto(baseUrl, { waitUntil: "networkidle" });
@@ -37,11 +42,19 @@ await page.waitForFunction(
   null,
   { timeout: 60000 }
 );
+let settingsChanged = false;
 if (requestedBraidAngle >= 24 && requestedBraidAngle <= 68) {
   await page.locator("#braidAngle").evaluate((control, value) => {
     control.value = String(value);
     control.dispatchEvent(new Event("input", { bubbles: true }));
   }, requestedBraidAngle);
+  settingsChanged = true;
+}
+if (requestedMaterialProfile) {
+  await page.locator("#materialProfile").selectOption(requestedMaterialProfile);
+  settingsChanged = true;
+}
+if (settingsChanged) {
   await page.locator("#generateBraid").click();
   await page.waitForFunction(
     () => document.querySelector("#statusPill")?.textContent === "Geometri hazır",
@@ -116,6 +129,7 @@ const report = {
   generatedAt: new Date().toISOString(),
   sourceUrl: baseUrl,
   braidAngle: requestedBraidAngle || null,
+  requestedMaterialProfile: requestedMaterialProfile || null,
   geometry: geometryReport,
   screenshots: {
     normal: normalStats,

@@ -299,6 +299,7 @@ input[type="color"] {
 }
 
 .three-mount {
+  position: relative;
   height: 520px;
   border-radius: 8px;
   overflow: hidden;
@@ -318,6 +319,13 @@ input[type="color"] {
   display: block;
   width: 100% !important;
   height: 100% !important;
+}
+
+.three-mount .measurement-ruler {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
 }
 
 #patternCanvas {

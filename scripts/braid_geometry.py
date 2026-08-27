@@ -63,15 +63,17 @@ def carrier_dimensions(params):
     diameter = float(clamp(float(params.get("diameterMm", 16)), 4, 80))
     angle = float(clamp(float(params.get("braidAngle", 34)), 24, 68))
     denier = float(clamp(float(params.get("denier", 1000)), 300, 3000))
+    denier_scale = float(clamp(float(params.get("denierScale", 1.0)), 0.4, 1.2))
+    effective_denier = denier * denier_scale
     ends = float(clamp(float(params.get("filamentCount", 25)), 8, 40))
     width_scale = float(clamp(float(params.get("strandWidthScale", 1.0)), 0.75, 2.2))
-    polymer_area = ((denier * ends * 1e-3 / 9000.0) / PET_DENSITY_KG_M3) * 1e6
+    polymer_area = ((effective_denier * ends * 1e-3 / 9000.0) / PET_DENSITY_KG_M3) * 1e6
     packed_area = polymer_area / PACKING_FRACTION
     radius = diameter * 0.5
     family_count = carrier_count // 2
     circumferential_pitch = math.tau * radius / family_count
     normal_pitch = circumferential_pitch * math.cos(math.radians(angle))
-    package_mass_scale = ends * denier / 25000.0
+    package_mass_scale = ends * effective_denier / 25000.0
     mass_bias = clamp(1.0 + 0.04 * (package_mass_scale ** 0.35 - 1.0), 0.96, 1.07)
     width = normal_pitch * BASELINE_WIDTH_PITCH_RATIO * width_scale * mass_bias
     thickness = (
@@ -92,6 +94,8 @@ def carrier_dimensions(params):
         "surfaceBaseRadiusMm": surface_base_radius,
         "braidAngleDeg": angle,
         "denier": int(round(denier)),
+        "denierScale": denier_scale,
+        "effectiveDenier": int(round(effective_denier)),
         "endsPerCarrier": int(round(ends)),
         "polymerAreaMm2": polymer_area,
         "packedAreaMm2": packed_area,
@@ -413,6 +417,8 @@ def common_report(dimensions, ring_segments):
         "yarnThickness": dimensions["thicknessMm"],
         "filamentCount": dimensions["endsPerCarrier"],
         "denier": dimensions["denier"],
+        "denierScale": dimensions["denierScale"],
+        "effectiveDenier": dimensions["effectiveDenier"],
         "packageMassScale": dimensions["packageMassScale"],
         "derivedDimensions": dimensions,
     }

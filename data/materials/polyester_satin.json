@@ -1,0 +1,36 @@
+{
+  "materialProfileId": "polyester_satin",
+  "displayName": "Polyester saten",
+  "status": "visual_candidate",
+  "denierScale": 0.70,
+  "optics": {
+    "roughness": 0.42,
+    "sheen": 0.36,
+    "sheenRoughness": 0.68,
+    "sheenWhiteMix": 0.42,
+    "specularIntensity": 0.58,
+    "specularWhiteMix": 0.24,
+    "anisotropy": 0.90,
+    "bumpScale": 0.0026,
+    "bumpMin": 0.0012,
+    "bumpMax": 0.0045,
+    "normalScale": [0.010, 0.10]
+  },
+  "texture": {
+    "colorSatinAmplitude": 10,
+    "roughnessBase": 218,
+    "roughnessFiber": 30,
+    "roughnessSatin": 16,
+    "specularBase": 54,
+    "specularFiber": 52,
+    "specularSatin": 30
+  },
+  "lighting": {
+    "exposure": 1.08,
+    "hemisphere": 0.90,
+    "key": 0.76,
+    "fill": 0.50,
+    "rim": 0.28,
+    "softbox": 0.78
+  }
+}

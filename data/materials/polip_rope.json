@@ -1,0 +1,36 @@
+{
+  "materialProfileId": "polip_rope",
+  "displayName": "Polip halat",
+  "status": "user_accepted",
+  "denierScale": 1.0,
+  "optics": {
+    "roughness": 0.50,
+    "sheen": 0.28,
+    "sheenRoughness": 0.76,
+    "sheenWhiteMix": 0.34,
+    "specularIntensity": 0.52,
+    "specularWhiteMix": 0.18,
+    "anisotropy": 0.84,
+    "bumpScale": 0.003,
+    "bumpMin": 0.0015,
+    "bumpMax": 0.005,
+    "normalScale": [0.012, 0.12]
+  },
+  "texture": {
+    "colorSatinAmplitude": 8,
+    "roughnessBase": 225,
+    "roughnessFiber": 24,
+    "roughnessSatin": 12,
+    "specularBase": 46,
+    "specularFiber": 44,
+    "specularSatin": 24
+  },
+  "lighting": {
+    "exposure": 1.04,
+    "hemisphere": 0.92,
+    "key": 0.78,
+    "fill": 0.46,
+    "rim": 0.24,
+    "softbox": 0.62
+  }
+}

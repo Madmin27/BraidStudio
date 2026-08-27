@@ -1,0 +1,55 @@
+{
+  "generatedAt": "2026-08-27T15:55:49.033Z",
+  "sourceUrl": "https://braidstudio.minen.com.tr/",
+  "braidAngle": 32,
+  "requestedMaterialProfile": "polyester_satin",
+  "geometry": {
+    "geometryModel": "unified_carrier_geometry",
+    "crossingDepthModel": "quintic_C2_layer_exchange",
+    "crossingDeformationModel": "continuous_across_width_saddle_field",
+    "crossingEdgeTimingModel": "exact_unwrapped_line_intersection",
+    "cylindricalSweepModel": "centerline_first_local_frame_sweep",
+    "crossSectionFrameModel": "actual_3d_path_orthonormal_transport",
+    "crossSectionOrder": 2,
+    "carrierPathModel": "one_continuous_bundle_per_carrier",
+    "piecesPerCarrier": 1,
+    "surfacePieceCount": 16,
+    "minimumCrossingEnvelopeClearance": 0,
+    "contactWidthConstraint": "full_pitch_no_gap_width",
+    "minimumContactAreaRetention": 0.8987940907970416,
+    "ringSegments": 24,
+    "materialProfileId": "polyester_satin",
+    "denier": 1000,
+    "denierScale": 0.7,
+    "effectiveDenier": 700
+  },
+  "screenshots": {
+    "normal": {
+      "nonTransparent": 14400,
+      "dark": 331,
+      "bright": 11607,
+      "total": 14400
+    },
+    "generated": {
+      "nonTransparent": 14400,
+      "dark": 336,
+      "bright": 11746,
+      "total": 14400
+    },
+    "close": {
+      "nonTransparent": 14400,
+      "dark": 261,
+      "bright": 10615,
+      "total": 14400
+    },
+    "mobile": {
+      "nonTransparent": 14400,
+      "dark": 140,
+      "bright": 11480,
+      "total": 14400
+    }
+  },
+  "accepted": false,
+  "deployed": true,
+  "acceptanceNote": "User visual acceptance is still required."
+}
