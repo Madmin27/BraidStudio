@@ -1,0 +1,33 @@
+{
+  "checkpoint": "single_crossing",
+  "accepted": false,
+  "parameters": {
+    "denierPerEnd": 1000.0,
+    "endsPerCarrier": 25,
+    "braidAngleDeg": 34.0
+  },
+  "derived": {
+    "polymerAreaMm2": 2.0128824476650564,
+    "packedAreaMm2": 3.870927783971262,
+    "widthMm": 5.00063682717856,
+    "thicknessMm": 0.8506450163414204,
+    "aspectRatio": 5.878641185351366
+  },
+  "contact": {
+    "contactHalfLengthMm": 5.393360553625076,
+    "transitionLengthMm": 2.126612540853551,
+    "centerSeparationAtCrossingMm": 0.7665547140536216
+  },
+  "topology": {
+    "continuousCarrierObjects": 2,
+    "crossingCount": 1,
+    "topCarrier": 1,
+    "underCarrier": 2,
+    "tiledGeometry": false
+  },
+  "collision": {
+    "intersectingTrianglePairs": 0,
+    "passes": true
+  },
+  "scope": "One isolated crossing only; no repeated cells and no full-rope geometry."
+}

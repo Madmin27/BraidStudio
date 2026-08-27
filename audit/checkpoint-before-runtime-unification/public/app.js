@@ -388,7 +388,9 @@ function initThree() {
   state.scene.add(rim);
   const polyesterStrip = new THREE.RectAreaLight(
     0xfffbf4,
-    3.2,
+    polyesterProofVariant() === "current"
+      ? 0
+      : (polyesterProofVariant() === "textile" ? 3.2 : 5.5),
     10,
     1.2
   );
@@ -411,6 +413,13 @@ function clearRopeGroup() {
   }
 }
 
+function polyesterProofVariant() {
+  const requested = new URLSearchParams(window.location.search).get("polyesterProof");
+  return requested === "current" || requested === "ribbon" || requested === "strong" || requested === "geometry" || requested === "textile"
+    ? requested
+    : "textile";
+}
+
 function geometryMode() {
   return new URLSearchParams(window.location.search).get("geometryMode") === "crossing"
     ? "crossing"
@@ -427,7 +436,7 @@ function geometryPayload(result) {
     strandWidthScale: result.strandWidthScale,
     filamentCount: result.filamentCount,
     denier: result.denier,
-    ribbonShader: true,
+    ribbonShader: polyesterProofVariant() !== "current",
     crossingMode: ui.crossingMode.value,
     flip: state.flip,
     baseColor: mostCommonCarrierColor(result),
@@ -490,23 +499,18 @@ async function requestGeometryMesh(result) {
 function renderGeometryThree(mesh) {
   clearRopeGroup();
   state.renderer.localClippingEnabled = false;
+  const proofVariant = polyesterProofVariant();
   for (const yarn of mesh.yarns || []) {
     const geometry = geometryFromCarrierMesh(yarn.mesh);
     const material = getCarrierMaterial(yarn.color || defaultBase, mesh);
     material.clippingPlanes = null;
     const object = new THREE.Mesh(geometry, material);
-    object.castShadow = false;
+    // In ribbon proof mode the carrier depth and curved profile already show
+    // the over-under order. Hard self shadows produce the vertical black seam
+    // seen at contact edges, so reserve those shadows for the legacy renderer.
+    object.castShadow = proofVariant === "current";
     object.receiveShadow = true;
     state.ropeGroup.add(object);
-  }
-
-  if (mesh.crossingWindow) {
-    state.viewRotation = { x: 0, y: 0, z: 0 };
-    state.zoom = 30;
-    state.camera.position.set(0, 0, state.zoom);
-    state.camera.lookAt(0, 0, 0);
-    state.ropeGroup.position.set(0, 0, 0);
-    return;
   }
 
   if (mesh.cylindricalWeave) {
@@ -521,20 +525,26 @@ function renderGeometryThree(mesh) {
     }
 
     const sheathColor = new THREE.Color(mostCommonCarrierColor(state.lastResult)).multiplyScalar(.98);
-    const sheathMaterial = new THREE.MeshBasicMaterial({
-      color: sheathColor,
-      side: THREE.DoubleSide
-    });
-    const sheathRadius = Math.max(
-      mesh.radius * .72,
-      (mesh.surfaceBaseRadius || mesh.radius) - mesh.yarnThickness * .5
-    );
+    const sheathMaterial = proofVariant === "current"
+      ? new THREE.MeshStandardMaterial({
+          color: sheathColor,
+          roughness: .92,
+          metalness: 0,
+          side: THREE.DoubleSide
+        })
+      : new THREE.MeshBasicMaterial({
+          color: sheathColor,
+          side: THREE.DoubleSide
+        });
+    const sheathRadius = proofVariant === "current"
+      ? mesh.radius * .90
+      : Math.max(mesh.radius * .78, mesh.radius - mesh.yarnThickness * .58);
     const sheath = new THREE.Mesh(
       new THREE.CylinderGeometry(sheathRadius, sheathRadius, mesh.length, 96, 1, true),
       sheathMaterial
     );
     sheath.rotation.z = Math.PI / 2;
-    sheath.receiveShadow = false;
+    sheath.receiveShadow = proofVariant === "current";
     state.ropeGroup.add(sheath);
 
     const coreMaterial = new THREE.MeshStandardMaterial({
@@ -609,30 +619,54 @@ function getCarrierMaterial(color, mesh) {
   const materialScale = Math.sqrt(denier / 1000);
   const filamentDiameterScale = mesh.filamentDiameterScale
     ?? clamp(Math.sqrt(denier / 1000), .45, 1.75);
-  const key = `${color.toLowerCase()}:carrier-polyester:${filamentCount}:${denier}`;
+  const proofVariant = polyesterProofVariant();
+  const legacyMaterial = proofVariant === "current";
+  const key = `${color.toLowerCase()}:carrier-polyester:${proofVariant}:${filamentCount}:${denier}`;
   if (state.materialCache.has(key)) return state.materialCache.get(key);
-  const fiberMaps = makePolyesterFiberMaps(filamentCount, denier);
+  if (proofVariant === "geometry") {
+    const geometryMaterial = new THREE.MeshStandardMaterial({
+      color: new THREE.Color(color),
+      emissive: new THREE.Color(color),
+      emissiveIntensity: .08,
+      roughness: .82,
+      metalness: 0,
+      side: THREE.DoubleSide
+    });
+    geometryMaterial.userData.sharedBraidMaterial = true;
+    state.materialCache.set(key, geometryMaterial);
+    return geometryMaterial;
+  }
+  const fiberMaps = makePolyesterFiberMaps(filamentCount, denier, proofVariant);
+  const strongSheen = proofVariant === "strong";
+  const textileSurface = proofVariant === "textile";
   const material = new THREE.MeshPhysicalMaterial({
     color: new THREE.Color(color),
     emissive: new THREE.Color(color),
-    emissiveIntensity: .012,
+    emissiveIntensity: legacyMaterial ? 0 : (textileSurface ? .012 : .06),
     map: fiberMaps.color,
     bumpMap: fiberMaps.bump,
-    bumpScale: clamp(.006 * materialScale * filamentDiameterScale, .003, .011),
+    bumpScale: legacyMaterial
+      ? clamp(.018 * materialScale * filamentDiameterScale, .006, .034)
+      : clamp((textileSurface ? .006 : .015) * materialScale * filamentDiameterScale, .003, textileSurface ? .011 : .026),
     normalMap: fiberMaps.normal,
-    normalScale: new THREE.Vector2(.025, .24),
+    normalScale: legacyMaterial
+      ? new THREE.Vector2(.88, .16)
+      : new THREE.Vector2(
+          textileSurface ? .025 : .12,
+          textileSurface ? .24 : (strongSheen ? .94 : .78)
+        ),
     roughnessMap: fiberMaps.roughness,
-    roughness: .24,
+    roughness: legacyMaterial ? .78 : (textileSurface ? .24 : (strongSheen ? .25 : .36)),
     metalness: 0,
-    sheen: .10,
-    sheenRoughness: .62,
-    sheenColor: new THREE.Color(color).lerp(new THREE.Color(0xffffff), .82),
+    sheen: legacyMaterial ? .96 : (textileSurface ? .10 : (strongSheen ? 1 : .84)),
+    sheenRoughness: legacyMaterial ? .4 : (textileSurface ? .62 : (strongSheen ? .24 : .34)),
+    sheenColor: new THREE.Color(color).lerp(new THREE.Color(0xffffff), legacyMaterial ? .72 : .82),
     specularIntensityMap: fiberMaps.specular,
-    specularIntensity: .90,
+    specularIntensity: legacyMaterial ? .98 : (textileSurface ? .90 : (strongSheen ? .78 : .58)),
     specularColor: new THREE.Color(0xffffff),
-    anisotropy: .98,
-    anisotropyMap: fiberMaps.anisotropy,
-    anisotropyRotation: 0,
+    anisotropy: legacyMaterial ? .96 : (textileSurface ? .98 : (strongSheen ? .97 : .92)),
+    anisotropyMap: legacyMaterial ? null : fiberMaps.anisotropy,
+    anisotropyRotation: legacyMaterial ? Math.PI / 2 : 0,
     side: THREE.DoubleSide
   });
   material.userData.sharedBraidMaterial = true;
@@ -640,14 +674,17 @@ function getCarrierMaterial(color, mesh) {
   return material;
 }
 
-function makePolyesterFiberMaps(filamentCount, denier) {
-  const mapKey = `carrier-polyester:${filamentCount}:${denier}`;
+function makePolyesterFiberMaps(filamentCount, denier, proofVariant = "ribbon") {
+  const mapKey = `bundle-v50:${proofVariant}:${filamentCount}:${denier}`;
   if (state.polyesterFiberMaps.has(mapKey)) return state.polyesterFiberMaps.get(mapKey);
-  const width = 512;
-  const height = 256;
+  const legacyMaterial = proofVariant === "current";
+  const textileSurface = proofVariant === "textile";
+  const width = legacyMaterial ? 256 : 512;
+  const height = legacyMaterial ? 512 : 256;
   const strandCount = clamp(Math.round(filamentCount), 8, 40);
-  const strandSpacing = height / strandCount;
+  const strandSpacing = (legacyMaterial ? width : height) / strandCount;
   const denierScale = Math.sqrt(denier / 1000);
+  const filamentDiameterScale = clamp(denierScale, .45, 1.75);
   const colorCanvas = document.createElement("canvas");
   const bumpCanvas = document.createElement("canvas");
   const normalCanvas = document.createElement("canvas");
@@ -667,32 +704,65 @@ function makePolyesterFiberMaps(filamentCount, denier) {
   const bumpImage = bumpCtx.createImageData(width, height);
   const roughnessImage = roughnessCtx.createImageData(width, height);
   const specularImage = specularCtx.createImageData(width, height);
-  const bumpAmplitude = clamp(54 * denierScale, 24, 78);
+  const bumpAmplitude = legacyMaterial
+    ? clamp(112 * denierScale * filamentDiameterScale, 36, 172)
+    : clamp((textileSurface ? 54 : 108) * denierScale, 24, textileSurface ? 78 : 148);
 
   for (let y = 0; y < height; y += 1) {
     for (let x = 0; x < width; x += 1) {
-      const wave = Math.sin(x * .022 + y * .006) * strandSpacing * .055;
-      const wrapped = mod(y + wave, height);
+      const longitudinalGlint = legacyMaterial
+        ? Math.sin(y * .071) * 1.7 + Math.sin(y * .019) * 1.2
+        : Math.sin(x * .043) * 1.4 + Math.sin(x * .013) * .9;
+      const wave = legacyMaterial
+        ? Math.sin(y * .028 + x * .004) * strandSpacing * .075
+        : Math.sin(x * .022 + y * .006) * strandSpacing * .055;
+      const wrapped = legacyMaterial ? mod(x + wave, width) : mod(y + wave, height);
       const strandPosition = wrapped / strandSpacing;
       const strandIndex = Math.floor(strandPosition);
       const local = strandPosition - strandIndex;
-      const ridge = Math.pow(Math.sin(Math.PI * local), .82);
-      const fiberCore = Math.pow(Math.sin(Math.PI * local), 2.15);
-      const capillaryLine = Math.pow(Math.sin(Math.PI * local), 16);
-      const capillaryGroove = Math.pow(Math.abs(Math.cos(Math.PI * local)), 18);
+      const ridge = Math.pow(Math.sin(Math.PI * local), legacyMaterial ? .72 : .82);
+      const fiberCore = Math.pow(
+        Math.sin(Math.PI * local),
+        legacyMaterial ? 5.5 : (textileSurface ? 2.15 : 4.2)
+      );
+      const capillaryLine = textileSurface
+        ? Math.pow(Math.sin(Math.PI * local), 16)
+        : 0;
+      const capillaryGroove = textileSurface
+        ? Math.pow(Math.abs(Math.cos(Math.PI * local)), 18)
+        : 0;
       const contactShadow = Math.pow(1 - ridge, 3);
       const filamentTone = (fract(Math.sin((strandIndex + 1) * 91.713) * 43758.5453) - .5) * 7;
-      const satinBand = .5 + .34 * Math.sin(x * .031 + strandIndex * .47)
-        + .16 * Math.sin(x * .009 - strandIndex * .23);
-      const colorValue = clampByte(
-        235 + ridge * 6 - contactShadow * 3 + filamentTone * .16
-        + capillaryLine * 8 - capillaryGroove * 7 + satinBand * fiberCore * 20
-      );
+      const silkGlint = legacyMaterial
+        ? fiberCore * (25 + longitudinalGlint * 1.8)
+        : fiberCore * (6 + longitudinalGlint * 1.1);
+      const satinBand = textileSurface
+        ? .5 + .34 * Math.sin(x * .031 + strandIndex * .47)
+          + .16 * Math.sin(x * .009 - strandIndex * .23)
+        : 0;
+      const colorValue = legacyMaterial
+        ? clampByte(198 + ridge * 31 - contactShadow * 22 + filamentTone + silkGlint)
+        : textileSurface
+          ? clampByte(
+              235 + ridge * 6 - contactShadow * 3 + filamentTone * .16
+              + capillaryLine * 8 - capillaryGroove * 7 + satinBand * fiberCore * 20
+            )
+          : clampByte(203 + ridge * 45 - contactShadow * 18 + filamentTone * .42 + silkGlint);
       const bumpValue = clampByte(
-        116 + ridge * bumpAmplitude + capillaryLine * 4 - capillaryGroove * 14
+        (textileSurface ? 116 : 62) + ridge * bumpAmplitude
+        + capillaryLine * (textileSurface ? 4 : 0)
+        - capillaryGroove * (textileSurface ? 14 : 0)
       );
-      const roughnessValue = clampByte(214 - fiberCore * (28 + satinBand * 20) - ridge * 6);
-      const specularValue = clampByte(92 + fiberCore * (78 + satinBand * 48) + capillaryLine * 18);
+      const roughnessValue = legacyMaterial
+        ? clampByte(236 - fiberCore * 164 - ridge * 18)
+        : textileSurface
+          ? clampByte(214 - fiberCore * (28 + satinBand * 20) - ridge * 6)
+          : clampByte(202 - fiberCore * 72 - ridge * 18);
+      const specularValue = legacyMaterial
+        ? clampByte(54 + fiberCore * 198 + ridge * 20)
+        : textileSurface
+          ? clampByte(92 + fiberCore * (78 + satinBand * 48) + capillaryLine * 18)
+          : clampByte(84 + fiberCore * 132 + ridge * 18);
       const offset = (y * width + x) * 4;
 
       colorImage.data[offset] = colorValue;
@@ -754,7 +824,7 @@ function makePolyesterFiberMaps(filamentCount, denier) {
   for (const texture of [colorTexture, bumpTexture, normalTexture, roughnessTexture, specularTexture, anisotropyTexture]) {
     texture.wrapS = THREE.RepeatWrapping;
     texture.wrapT = THREE.RepeatWrapping;
-    texture.repeat.set(3.5, 1);
+    texture.repeat.set(legacyMaterial ? 2 : 3.5, legacyMaterial ? 1.35 : 1);
     texture.anisotropy = Math.min(12, state.renderer.capabilities.getMaxAnisotropy?.() || 1);
   }
   colorTexture.colorSpace = THREE.SRGBColorSpace;

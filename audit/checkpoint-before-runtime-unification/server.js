@@ -1,7 +1,7 @@
 import { createServer } from "node:http";
 import { spawn } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
-import { appendFile, mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { extname, join, normalize } from "node:path";
 import { fileURLToPath } from "node:url";
 import { generateCandidateColorMap } from "./server/lib/candidateColorGenerator.js";
@@ -16,8 +16,6 @@ const publicDir = join(__dirname, "public");
 const srcDir = join(__dirname, "src");
 const dataDir = join(__dirname, "data");
 const geometryScript = join(__dirname, "scripts", "braid_geometry.py");
-const runtimeAuditDir = join(__dirname, "audit");
-const runtimeAuditFile = join(runtimeAuditDir, "runtime-files.jsonl");
 const analysisCacheFile = join(dataDir, "analysis-cache.json");
 const analysisPromptVersion = "hybrid-v1";
 
@@ -42,18 +40,6 @@ const contentTypes = {
   ".woff2": "font/woff2",
   ".ttf": "font/ttf"
 };
-
-async function auditRuntime(event) {
-  try {
-    await mkdir(runtimeAuditDir, { recursive: true });
-    await appendFile(runtimeAuditFile, `${JSON.stringify({
-      at: new Date().toISOString(),
-      ...event
-    })}\n`);
-  } catch (error) {
-    console.error("runtime_audit_failed", error.message);
-  }
-}
 
 function loadEnvFile(path) {
   const values = parseEnvFile(path);
@@ -775,6 +761,65 @@ function parsePatternFlow(text) {
   return "Paralel_Spiral";
 }
 
+async function legacyAnalyzeWithOpenRouter({ imageHash, mimeType, dataBase64 }) {
+  const { openRouterApiKey, openRouterModel, appUrl } = getRuntimeConfig();
+  if (!openRouterApiKey) {
+    throw Object.assign(new Error("missing_openrouter_api_key"), { statusCode: 503 });
+  }
+
+  const prompt = [
+    "Analyze this braid/rope product image only as a technical pattern fingerprint classifier.",
+    "Return only compact JSON with keys:",
+    "predictedSignature, confidenceScore, structuralAnalysis, colors, dominantColor, accentColors, material, warnings.",
+    "predictedSignature must be one of: plain_weave, diagonal_rib, single_spiral_tracer, dual_counter_spiral, spiral_tracer, block_stripe, block_striped_segment, unknown.",
+    "confidenceScore must be a number between 0 and 1.",
+    "structuralAnalysis must contain carrierCount, symmetry, primaryApplication, braidLogic.",
+    "carrierCount must be one of 8, 12, 16, 24, 32 only when visible repeat/strand evidence supports it; otherwise use null and add a warning.",
+    "Estimate carrierCount from visible braid frequency: if there are about 10 or more base-white strands between adjacent tracer diagonals, prefer 24 or 32 over 16.",
+    "For tight rope where strands pass in paired over-under bands, set structuralAnalysis.braidLogic to 2_over_2.",
+    "For white rope with adjacent yellow/black tracer blocks, prefer spiral_tracer with braidLogic 2_over_2 unless the visual clearly shows one-over-one.",
+    "Do not default carrierCount to 16. Do not guess carrierCount from color count alone.",
+    "AI must not output recipeId, walkMap, carrier path or production-ready claims.",
+    "If carrier count is uncertain, set structuralAnalysis.carrierCount to null with lower confidence.",
+    "For white/blue braided rope with flecks/tracers, polyester is a reasonable material suggestion unless visual evidence says otherwise.",
+    "Final recipe is selected later by backend library solver and user confirmation."
+  ].join(" ");
+  const startedAt = Date.now();
+  const result = await callOpenRouter({
+    model: openRouterModel,
+    appUrl,
+    openRouterApiKey,
+      temperature: 0.1,
+    responseFormat: { type: "json_object" },
+    messages: [
+        {
+          role: "user",
+          content: [
+            { type: "text", text: prompt },
+            {
+              type: "image_url",
+              image_url: {
+                url: `data:${mimeType};base64,${dataBase64}`
+              }
+            }
+          ]
+        }
+      ]
+  });
+
+  return {
+    image_hash: imageHash,
+    provider: "openrouter",
+    model: openRouterModel,
+    prompt_version: analysisPromptVersion,
+    analyzed_at: new Date().toISOString(),
+    duration_ms: Date.now() - startedAt,
+    predictions: normalizeAnalysis(extractJson(result.text)),
+    raw_text: result.text,
+    usage: result.usage
+  };
+}
+
 async function handleAnalyzeImage(req, res) {
   const startedAt = Date.now();
   try {
@@ -1020,33 +1065,16 @@ function normalizeGeometryPayload(body = {}) {
 }
 
 async function handleBraidGeometry(req, res) {
-  const startedAt = Date.now();
   try {
     const body = await readRequestJson(req, 256 * 1024);
     const payload = normalizeGeometryPayload(body);
     const mesh = await runBraidGeometry(payload);
-    await auditRuntime({
-      type: "geometry",
-      status: "ok",
-      mode: payload.mode,
-      model: mesh.geometryModel,
-      carrierCount: mesh.carrierCount,
-      durationMs: Date.now() - startedAt,
-      files: ["server.js", "scripts/braid_geometry.py"]
-    });
     jsonResponse(res, 200, {
       ...mesh,
       productionGeometry: true,
       note: "Generated by the single BraidStudio carrier geometry core."
     });
   } catch (error) {
-    await auditRuntime({
-      type: "geometry",
-      status: "error",
-      durationMs: Date.now() - startedAt,
-      error: error.message || "braid_geometry_failed",
-      files: ["server.js", "scripts/braid_geometry.py"]
-    });
     jsonResponse(res, error.statusCode || 500, {
       error: error.message || "braid_geometry_failed",
       details: error.details || null
@@ -1109,13 +1137,6 @@ const server = createServer(async (req, res) => {
   try {
     const path = assetPath(req.url);
     const data = await readFile(path);
-    if ([".html", ".js", ".css"].includes(extname(path))) {
-      await auditRuntime({
-        type: "asset",
-        request: req.url,
-        file: path.slice(__dirname.length)
-      });
-    }
     res.writeHead(200, {
       "content-type": contentTypes[extname(path)] || "application/octet-stream",
       "cache-control": "no-store"

@@ -1,0 +1,43 @@
+{
+  "generatedAt": "2026-08-27T10:01:54.110Z",
+  "sourceUrl": "https://braidstudio.minen.com.tr/",
+  "geometry": {
+    "geometryModel": "unified_carrier_geometry",
+    "crossingDepthModel": "quintic_C2_layer_exchange",
+    "crossingDeformationModel": "continuous_across_width_saddle_field",
+    "crossingEdgeTimingModel": "exact_unwrapped_line_intersection",
+    "cylindricalSweepModel": "centerline_first_local_frame_sweep",
+    "crossSectionFrameModel": "actual_3d_path_orthonormal_transport",
+    "crossSectionOrder": 2,
+    "carrierPathModel": "one_continuous_bundle_per_carrier",
+    "piecesPerCarrier": 1,
+    "surfacePieceCount": 16,
+    "minimumCrossingEnvelopeClearance": 0,
+    "contactWidthConstraint": "full_pitch_no_gap_width",
+    "minimumContactAreaRetention": 0.8987940907970416,
+    "ringSegments": 24
+  },
+  "screenshots": {
+    "normal": {
+      "nonTransparent": 14400,
+      "dark": 1043,
+      "bright": 5664,
+      "total": 14400
+    },
+    "close": {
+      "nonTransparent": 14400,
+      "dark": 96,
+      "bright": 32,
+      "total": 14400
+    },
+    "mobile": {
+      "nonTransparent": 14400,
+      "dark": 1058,
+      "bright": 5347,
+      "total": 14400
+    }
+  },
+  "accepted": false,
+  "deployed": true,
+  "acceptanceNote": "User visual acceptance is still required."
+}
