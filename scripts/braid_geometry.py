@@ -19,7 +19,6 @@ CONTACT_CLEARANCE_MM = 0.002
 CONTACT_FACE_HALF_WIDTH_RATIO = 0.55
 TOW_EDGE_ROLL_RATIO = 0.0
 TOW_EDGE_ROLL_WIDTH_RATIO = 0.14
-BEAUTY_FIBER_RELIEF_RATIO = 0.012
 LAYER_TRANSITION_RATIO = 0.32
 BASELINE_WIDTH_PITCH_RATIO = 1.01
 BASELINE_THICKNESS_WIDTH_RATIO = 0.17010620750784015
@@ -300,6 +299,10 @@ def append_swept_mesh(points, dimensions, ring_segments, cylindrical, ribbon_sha
     exponent = 2.0 / SUPERELLIPSE_ORDER
     centers, outward_references = world_centers(points, dimensions, cylindrical)
     frames = transported_frames(centers, outward_references)
+    path_length_mm = sum(
+        math.dist(centers[index - 1], centers[index])
+        for index in range(1, len(centers))
+    )
 
     for ring, (point, center, frame) in enumerate(zip(points, centers, frames)):
         _, across_axis, outward_axis = frame
@@ -348,18 +351,6 @@ def append_swept_mesh(points, dimensions, ring_segments, cylindrical, ribbon_sha
             )
             outward_shape -= TOW_EDGE_ROLL_RATIO * edge_roll
             outward_offset = outward_shape * height * 0.5
-            lateral_position = 0.5 + across_shape * 0.5
-            fiber_phase = math.tau * dimensions["endsPerCarrier"] * lateral_position
-            fiber_relief = math.cos(fiber_phase)
-            fiber_edge_taper = math.sin(math.pi * lateral_position) ** 2
-            contact_relief = 1.0 - vertex_contact * 0.75
-            outward_offset += (
-                height
-                * BEAUTY_FIBER_RELIEF_RATIO
-                * fiber_relief
-                * fiber_edge_taper
-                * contact_relief
-            )
             saddle_offset = (
                 vertex_order - point["order"]
             ) * point["centerSeparation"] * 0.5
@@ -390,7 +381,13 @@ def append_swept_mesh(points, dimensions, ring_segments, cylindrical, ribbon_sha
             c = following_row + segment
             d = following_row + following
             indices.extend([a, c, b, b, c, d])
-    return {"vertices": vertices, "normals": normals, "uvs": uvs, "indices": indices}
+    return {
+        "vertices": vertices,
+        "normals": normals,
+        "uvs": uvs,
+        "indices": indices,
+        "pathLengthMm": path_length_mm,
+    }
 
 
 def common_report(dimensions, ring_segments):
@@ -525,9 +522,7 @@ def build_rope(params, dimensions):
     carrier_count = dimensions["carrierCount"]
     family_count = dimensions["familyCount"]
     topology = build_carrier_records(params, dimensions, params.get("visibleRows", 30))
-    # Full-rope transport stays below the live JSON budget. The browser beauty
-    # shell interpolates all 25 fiber strips from this continuous envelope.
-    ring_segments = 24
+    ring_segments = 24 if carrier_count <= 16 else (20 if carrier_count <= 32 else 16)
     yarns = [record_to_yarn(record, dimensions, ring_segments) for record in topology["records"]]
     report = common_report(dimensions, ring_segments)
     report.update({

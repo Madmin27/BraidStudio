@@ -5,6 +5,9 @@ const outputDir = process.env.OUTPUT_DIR || "proofs/current-rope";
 const baseUrl = process.env.BASE_URL || "http://127.0.0.1:3217/";
 const requestedBraidAngle = Number(process.env.BRAID_ANGLE || 0);
 const requestedMaterialProfile = process.env.MATERIAL_PROFILE || "";
+const requestedGeometryMode = process.env.GEOMETRY_MODE === "crossing" ? "crossing" : "rope";
+const sourceUrl = new URL(baseUrl);
+if (requestedGeometryMode === "crossing") sourceUrl.searchParams.set("geometryMode", "crossing");
 mkdirSync(outputDir, { recursive: true });
 
 const browser = await chromium.launch();
@@ -34,7 +37,7 @@ page.on("response", async (response) => {
     effectiveDenier: mesh.effectiveDenier
   };
 });
-await page.goto(baseUrl, { waitUntil: "networkidle" });
+await page.goto(sourceUrl.href, { waitUntil: "networkidle" });
 await page.evaluate(() => localStorage.clear());
 await page.reload({ waitUntil: "networkidle" });
 await page.waitForFunction(
@@ -63,6 +66,7 @@ if (settingsChanged) {
   );
 }
 await page.waitForTimeout(800);
+const runtimeAudit = await page.evaluate(() => window.__BRAIDSTUDIO_RUNTIME_AUDIT__ || null);
 
 const mount = page.locator("#threeMount");
 const normalBuffer = await mount.screenshot({ path: `${outputDir}/normal.png` });
@@ -109,7 +113,7 @@ await page.screenshot({
 
 const box = await mount.boundingBox();
 await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
-await page.mouse.wheel(0, -4200);
+await page.mouse.wheel(0, requestedGeometryMode === "crossing" ? -2600 : -4200);
 await page.waitForTimeout(500);
 const closeBuffer = await mount.screenshot({ path: `${outputDir}/close.png` });
 const closeStats = await measureScreenshot(closeBuffer);
@@ -127,10 +131,12 @@ const mobileStats = await measureScreenshot(mobileBuffer);
 
 const report = {
   generatedAt: new Date().toISOString(),
-  sourceUrl: baseUrl,
+  sourceUrl: sourceUrl.href,
   braidAngle: requestedBraidAngle || null,
   requestedMaterialProfile: requestedMaterialProfile || null,
+  requestedGeometryMode,
   geometry: geometryReport,
+  runtimeAudit,
   screenshots: {
     normal: normalStats,
     generated: generatedStats,
