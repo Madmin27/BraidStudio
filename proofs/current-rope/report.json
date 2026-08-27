@@ -1,6 +1,7 @@
 {
-  "generatedAt": "2026-08-27T10:01:54.110Z",
+  "generatedAt": "2026-08-27T10:32:13.215Z",
   "sourceUrl": "https://braidstudio.minen.com.tr/",
+  "braidAngle": null,
   "geometry": {
     "geometryModel": "unified_carrier_geometry",
     "crossingDepthModel": "quintic_C2_layer_exchange",
@@ -20,20 +21,26 @@
   "screenshots": {
     "normal": {
       "nonTransparent": 14400,
-      "dark": 1043,
-      "bright": 5664,
+      "dark": 150,
+      "bright": 6899,
+      "total": 14400
+    },
+    "generated": {
+      "nonTransparent": 14400,
+      "dark": 409,
+      "bright": 6829,
       "total": 14400
     },
     "close": {
       "nonTransparent": 14400,
-      "dark": 96,
-      "bright": 32,
+      "dark": 0,
+      "bright": 2064,
       "total": 14400
     },
     "mobile": {
       "nonTransparent": 14400,
-      "dark": 1058,
-      "bright": 5347,
+      "dark": 139,
+      "bright": 7482,
       "total": 14400
     }
   },

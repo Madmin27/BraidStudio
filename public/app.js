@@ -370,32 +370,26 @@ function initThree() {
   state.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   state.renderer.outputColorSpace = THREE.SRGBColorSpace;
   state.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  state.renderer.toneMappingExposure = 1.0;
+  state.renderer.toneMappingExposure = 1.04;
   ui.threeMount.appendChild(state.renderer.domElement);
 
-  state.scene.add(new THREE.HemisphereLight(0xffffff, 0x68716c, .55));
-  const key = new THREE.DirectionalLight(0xfff8ef, 1.35);
+  state.scene.add(new THREE.HemisphereLight(0xffffff, 0xaeb4b0, .92));
+  const key = new THREE.DirectionalLight(0xfffaf4, .78);
   key.position.set(4.5, 7, 6);
   key.castShadow = true;
   key.shadow.bias = -0.0001;
   key.shadow.normalBias = 0.025;
   state.scene.add(key);
-  const fill = new THREE.DirectionalLight(0xddeaff, .38);
+  const fill = new THREE.DirectionalLight(0xe7efff, .46);
   fill.position.set(-5, 1.5, 4);
   state.scene.add(fill);
-  const rim = new THREE.DirectionalLight(0xffffff, .68);
+  const rim = new THREE.DirectionalLight(0xffffff, .24);
   rim.position.set(-2, 5, -6);
   state.scene.add(rim);
-  const polyesterStrip = new THREE.RectAreaLight(
-    0xfffbf4,
-    3.2,
-    10,
-    1.2
-  );
-  polyesterStrip.position.set(0, 4.8, 5.4);
-  polyesterStrip.lookAt(0, 0, 0);
-  state.scene.add(polyesterStrip);
-
+  const satinSoftbox = new THREE.RectAreaLight(0xfffdf8, .62, 18, 8);
+  satinSoftbox.position.set(0, 7, 8);
+  satinSoftbox.lookAt(0, 0, 0);
+  state.scene.add(satinSoftbox);
   state.ropeGroup = new THREE.Group();
   state.scene.add(state.ropeGroup);
   installThreeInteractions();
@@ -609,7 +603,7 @@ function getCarrierMaterial(color, mesh) {
   const materialScale = Math.sqrt(denier / 1000);
   const filamentDiameterScale = mesh.filamentDiameterScale
     ?? clamp(Math.sqrt(denier / 1000), .45, 1.75);
-  const key = `${color.toLowerCase()}:carrier-polyester:${filamentCount}:${denier}`;
+  const key = `${color.toLowerCase()}:carrier-polyester-fiber-satin:${filamentCount}:${denier}`;
   if (state.materialCache.has(key)) return state.materialCache.get(key);
   const fiberMaps = makePolyesterFiberMaps(filamentCount, denier);
   const material = new THREE.MeshPhysicalMaterial({
@@ -618,19 +612,19 @@ function getCarrierMaterial(color, mesh) {
     emissiveIntensity: .012,
     map: fiberMaps.color,
     bumpMap: fiberMaps.bump,
-    bumpScale: clamp(.006 * materialScale * filamentDiameterScale, .003, .011),
+    bumpScale: clamp(.003 * materialScale * filamentDiameterScale, .0015, .005),
     normalMap: fiberMaps.normal,
-    normalScale: new THREE.Vector2(.025, .24),
+    normalScale: new THREE.Vector2(.012, .12),
     roughnessMap: fiberMaps.roughness,
-    roughness: .24,
+    roughness: .50,
     metalness: 0,
-    sheen: .10,
-    sheenRoughness: .62,
-    sheenColor: new THREE.Color(color).lerp(new THREE.Color(0xffffff), .82),
+    sheen: .28,
+    sheenRoughness: .76,
+    sheenColor: new THREE.Color(color).lerp(new THREE.Color(0xffffff), .34),
     specularIntensityMap: fiberMaps.specular,
-    specularIntensity: .90,
-    specularColor: new THREE.Color(0xffffff),
-    anisotropy: .98,
+    specularIntensity: .52,
+    specularColor: new THREE.Color(color).lerp(new THREE.Color(0xffffff), .18),
+    anisotropy: .84,
     anisotropyMap: fiberMaps.anisotropy,
     anisotropyRotation: 0,
     side: THREE.DoubleSide
@@ -641,7 +635,7 @@ function getCarrierMaterial(color, mesh) {
 }
 
 function makePolyesterFiberMaps(filamentCount, denier) {
-  const mapKey = `carrier-polyester:${filamentCount}:${denier}`;
+  const mapKey = `carrier-polyester-fiber-satin:${filamentCount}:${denier}`;
   if (state.polyesterFiberMaps.has(mapKey)) return state.polyesterFiberMaps.get(mapKey);
   const width = 512;
   const height = 256;
@@ -686,13 +680,15 @@ function makePolyesterFiberMaps(filamentCount, denier) {
         + .16 * Math.sin(x * .009 - strandIndex * .23);
       const colorValue = clampByte(
         235 + ridge * 6 - contactShadow * 3 + filamentTone * .16
-        + capillaryLine * 8 - capillaryGroove * 7 + satinBand * fiberCore * 20
+        + capillaryLine * 4 - capillaryGroove * 4 + satinBand * fiberCore * 8
       );
       const bumpValue = clampByte(
         116 + ridge * bumpAmplitude + capillaryLine * 4 - capillaryGroove * 14
       );
-      const roughnessValue = clampByte(214 - fiberCore * (28 + satinBand * 20) - ridge * 6);
-      const specularValue = clampByte(92 + fiberCore * (78 + satinBand * 48) + capillaryLine * 18);
+      const roughnessValue = clampByte(225 - fiberCore * (24 + satinBand * 12) - ridge * 4);
+      const specularValue = clampByte(
+        46 + fiberCore * (44 + satinBand * 24) + capillaryLine * 8
+      );
       const offset = (y * width + x) * 4;
 
       colorImage.data[offset] = colorValue;
@@ -742,7 +738,7 @@ function makePolyesterFiberMaps(filamentCount, denier) {
   const anisotropyCtx = anisotropyCanvas.getContext("2d");
   // R is anisotropy strength; G/B encode the tangent-space direction.
   // The yarn fibers follow mesh U/tangent, so use +X rather than bitangent.
-  anisotropyCtx.fillStyle = "rgb(255,255,128)";
+  anisotropyCtx.fillStyle = "rgb(255,128,230)";
   anisotropyCtx.fillRect(0, 0, anisotropyCanvas.width, anisotropyCanvas.height);
 
   const colorTexture = new THREE.CanvasTexture(colorCanvas);
@@ -800,7 +796,7 @@ function renderCanvasFromThree() {
 
   const mountRect = ui.threeMount.getBoundingClientRect();
   if (state.geometryMesh?.cylindricalWeave) {
-    state.camera.position.z = clamp(state.geometryMesh.length * 1.05, 24, 36);
+    state.camera.position.z = clamp(state.geometryMesh.length * 1.24, 28, 44);
     state.ropeGroup.rotation.set(0, -.18, 0);
   }
   state.camera.aspect = canvas.width / canvas.height;

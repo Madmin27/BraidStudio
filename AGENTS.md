@@ -68,4 +68,8 @@ alinarak hesaplanan tek bir saddle alaniyla uretilir. Tasiyici eni cevresel
 adimi tam kapatir; gizli katman gecisini aciga cikaran kenar boslugu birakilmaz.
 Guncel kanitlar `proofs/current-crossing` ve `proofs/current-rope` altindadir.
 2026-08-27 tarihinde kullanici istegiyle canli onizlemeye aktarildi. Kullanici
-incelemeden sonuc kabul edilmez; malzeme/polyester kalibrasyonu sonraki istir.
+incelemeden sonuc kabul edilmez. Guncel malzeme adayi blok cilasi kullanmaz;
+UV tangent yonlu filament anisotropy, dusuk guclu filament specular haritasi,
+yumusak cloth sheen ve genis softbox ile polyester saten tepkisi uretir.
+32 ve 45 derece kanitlari `proofs/angle-32` ve `proofs/angle-45` altindadir.
+Malzeme adayi kullanici kabulunu bekler.

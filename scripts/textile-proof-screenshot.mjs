@@ -3,6 +3,7 @@ import { chromium } from "playwright-core";
 
 const outputDir = process.env.OUTPUT_DIR || "proofs/current-rope";
 const baseUrl = process.env.BASE_URL || "http://127.0.0.1:3217/";
+const requestedBraidAngle = Number(process.env.BRAID_ANGLE || 0);
 mkdirSync(outputDir, { recursive: true });
 
 const browser = await chromium.launch();
@@ -36,10 +37,25 @@ await page.waitForFunction(
   null,
   { timeout: 60000 }
 );
+if (requestedBraidAngle >= 24 && requestedBraidAngle <= 68) {
+  await page.locator("#braidAngle").evaluate((control, value) => {
+    control.value = String(value);
+    control.dispatchEvent(new Event("input", { bubbles: true }));
+  }, requestedBraidAngle);
+  await page.locator("#generateBraid").click();
+  await page.waitForFunction(
+    () => document.querySelector("#statusPill")?.textContent === "Geometri hazır",
+    null,
+    { timeout: 60000 }
+  );
+}
 await page.waitForTimeout(800);
 
 const mount = page.locator("#threeMount");
 const normalBuffer = await mount.screenshot({ path: `${outputDir}/normal.png` });
+const generatedBuffer = await page.locator("#patternCanvas").screenshot({
+  path: `${outputDir}/generated.png`
+});
 
 async function measureScreenshot(buffer) {
   return page.evaluate(async (base64) => {
@@ -66,6 +82,7 @@ async function measureScreenshot(buffer) {
 }
 
 const normalStats = await measureScreenshot(normalBuffer);
+const generatedStats = await measureScreenshot(generatedBuffer);
 const mountBox = await mount.boundingBox();
 await page.screenshot({
   path: `${outputDir}/corner.png`,
@@ -98,8 +115,14 @@ const mobileStats = await measureScreenshot(mobileBuffer);
 const report = {
   generatedAt: new Date().toISOString(),
   sourceUrl: baseUrl,
+  braidAngle: requestedBraidAngle || null,
   geometry: geometryReport,
-  screenshots: { normal: normalStats, close: closeStats, mobile: mobileStats },
+  screenshots: {
+    normal: normalStats,
+    generated: generatedStats,
+    close: closeStats,
+    mobile: mobileStats
+  },
   accepted: false,
   deployed: !/^https?:\/\/(127\.0\.0\.1|localhost)(?::|\/)/.test(baseUrl),
   acceptanceNote: "User visual acceptance is still required."

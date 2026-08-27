@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-08-27T10:31:48.957Z",
-  "sourceUrl": "https://braidstudio.minen.com.tr/?geometryMode=crossing",
-  "braidAngle": null,
+  "generatedAt": "2026-08-27T10:31:07.283Z",
+  "sourceUrl": "http://127.0.0.1:3218/",
+  "braidAngle": 32,
   "geometry": {
     "geometryModel": "unified_carrier_geometry",
     "crossingDepthModel": "quintic_C2_layer_exchange",
@@ -12,7 +12,7 @@
     "crossSectionOrder": 2,
     "carrierPathModel": "one_continuous_bundle_per_carrier",
     "piecesPerCarrier": 1,
-    "surfacePieceCount": 2,
+    "surfacePieceCount": 16,
     "minimumCrossingEnvelopeClearance": 0,
     "contactWidthConstraint": "full_pitch_no_gap_width",
     "minimumContactAreaRetention": 0.8987940907970416,
@@ -21,30 +21,30 @@
   "screenshots": {
     "normal": {
       "nonTransparent": 14400,
-      "dark": 2144,
-      "bright": 11262,
+      "dark": 131,
+      "bright": 6902,
       "total": 14400
     },
     "generated": {
       "nonTransparent": 14400,
-      "dark": 1547,
-      "bright": 12328,
+      "dark": 387,
+      "bright": 6813,
       "total": 14400
     },
     "close": {
       "nonTransparent": 14400,
       "dark": 0,
-      "bright": 14097,
+      "bright": 2069,
       "total": 14400
     },
     "mobile": {
       "nonTransparent": 14400,
-      "dark": 3534,
-      "bright": 9160,
+      "dark": 107,
+      "bright": 7481,
       "total": 14400
     }
   },
   "accepted": false,
-  "deployed": true,
+  "deployed": false,
   "acceptanceNote": "User visual acceptance is still required."
 }

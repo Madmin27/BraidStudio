@@ -50,3 +50,8 @@ ayni `unified_carrier_geometry` modelini raporlamistir. Guncel kanitlar
 `../proofs/current-crossing/` ve `../proofs/current-rope/` altindadir. Iki kanit
 da `https://braidstudio.minen.com.tr/` uzerinden alinmis ve `deployed: true`
 raporlamistir. Kullanici kabul kaydi henuz yoktur.
+
+Polyester optik kalibrasyonunda anisotropy yonu gercek UV tangent eksenine
+duzeltilmis, specular cevap filament cekirdekleriyle sinirlanmis ve dar stüdyo
+yansimasi yerine halattan buyuk yumusak bir kaynak kullanilmistir. Aciya bagli
+kose kontrolu `../proofs/angle-32/` ve `../proofs/angle-45/` altindadir.
