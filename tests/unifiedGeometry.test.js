@@ -177,6 +177,8 @@ test("server and browser expose only the unified geometry endpoint", async () =>
   assert.match(browser, /geometryMesh\.length \* 2\.15, 52, 80/);
   assert.match(browser, /drawMeasurementRulers/);
   assert.match(browser, /projectedPixelsPerMillimeter/);
+  assert.match(browser, /geometryFromCarrierFiberShell/);
+  assert.match(browser, /getCarrierFiberMaterial/);
   assert.doesNotMatch(browser, /\/api\/texgen-braid|requestTexgenMesh/);
   assert.doesNotMatch(browser, /polyesterProofVariant|legacyMaterial|bundle-v\d+/);
 });

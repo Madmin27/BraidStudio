@@ -4,33 +4,35 @@
   "status": "visual_candidate",
   "denierScale": 0.70,
   "optics": {
-    "roughness": 0.42,
-    "sheen": 0.36,
-    "sheenRoughness": 0.68,
-    "sheenWhiteMix": 0.42,
-    "specularIntensity": 0.58,
-    "specularWhiteMix": 0.24,
-    "anisotropy": 0.90,
-    "bumpScale": 0.0026,
-    "bumpMin": 0.0012,
-    "bumpMax": 0.0045,
-    "normalScale": [0.010, 0.10]
+    "roughness": 0.48,
+    "sheen": 0.68,
+    "sheenRoughness": 0.52,
+    "sheenWhiteMix": 0.70,
+    "specularIntensity": 0.52,
+    "specularWhiteMix": 0.45,
+    "anisotropy": 0.95,
+    "bumpScale": 0.001,
+    "bumpMin": 0.0003,
+    "bumpMax": 0.0014,
+    "normalScale": [0.004, 0.10]
   },
   "texture": {
-    "colorSatinAmplitude": 10,
-    "roughnessBase": 218,
-    "roughnessFiber": 30,
-    "roughnessSatin": 16,
-    "specularBase": 54,
-    "specularFiber": 52,
-    "specularSatin": 30
+    "visibleFiberMultiplier": 1,
+    "microFibersPerThread": 3,
+    "colorSatinAmplitude": 7,
+    "roughnessBase": 232,
+    "roughnessFiber": 50,
+    "roughnessSatin": 20,
+    "specularBase": 34,
+    "specularFiber": 78,
+    "specularSatin": 32
   },
   "lighting": {
-    "exposure": 1.08,
-    "hemisphere": 0.90,
-    "key": 0.76,
-    "fill": 0.50,
-    "rim": 0.28,
-    "softbox": 0.78
+    "exposure": 1.04,
+    "hemisphere": 0.94,
+    "key": 0.60,
+    "fill": 0.54,
+    "rim": 0.18,
+    "softbox": 0.70
   }
 }

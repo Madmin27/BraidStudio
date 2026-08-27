@@ -512,11 +512,19 @@ function renderGeometryThree(mesh) {
     object.castShadow = false;
     object.receiveShadow = true;
     state.ropeGroup.add(object);
+    if (mesh.materialProfile?.materialProfileId === "polyester_satin") {
+      const fiberGeometry = geometryFromCarrierFiberShell(yarn.mesh, mesh);
+      const fiberMaterial = getCarrierFiberMaterial(yarn.color || defaultBase, mesh, material);
+      const fiberObject = new THREE.Mesh(fiberGeometry, fiberMaterial);
+      fiberObject.castShadow = false;
+      fiberObject.receiveShadow = true;
+      state.ropeGroup.add(fiberObject);
+    }
   }
 
   if (mesh.crossingWindow) {
     state.viewRotation = { x: 0, y: 0, z: 0 };
-    state.zoom = 30;
+    state.zoom = 13;
     state.camera.position.set(0, 0, state.zoom);
     state.camera.lookAt(0, 0, 0);
     state.ropeGroup.position.set(0, 0, 0);
@@ -633,7 +641,7 @@ function getCarrierMaterial(color, mesh) {
   const material = new THREE.MeshPhysicalMaterial({
     color: new THREE.Color(color),
     emissive: new THREE.Color(color),
-    emissiveIntensity: .012,
+    emissiveIntensity: .002,
     map: fiberMaps.color,
     bumpMap: fiberMaps.bump,
     bumpScale: clamp(
@@ -668,13 +676,33 @@ function getCarrierMaterial(color, mesh) {
   return material;
 }
 
+function getCarrierFiberMaterial(color, mesh, baseMaterial) {
+  const profileId = mesh.materialProfile?.materialProfileId || "polyester_satin";
+  const key = `${color.toLowerCase()}:${profileId}:fiber-shell`;
+  if (state.materialCache.has(key)) return state.materialCache.get(key);
+  const material = baseMaterial.clone();
+  material.roughness = .32;
+  material.sheen = .88;
+  material.sheenRoughness = .42;
+  material.sheenColor = new THREE.Color(color).lerp(new THREE.Color(0xffffff), .82);
+  material.specularIntensity = .82;
+  material.specularColor = new THREE.Color(color).lerp(new THREE.Color(0xffffff), .64);
+  material.bumpScale *= .35;
+  material.normalScale = baseMaterial.normalScale.clone().multiplyScalar(.45);
+  material.userData.sharedBraidMaterial = true;
+  state.materialCache.set(key, material);
+  return material;
+}
+
 function makePolyesterFiberMaps(filamentCount, denier, profile = {}) {
   const textureProfile = profile.texture || {};
   const mapKey = `${profile.materialProfileId || "polyester_satin"}:${filamentCount}:${denier}`;
   if (state.polyesterFiberMaps.has(mapKey)) return state.polyesterFiberMaps.get(mapKey);
   const width = 512;
-  const height = 256;
-  const strandCount = clamp(Math.round(filamentCount), 8, 40);
+  const height = 512;
+  const visibleFiberMultiplier = Number(textureProfile.visibleFiberMultiplier ?? 1);
+  const microFibersPerThread = Math.round(Number(textureProfile.microFibersPerThread ?? 1));
+  const strandCount = clamp(Math.round(filamentCount * visibleFiberMultiplier), 16, 160);
   const strandSpacing = height / strandCount;
   const denierScale = Math.sqrt(denier / 1000);
   const colorCanvas = document.createElement("canvas");
@@ -696,30 +724,40 @@ function makePolyesterFiberMaps(filamentCount, denier, profile = {}) {
   const bumpImage = bumpCtx.createImageData(width, height);
   const roughnessImage = roughnessCtx.createImageData(width, height);
   const specularImage = specularCtx.createImageData(width, height);
-  const bumpAmplitude = clamp(54 * denierScale, 24, 78);
+  const bumpAmplitude = clamp(6 * denierScale, 3, 10);
 
   for (let y = 0; y < height; y += 1) {
     for (let x = 0; x < width; x += 1) {
-      const wave = Math.sin(x * .022 + y * .006) * strandSpacing * .055;
+      const wave = (
+        Math.sin(x * .019 + Math.floor(y / strandSpacing) * .31)
+        + .35 * Math.sin(x * .047 - y * .009)
+      ) * strandSpacing * .035;
       const wrapped = mod(y + wave, height);
       const strandPosition = wrapped / strandSpacing;
       const strandIndex = Math.floor(strandPosition);
       const local = strandPosition - strandIndex;
-      const ridge = Math.pow(Math.sin(Math.PI * local), .82);
-      const fiberCore = Math.pow(Math.sin(Math.PI * local), 2.15);
+      const ridge = Math.pow(Math.sin(Math.PI * local), 1.35);
+      const fiberCore = Math.pow(Math.sin(Math.PI * local), 2.8);
+      const microLocal = fract(
+        local * microFibersPerThread
+        + .045 * Math.sin(x * .033 + strandIndex * .71)
+      );
+      const microRidge = Math.pow(Math.sin(Math.PI * microLocal), 2.2);
+      const microGroove = Math.pow(Math.abs(Math.cos(Math.PI * microLocal)), 12);
       const capillaryLine = Math.pow(Math.sin(Math.PI * local), 16);
       const capillaryGroove = Math.pow(Math.abs(Math.cos(Math.PI * local)), 18);
-      const contactShadow = Math.pow(1 - ridge, 3);
+      const contactShadow = Math.pow(1 - ridge, 4);
       const filamentTone = (fract(Math.sin((strandIndex + 1) * 91.713) * 43758.5453) - .5) * 7;
       const satinBand = .5 + .34 * Math.sin(x * .031 + strandIndex * .47)
         + .16 * Math.sin(x * .009 - strandIndex * .23);
       const colorValue = clampByte(
-        235 + ridge * 6 - contactShadow * 3 + filamentTone * .16
-        + capillaryLine * 4 - capillaryGroove * 4
+        238 + ridge * 1.5 + microRidge * 8 - contactShadow * 1.5 + filamentTone * .36
+        + capillaryLine * 1.5 - capillaryGroove * 1.5
         + satinBand * fiberCore * Number(textureProfile.colorSatinAmplitude ?? 8)
       );
       const bumpValue = clampByte(
-        116 + ridge * bumpAmplitude + capillaryLine * 4 - capillaryGroove * 14
+        124 + ridge * bumpAmplitude + microRidge * 18 - microGroove * 5
+        + capillaryLine - capillaryGroove
       );
       const roughnessValue = clampByte(
         Number(textureProfile.roughnessBase ?? 225)
@@ -727,6 +765,7 @@ function makePolyesterFiberMaps(filamentCount, denier, profile = {}) {
           Number(textureProfile.roughnessFiber ?? 24)
           + satinBand * Number(textureProfile.roughnessSatin ?? 12)
         )
+        - microRidge * 18
         - ridge * 4
       );
       const specularValue = clampByte(
@@ -735,6 +774,7 @@ function makePolyesterFiberMaps(filamentCount, denier, profile = {}) {
           Number(textureProfile.specularFiber ?? 44)
           + satinBand * Number(textureProfile.specularSatin ?? 24)
         )
+        + microRidge * 30
         + capillaryLine * 8
       );
       const offset = (y * width + x) * 4;
@@ -824,6 +864,109 @@ function geometryFromCarrierMesh(mesh) {
   geometry.computeTangents();
   geometry.computeBoundingSphere();
   return geometry;
+}
+
+function geometryFromCarrierFiberShell(carrierMesh, mesh) {
+  const ringSegments = Number(mesh.ringSegments);
+  const vertexCount = carrierMesh.vertices.length / 3;
+  const ringCount = vertexCount / ringSegments;
+  const fiberCount = clamp(Math.round(mesh.filamentCount || 25), 8, 40);
+  const samplesAcrossFiber = 4;
+  const vertices = [];
+  const normals = [];
+  const uvs = [];
+  const indices = [];
+  const fiberWidth = .995 / fiberCount;
+  const baseLift = Number(mesh.yarnThickness) * .006;
+  const crownHeight = Number(mesh.yarnThickness) * .008;
+
+  const sectionSamples = Array.from({ length: fiberCount }, (_, fiber) => (
+    Array.from({ length: samplesAcrossFiber }, (_, sample) => {
+      const across = sample / (samplesAcrossFiber - 1);
+      const centerV = (fiber + .5) / fiberCount;
+      const targetV = clamp(centerV + (across - .5) * fiberWidth, .001, .999);
+      return {
+        ...carrierSectionSample(carrierMesh, ringSegments, targetV),
+        targetV,
+        lift: baseLift + Math.sin(Math.PI * across) * crownHeight
+      };
+    })
+  ));
+
+  for (let fiber = 0; fiber < fiberCount; fiber += 1) {
+    const fiberStart = vertices.length / 3;
+    for (let ring = 0; ring < ringCount; ring += 1) {
+      for (const sample of sectionSamples[fiber]) {
+        const interpolated = interpolateCarrierVertex(carrierMesh, ring, ringSegments, sample);
+        vertices.push(
+          interpolated.position[0] + interpolated.normal[0] * sample.lift,
+          interpolated.position[1] + interpolated.normal[1] * sample.lift,
+          interpolated.position[2] + interpolated.normal[2] * sample.lift
+        );
+        normals.push(...interpolated.normal);
+        uvs.push(interpolated.u, sample.targetV);
+      }
+    }
+    for (let ring = 0; ring < ringCount - 1; ring += 1) {
+      const row = fiberStart + ring * samplesAcrossFiber;
+      const nextRow = row + samplesAcrossFiber;
+      for (let sample = 0; sample < samplesAcrossFiber - 1; sample += 1) {
+        const a = row + sample;
+        const b = a + 1;
+        const c = nextRow + sample;
+        const d = c + 1;
+        indices.push(a, c, b, b, c, d);
+      }
+    }
+  }
+
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute("position", new THREE.Float32BufferAttribute(vertices, 3));
+  geometry.setAttribute("normal", new THREE.Float32BufferAttribute(normals, 3));
+  geometry.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
+  geometry.setIndex(indices);
+  geometry.computeVertexNormals();
+  geometry.computeTangents();
+  geometry.computeBoundingSphere();
+  return geometry;
+}
+
+function carrierSectionSample(carrierMesh, ringSegments, targetV) {
+  for (let segment = 0; segment < ringSegments - 1; segment += 1) {
+    const firstV = carrierMesh.uvs[segment * 2 + 1];
+    const secondV = carrierMesh.uvs[(segment + 1) * 2 + 1];
+    const minimum = Math.min(firstV, secondV);
+    const maximum = Math.max(firstV, secondV);
+    if (targetV >= minimum && targetV <= maximum) {
+      const denominator = secondV - firstV;
+      return {
+        segment,
+        mix: Math.abs(denominator) < 1e-9 ? 0 : (targetV - firstV) / denominator
+      };
+    }
+  }
+  return { segment: ringSegments - 2, mix: 1 };
+}
+
+function interpolateCarrierVertex(carrierMesh, ring, ringSegments, sample) {
+  const first = ring * ringSegments + sample.segment;
+  const second = first + 1;
+  const mix = clamp(sample.mix, 0, 1);
+  const readTriplet = (values, index) => values.slice(index * 3, index * 3 + 3);
+  const interpolateTriplet = (values) => {
+    const a = readTriplet(values, first);
+    const b = readTriplet(values, second);
+    return a.map((value, axis) => value + (b[axis] - value) * mix);
+  };
+  const position = interpolateTriplet(carrierMesh.vertices);
+  const normal = new THREE.Vector3(...interpolateTriplet(carrierMesh.normals)).normalize().toArray();
+  const firstU = carrierMesh.uvs[first * 2];
+  const secondU = carrierMesh.uvs[second * 2];
+  return {
+    position,
+    normal,
+    u: firstU + (secondU - firstU) * mix
+  };
 }
 
 function renderCanvasFromThree() {
