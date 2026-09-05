@@ -151,3 +151,25 @@ Durum: GORSEL KABUL BEKLIYOR, CANLIYA ALINMADI
   1.35 olarak biraz daha azaltildi. Beyaz specular 1.0 / ortam 3.2 ve
   tum isiklar ayni. Kanitlar `proofs/red-reflection-soft-crossing` ve
   `proofs/red-reflection-soft-rope` altindadir.
+
+## 16 Kukla Kimlik Tekrari Denetimi
+
+- Malzeme geri donusu: `a536b43`; beyaz ve kirmizi tonlari burada korunur.
+- Onceki kullaniciya gosterilen malzeme resmi 32 kukla, 16S/16Z ve 0.9375
+  turdu. 16 kukla denetimine ornek olarak kullanilamaz.
+- 16 kukla / 16 mm / 45 derece / 12 ip x 1000D / Diamond orneginde gercek
+  sweep mesh'inin kutupsal kesitinden kimlik sirasi olculdu: her ailede
+  8 farkli kimlik ve 8 aralik sonra ayni kimlik; adim 50.26548 mm.
+- 224 S/Z kesisiminde karsilikli ust-alt emri ve mesh tacinin radyal sirasi
+  kontrol edildi. Bu, tum yuzeyler icin penetrasyon kaniti sayilmaz.
+- `tests/unifiedGeometry.test.js` gercek mesh'ten 8-blok tekrari ve helis
+  yonunu normal/ters kukla dagiliminda denetler (12 test).
+- Ust-alt orgu tekrari (Diamond: 2 kesisim sirasi) ile ayni kuklanin geri
+  donusu (8 ayni-yon blok araligi, 16 kesisim araligi/tur) farkli kavramlardir.
+- Arayuz bu iki tekrar turunu ayri gosterir. Goruntu icindeki etiket kukla,
+  S/Z, cap ve aciyi belirtir.
+- Geometri merkez yollari ve malzeme degismedi; tekrar metaverisi ve
+  arayuz aciklamasi eklendi. Canliya aktarim yapilmadi.
+- Tekrar denetimi: `python3 scripts/carrier-repeat-audit.py`.
+- Kanitlar: `proofs/carrier-repeat-16/identity-repeat.png`, `audit.json`,
+  `normal.png`, `close.png`, `mobile.png`, `report.json`.

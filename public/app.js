@@ -1180,9 +1180,18 @@ function renderSummary(result, mesh = null) {
   ui.denierValue.textContent = `${result.denier}D`;
   const dimensions = mesh?.derivedDimensions;
   ui.repeatBadge.textContent = dimensions
-    ? `${dimensions.patternRepeatRows} sıra tekrar`
+    ? `${dimensions.carrierReturnBlocks} blokta aynı kukla`
     : "Hesaplanıyor";
   ui.sceneMeta.textContent = `${result.carrierCount} kukla, ${result.diameterMm} mm, ${result.angleDeg}° örgü`;
+  let recipeLabel = ui.threeMount.querySelector(".braid-recipe-label");
+  if (!recipeLabel) {
+    recipeLabel = document.createElement("div");
+    recipeLabel.className = "braid-recipe-label";
+    recipeLabel.style.cssText = "position:absolute;left:54px;top:40px;z-index:2;pointer-events:none;font:12px system-ui;color:#29483e;background:rgba(255,255,255,.88);padding:4px 7px;border-radius:4px;max-width:calc(100% - 65px)";
+    ui.threeMount.appendChild(recipeLabel);
+  }
+  recipeLabel.textContent = `${result.carrierCount} kukla · ${result.carrierCount / 2} S / ${result.carrierCount / 2} Z · ${result.diameterMm} mm · ${result.angleDeg}°`;
+
   const fitLabel = {
     ok: "Uygun",
     loose: "Gevşek paket",
@@ -1193,7 +1202,8 @@ function renderSummary(result, mesh = null) {
     ["Görünen tur", `${(mesh.length / dimensions.helicalPitchAxialMm).toFixed(2)} tur`],
     ["Yüzey çevresi", `${dimensions.circumferenceMm.toFixed(1)} mm`],
     ["Kukla aralığı", `${dimensions.circumferentialPitchMm.toFixed(2)} mm`],
-    ["Desen tekrarı", `${dimensions.patternRepeatRows} sıra / ${dimensions.weaveRepeatAxialMm.toFixed(1)} mm`],
+    ["Üst-alt tekrarı", `${dimensions.patternRepeatRows} kesişim sırası / ${dimensions.weaveRepeatAxialMm.toFixed(1)} mm`],
+    ["Aynı kuklanın dönüşü", `${dimensions.carrierReturnBlocks} aynı yön bloğu / ${dimensions.carrierReturnAxialMm.toFixed(1)} mm`],
     ["Görünen kesit", mesh.visibleRows ? `${mesh.visibleRows} sıra` : "tek crossing"],
     ["Taşıyıcı toplamı", `${mesh.totalCarrierDenier}D`],
     ["Kalibre taşıyıcı", `${mesh.derivedDimensions.effectiveCarrierDenier}D`],

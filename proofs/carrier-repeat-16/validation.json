@@ -1,0 +1,19 @@
+{
+  "checkpoint": "a536b43",
+  "tests": {
+    "command": "node tests/unifiedGeometry.test.js",
+    "passed": 12,
+    "failed": 0
+  },
+  "syntaxExitCode": 0,
+  "browserErrors": [],
+  "accepted": false,
+  "deployed": false,
+  "sha256": {
+    "scripts/braid_geometry.py": "0e06c054934fd8af35a252fa201eaa038f1cb7a9a6d178380bc545635a1c79c1",
+    "scripts/carrier-repeat-audit.py": "59701af030fe6f23438d9f734bf455011276f5e9ae27ebfbedf95fc92e1118d0",
+    "public/app.js": "d1500a7f1472dcabfda50e987d530c4d9bd8d0b5046b3a71668744fdfe3ad1ed",
+    "tests/unifiedGeometry.test.js": "8e0967b4b0ba3c0ef7a1825f7423f27cd1b5a01adfcb1f9b14b529e2c99e2aec",
+    "data/materials/polyester_satin.json": "c1800087e55cbb87c0ab833b951e62b2e4f1fc1c6a0f52195ecbdaa923141664"
+  }
+}

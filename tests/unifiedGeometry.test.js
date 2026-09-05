@@ -375,3 +375,50 @@ test("server and browser expose only the unified geometry endpoint", async () =>
   assert.doesNotMatch(geometry, /flatWeave|cylindricalWeave|crossingWindow|ribbon_shader/);
   assert.match(geometry, /fit_status = "overfilled"/);
 });
+
+// Recover carrier identity from the rendered mesh at a fixed circumferential
+// ray. This does not trust directionCounts or a claimed repeat in metadata.
+function meshRayHits(yarn, ringSegments) {
+  const points = [];
+  let previousRaw = null, theta = 0;
+  for (let ring = 0; ring < yarn.pathPointCount; ring++) {
+    const i = (ring * ringSegments + Math.floor(ringSegments / 2)) * 3;
+    const v = yarn.mesh.vertices;
+    const raw = Math.atan2(v[i + 2], v[i + 1]);
+    if (previousRaw === null) theta = raw;
+    else theta += Math.atan2(Math.sin(raw - previousRaw), Math.cos(raw - previousRaw));
+    points.push({ x: v[i], theta });
+    previousRaw = raw;
+  }
+  const hits = [];
+  for (let j = 1; j < points.length; j++) {
+    const a = points[j - 1], b = points[j];
+    const low = Math.min(a.theta, b.theta), high = Math.max(a.theta, b.theta);
+    for (let k = Math.ceil(low / (2 * Math.PI)); k * 2 * Math.PI <= high; k++) {
+      const t = (k * 2 * Math.PI - a.theta) / (b.theta - a.theta);
+      if (t >= 0 && t < 1) hits.push({ x: a.x + t * (b.x - a.x), id: yarn.carrierNo });
+    }
+  }
+  return { hits, windingSign: Math.sign(points.at(-1).theta - points[0].theta) };
+}
+
+test("16-carrier mesh returns to the same carrier after eight same-family blocks", async () => {
+  for (const flip of [false, true]) {
+    const mesh = await runGeometry({ ...basePayload(), visibleRows: 30, flip, denierScale: 1 });
+    for (const [direction, sign] of [["S", 1], ["Z", -1]]) {
+      const family = mesh.yarns.filter(y => y.direction === direction);
+      assert.equal(family.length, 8);
+      const hits = family.flatMap(yarn => {
+        const result = meshRayHits(yarn, mesh.ringSegments);
+        assert.equal(result.windingSign, sign);
+        return result.hits;
+      }).sort((a, b) => a.x - b.x);
+      assert.ok(hits.length >= 9);
+      for (let i = 0; i + 8 < hits.length; i++) {
+        assert.equal(new Set(hits.slice(i, i + 8).map(h => h.id)).size, 8);
+        assert.equal(hits[i].id, hits[i + 8].id);
+        assert.ok(Math.abs(hits[i + 8].x - hits[i].x - mesh.derivedDimensions.helicalPitchAxialMm) < 1e-4);
+      }
+    }
+  }
+});

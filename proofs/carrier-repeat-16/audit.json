@@ -1,0 +1,152 @@
+{
+  "parameters": {
+    "mode": "rope",
+    "carrierCount": 16,
+    "diameterMm": 16,
+    "braidAngle": 45,
+    "filamentCount": 12,
+    "denier": 1000,
+    "denierScale": 1,
+    "visibleRows": 30,
+    "crossingMode": "diamond",
+    "carriers": [
+      {
+        "color": "#e11912"
+      },
+      {
+        "color": "#f6f5ee"
+      },
+      {
+        "color": "#e11912"
+      },
+      {
+        "color": "#f6f5ee"
+      },
+      {
+        "color": "#f6f5ee"
+      },
+      {
+        "color": "#f6f5ee"
+      },
+      {
+        "color": "#f6f5ee"
+      },
+      {
+        "color": "#f6f5ee"
+      },
+      {
+        "color": "#f6f5ee"
+      },
+      {
+        "color": "#f6f5ee"
+      },
+      {
+        "color": "#f6f5ee"
+      },
+      {
+        "color": "#f6f5ee"
+      },
+      {
+        "color": "#f6f5ee"
+      },
+      {
+        "color": "#f6f5ee"
+      },
+      {
+        "color": "#f6f5ee"
+      },
+      {
+        "color": "#f6f5ee"
+      }
+    ]
+  },
+  "source": "swept mesh crown vertices, polar ray intersections",
+  "directionCounts": {
+    "S": 8,
+    "Z": 8
+  },
+  "sameCarrierBlockIntervals": 8,
+  "measuredSequences": {
+    "S": [
+      {
+        "x": -28.274333882308145,
+        "carrierNo": 1
+      },
+      {
+        "x": -21.991148575128552,
+        "carrierNo": 15
+      },
+      {
+        "x": -15.707963267948973,
+        "carrierNo": 13
+      },
+      {
+        "x": -9.424777960769376,
+        "carrierNo": 11
+      },
+      {
+        "x": -3.1415926535897967,
+        "carrierNo": 9
+      },
+      {
+        "x": 3.1415926535897967,
+        "carrierNo": 7
+      },
+      {
+        "x": 9.424777960769383,
+        "carrierNo": 5
+      },
+      {
+        "x": 15.70796326794897,
+        "carrierNo": 3
+      },
+      {
+        "x": 21.991148575128555,
+        "carrierNo": 1
+      }
+    ],
+    "Z": [
+      {
+        "x": -21.991148575128555,
+        "carrierNo": 2
+      },
+      {
+        "x": -15.707963267948966,
+        "carrierNo": 4
+      },
+      {
+        "x": -9.424777960769383,
+        "carrierNo": 6
+      },
+      {
+        "x": -3.1415926535897967,
+        "carrierNo": 8
+      },
+      {
+        "x": 3.1415926535897967,
+        "carrierNo": 10
+      },
+      {
+        "x": 9.424777960769376,
+        "carrierNo": 12
+      },
+      {
+        "x": 15.707963267948962,
+        "carrierNo": 14
+      },
+      {
+        "x": 21.99114857512855,
+        "carrierNo": 16
+      },
+      {
+        "x": 28.274333882308134,
+        "carrierNo": 2
+      }
+    ]
+  },
+  "carrierReturnAxialMm": 50.2654824574367,
+  "checkedReciprocalCrossings": 224,
+  "minimumOverCrownSeparationMm": 0.38107956739548055,
+  "accepted": false,
+  "deployed": false
+}
