@@ -331,11 +331,31 @@ function initThree() {
   const rim = new THREE.DirectionalLight(0xffffff, .24);
   rim.position.set(-2, 5, -6);
   state.scene.add(rim);
-  const satinSoftbox = new THREE.RectAreaLight(0xfffdf8, .62, 18, 8);
-  satinSoftbox.position.set(0, 7, 8);
-  satinSoftbox.lookAt(0, 0, 0);
-  state.scene.add(satinSoftbox);
-  state.materialLights = { hemisphere, key, fill, rim, softbox: satinSoftbox };
+  // A prefiltered studio environment supplies real reflected light. The old
+  // RectAreaLight had no LTC tables and could not provide its intended softbox.
+  const studio = new THREE.Scene();
+  studio.background = new THREE.Color(0.12, 0.13, 0.15);
+  const panels = [];
+  for (const [position, size, power] of [
+    [[-3, 5, 4], [7, 2.2], 5],
+    [[4, 1, 3], [2, 6], 2.5],
+    [[0, -4, -3], [6, 3], .7]
+  ]) {
+    const panel = new THREE.Mesh(
+      new THREE.PlaneGeometry(...size),
+      new THREE.MeshBasicMaterial({ color: new THREE.Color(power, power, power), side: THREE.DoubleSide })
+    );
+    panel.position.set(...position);
+    panel.lookAt(0, 0, 0);
+    studio.add(panel);
+    panels.push(panel);
+  }
+  const pmrem = new THREE.PMREMGenerator(state.renderer);
+  state.studioEnvironment = pmrem.fromScene(studio, .035);
+  state.scene.environment = state.studioEnvironment.texture;
+  pmrem.dispose();
+  for (const panel of panels) { panel.geometry.dispose(); panel.material.dispose(); }
+  state.materialLights = { hemisphere, key, fill, rim };
   state.ropeGroup = new THREE.Group();
   state.scene.add(state.ropeGroup);
   installThreeInteractions();
@@ -357,20 +377,15 @@ function applyMaterialLighting(profile) {
   const keyPosition = Array.isArray(lighting.keyPosition)
     ? lighting.keyPosition
     : [4.5, 7, 6];
-  const softboxPosition = Array.isArray(lighting.softboxPosition)
-    ? lighting.softboxPosition
-    : [0, 7, 8];
+  state.scene.environment = profile.materialProfileId === "polyester_satin"
+    ? state.studioEnvironment.texture : null;
   state.renderer.toneMappingExposure = Number(lighting.exposure);
   state.materialLights.hemisphere.intensity = Number(lighting.hemisphere);
   state.materialLights.key.intensity = Number(lighting.key);
-  state.materialLights.key.position.set(...keyPosition.map(Number));
+  state.materialLights.key.position.set(...keyPosition.map(value => Number(value) * 30));
   state.materialLights.fill.intensity = Number(lighting.fill);
   state.materialLights.rim.intensity = Number(lighting.rim);
-  state.materialLights.softbox.intensity = Number(lighting.softbox);
-  state.materialLights.softbox.width = Number(lighting.softboxWidth ?? 18);
-  state.materialLights.softbox.height = Number(lighting.softboxHeight ?? 8);
-  state.materialLights.softbox.position.set(...softboxPosition.map(Number));
-  state.materialLights.softbox.lookAt(0, 0, 0);
+
 }
 
 function geometryMode() {
@@ -455,13 +470,20 @@ function renderGeometryThree(mesh) {
   clearRopeGroup();
   applyMaterialLighting(mesh.materialProfile);
   state.renderer.localClippingEnabled = false;
+  const shadow = state.materialLights.key.shadow;
+  const extent = Math.max(mesh.length || 20, mesh.diameterMm || 16) * .65;
+  shadow.mapSize.set(2048, 2048);
+  Object.assign(shadow.camera, { left: -extent, right: extent, top: extent, bottom: -extent, near: .1, far: 600 });
+  shadow.camera.updateProjectionMatrix();
+  shadow.normalBias = .008;
+  shadow.bias = -.00001;
   const runtimeMaterials = [];
   for (const yarn of mesh.yarns || []) {
     const geometry = geometryFromCarrierMesh(yarn.mesh, mesh.materialProfile);
     const material = getCarrierMaterial(yarn.color || defaultBase, mesh);
     material.clippingPlanes = null;
     const object = new THREE.Mesh(geometry, material);
-    object.castShadow = false;
+    object.castShadow = mesh.materialProfile?.materialProfileId === "polyester_satin";
     object.receiveShadow = true;
     state.ropeGroup.add(object);
     runtimeMaterials.push({
@@ -479,6 +501,11 @@ function renderGeometryThree(mesh) {
     selectedDiameterMm: mesh.diameterMm,
     meshOuterDiameterMm: mesh.meshOuterDiameterMm,
     diameterErrorMm: mesh.diameterErrorMm,
+    lighting: {
+      environment: Boolean(state.scene.environment),
+      shadowCastingCarriers: state.ropeGroup.children.filter(object => object.castShadow).length,
+      environmentIntensity: Number(mesh.materialProfile?.optics?.environmentIntensity ?? 1)
+    },
     materials: runtimeMaterials
   };
 
@@ -632,12 +659,15 @@ function getCarrierMaterial(color, mesh) {
       resolveOptic("sheenWhiteMix", .34)
     ),
     sheenRoughnessMap: profileId === "polyester_satin" ? fiberMaps.roughness : null,
-    specularIntensityMap: fiberMaps.specular,
+    // Keep the accepted white response. Dyed yarn reflects through individual
+    // filament highlights instead of one coherent highlight over the whole tow.
+    specularIntensityMap: profileId === "polyester_satin" && lightMix > .99 ? null : fiberMaps.specular,
+    envMapIntensity: resolveOptic("environmentIntensity", 1),
     specularIntensity: resolvedSpecularIntensity,
     specularColor: new THREE.Color(0xffffff),
     anisotropy: resolvedAnisotropy,
-    anisotropyMap: fiberMaps.anisotropy,
-    anisotropyRotation: 0,
+    anisotropyMap: profileId === "polyester_satin" ? null : fiberMaps.anisotropy,
+    anisotropyRotation: profileId === "polyester_satin" ? Math.PI / 2 : 0,
     side: THREE.DoubleSide
   });
   material.userData.sharedBraidMaterial = true;
@@ -685,7 +715,7 @@ function makePolyesterFiberMaps(endsPerCarrier, denierPerEnd, profile = {}, ligh
   const mapKey = `${profileId}:${endsPerCarrier}:${denierPerEnd}:${lightTextureClass}`;
   if (state.polyesterFiberMaps.has(mapKey)) return state.polyesterFiberMaps.get(mapKey);
   const width = 512;
-  const height = isPolyesterSatin ? 512 : 256;
+  const height = isPolyesterSatin ? 1024 : 256;
   const strandCount = clamp(Math.round(endsPerCarrier), 8, 40);
   const strandSpacing = height / strandCount;
   const denierScale = Math.sqrt(denierPerEnd / 700);
@@ -924,8 +954,12 @@ function makePolyesterFiberMaps(endsPerCarrier, denierPerEnd, profile = {}, ligh
       const right = bumpImage.data[(y * width + mod(x + 1, width)) * 4];
       const up = bumpImage.data[(mod(y - 1, height) * width + x) * 4];
       const down = bumpImage.data[(mod(y + 1, height) * width + x) * 4];
-      const nx = (left - right) / 255;
-      const ny = (up - down) / 255;
+      // Unresolved bound filaments: longitudinal cylinders, not speckled relief.
+      // This is a visual surface-density approximation, not a measured F count.
+      const phase = Math.PI * 2 * y / height * strandCount * microFibersPerYarn
+        + .08 * Math.sin(Math.PI * 4 * x / width);
+      const nx = isPolyesterSatin ? .004 * Math.sin(phase) : (left - right) / 255;
+      const ny = isPolyesterSatin ? .42 * Math.sin(phase) : (up - down) / 255;
       const nz = isPolyesterSatin ? .75 : 1.45;
       const inverseLength = 1 / Math.hypot(nx, ny, nz);
       const offset = (y * width + x) * 4;

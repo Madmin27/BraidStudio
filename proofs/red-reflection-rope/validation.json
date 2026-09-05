@@ -1,0 +1,30 @@
+{
+  "accepted": false,
+  "deployed": false,
+  "whiteInteriorPixelComparison": {
+    "selection": "neutral white interior pixels within rope ROI; 1px boundary excluded",
+    "pixels": 76623,
+    "changedPixels": 0,
+    "maxChannelDelta": 0
+  },
+  "tests": {
+    "pass": 11,
+    "fail": 0
+  },
+  "syntaxExitCode": 0,
+  "screenshots": {
+    "red-reflection-crossing": {
+      "generatedAt": "2026-09-05T19:39:28.693Z",
+      "browserErrors": []
+    },
+    "red-reflection-rope": {
+      "generatedAt": "2026-09-05T19:40:38.686Z",
+      "browserErrors": []
+    }
+  },
+  "sha256": {
+    "public/app.js": "8d014a7dd4306099c9c5d710ea43c121bd841cb78409b4218104f39c995edb58",
+    "data/materials/polyester_satin.json": "97d761fa33d7495810c89beed179a8eddb843cc83684026b1b5b5c084c0b978a",
+    "tests/unifiedGeometry.test.js": "b4436708616a8a2948fbbdb49f964eba02b5e7edb2157cc62b116fdf1b3c746a"
+  }
+}

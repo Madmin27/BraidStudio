@@ -80,7 +80,7 @@ Malzeme adayi kullanici kabulunu bekler.
 
 - `polip_rope`: 2026-08-27 tarihinde `KoseKabulPolip1` kontrol noktasi olarak
   kullanici tarafindan kabul edilen optik ayarlar; denye olcegi `1.0`.
-- `polyester_satin`: daha canli ve ipeksi saten tepki adayi; denye olcegi `0.70`.
+- `polyester_satin`: daha canli ve ipeksi saten tepki adayi; denye olcegi `1.0` (2026-09-05 fotograf calismasinda duzeltildi).
 - Profil zinciri: arayuz secimi -> `/api/braid-geometry` -> kutuphane dogrulamasi
   -> etkin denye ile tek geometri cekirdegi -> ayni profil ile Three.js malzemesi.
 - Uretim kamerasi normal ve PNG goruntulerinde halati daha uzaktan cerceveler.
@@ -114,3 +114,40 @@ Durum: GORSEL KABUL BEKLIYOR, CANLIYA ALINMADI
 - Guncel kanitlar: `proofs/final-audit-crossing`, `proofs/final-audit-rope`,
   `proofs/final-audit-denier-500`, `proofs/final-audit-denier-1500`,
   `proofs/final-audit-ends-12`, `proofs/final-audit-ends-35`.
+
+## 2026-09-05 Fotograf Referansi Calisma Kopyasi
+
+- Geri donus: `73cacd4`; calisma dali `work/photo-reference`.
+- Bu kopya canliya aktarilmadi; gorsel kabul verilmedi.
+- Tek geometri cekirdegi ve tasiyici topolojisi korunur.
+- Polyester profilindeki denye olcegi 1.0: 1000D artik 700D olarak yorumlanmaz.
+- Eksik LTC kurulumu olan RectAreaLight yerine yerel PMREM studyo yansimasi
+  kullanilir. Uc panelden uretilir; harici HDR/AI gorseli kullanilmaz.
+- Polyester carrier'lari birbirine golge dusurur. Polip icin ortam yansimasi
+  ve carrier golgesi acilmaz.
+- Polyester parlakligi renk dokusuna boyanmaz; sabit fiziksel specular,
+  yonlu yansima ve ince boyuna silindirik normal ayrintisindan gelir.
+- Filament yogunlugu halen optik yaklasimdir; gercek D/F etiketi olculmemistir.
+- `proofs/photo-reference/target.png` kullanicinin referansidir.
+- `proofs/photo-reference-rope`: 32 kukla, 16 mm, 45 derece, 12 ip x 1000D.
+  Bu fotograf makinesinin cozulmus recetesi degil, acikca belirtilmis test recetesidir.
+- `proofs/photo-reference-crossing`: ayni recetenin gercek iki-carrier kesiti.
+- `proofs/photo-reference-default`: 16 kukla, 10 mm varsayilan regresyonu.
+- Detayli karsilastirma ve sinirlar: `PHOTO_REFERENCE_REVIEW.md`.
+
+## Kirmizi Yansima Duzeltmesi
+
+- Kullanici `photo-reference-rope` adayindaki BEYAZ gorunumu kabul edilebilir
+  buldu; bu kabul kirmiziya veya tam urunun gorsel kabulune genellenmez.
+- Beyazin roughness 0.20, specular 1.0, ortam yansimasi 3.2 degerleri,
+  normal dokusu ve sahne isiklari korunur.
+- Koyu/renkli ipte roughness 0.34, specular 0.72, ortam yansimasi 1.6;
+  mevcut filament specular haritasi yansimayi lifler arasinda dagitir.
+- Ortam yansimasi artik diger optikler gibi acik/koyu ip ayrimina uyar.
+- Son kanitlar `proofs/red-reflection-rope` ve `proofs/red-reflection-crossing`.
+- Calisma halen izole kopyadadir; canliya aktarilmadi.
+
+- Kullanicinin sonraki ince ayari: renkli ip specular 0.60, ortam yansimasi
+  1.35 olarak biraz daha azaltildi. Beyaz specular 1.0 / ortam 3.2 ve
+  tum isiklar ayni. Kanitlar `proofs/red-reflection-soft-crossing` ve
+  `proofs/red-reflection-soft-rope` altindadir.

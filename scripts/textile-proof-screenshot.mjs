@@ -3,6 +3,7 @@ import { chromium } from "playwright-core";
 
 const outputDir = process.env.OUTPUT_DIR || "proofs/current-rope";
 const baseUrl = process.env.BASE_URL || "http://127.0.0.1:3217/";
+const requestedCarrierCount = Number(process.env.CARRIER_COUNT || 0);
 const requestedBraidAngle = Number(process.env.BRAID_ANGLE || 0);
 const requestedDiameter = Number(process.env.DIAMETER_MM || 0);
 const requestedEnds = Number(process.env.ENDS_PER_CARRIER || 0);
@@ -16,10 +17,14 @@ mkdirSync(outputDir, { recursive: true });
 const browser = await chromium.launch();
 const page = await browser.newPage({ viewport: { width: 1440, height: 1000 }, deviceScaleFactor: 1 });
 let geometryReport = null;
+const browserErrors = [];
+page.on("pageerror", error => browserErrors.push(error.message));
+page.on("console", message => { if (message.type() === "error") browserErrors.push(message.text()); });
 page.on("response", async (response) => {
   if (!response.url().endsWith("/api/braid-geometry") || !response.ok()) return;
   const mesh = await response.json();
   geometryReport = {
+    carrierCount: mesh.carrierCount,
     geometryModel: mesh.geometryModel,
     crossingDepthModel: mesh.crossingDepthModel,
     crossingDeformationModel: mesh.crossingDeformationModel,
@@ -64,6 +69,10 @@ await page.waitForFunction(
   { timeout: 60000 }
 );
 let settingsChanged = false;
+if (requestedCarrierCount) {
+  await page.locator("#carrierCount").selectOption(String(requestedCarrierCount));
+  settingsChanged = true;
+}
 if (requestedBraidAngle >= 24 && requestedBraidAngle <= 68) {
   await page.locator("#braidAngle").evaluate((control, value) => {
     control.value = String(value);
@@ -187,6 +196,7 @@ const mobileStats = await measureScreenshot(mobileBuffer);
 const report = {
   generatedAt: new Date().toISOString(),
   sourceUrl: sourceUrl.href,
+  carrierCount: requestedCarrierCount || null,
   braidAngle: requestedBraidAngle || null,
   diameterMm: requestedDiameter || null,
   endsPerCarrier: requestedEnds || null,
@@ -195,6 +205,7 @@ const report = {
   requestedGeometryMode,
   geometry: geometryReport,
   runtimeAudit,
+  browserErrors,
   screenshots: {
     normal: normalStats,
     generated: generatedStats,
@@ -207,4 +218,5 @@ const report = {
 };
 writeFileSync(`${outputDir}/report.json`, `${JSON.stringify(report, null, 2)}\n`);
 console.log(JSON.stringify(report));
+if (browserErrors.length) throw new Error(`Browser errors: ${browserErrors.join("; ")}`);
 await browser.close();

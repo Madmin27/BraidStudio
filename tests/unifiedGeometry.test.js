@@ -241,16 +241,16 @@ test("material library preserves accepted Polip and calibrated Polyester profile
   assert.equal(polip.status, "user_accepted");
   assert.equal(polip.denierScale, 1);
   assert.equal(polyester.materialProfileId, "polyester_satin");
-  assert.equal(polyester.denierScale, 0.7);
+  assert.equal(polyester.denierScale, 1);
   assert.equal(polyester.texture.worldSpaceU, true);
   assert.ok(polyester.texture.repeatPerMm > 0);
   assert.ok(polyester.texture.referenceMicroFibersPerEnd > 1);
   assert.ok(polyester.texture.aggregateSpecular > 0);
   assert.ok(polyester.texture.lightCarrier.colorBase > polyester.texture.colorBase);
-  assert.ok(polyester.texture.lightCarrier.microRelief < polyester.texture.microRelief);
-  assert.ok(polyester.texture.lightCarrier.microGrooveColor > polyester.texture.macroGrooveColor);
-  assert.ok(polyester.texture.lightCarrier.colorSatinAmplitude > 0);
-  assert.ok(polyester.texture.lightCarrier.colorSatinAmplitude < polyester.texture.colorSatinAmplitude);
+  // Satin contrast comes from reflected illumination, not highlights baked into dye.
+  assert.equal(polyester.texture.colorSatinAmplitude, 0);
+  assert.equal(polyester.texture.lightCarrier.colorSatinAmplitude, 0);
+  assert.ok(polyester.optics.environmentIntensity > 0);
   assert.ok(polyester.optics.lightCarrier.roughness <= polyester.optics.roughness);
   assert.ok(polyester.optics.lightCarrier.specularIntensity > 0.7);
   assert.ok(polyester.optics.lightCarrier.sheen < polyester.optics.sheen);
@@ -338,12 +338,11 @@ test("server and browser expose only the unified geometry endpoint", async () =>
   assert.match(browser, /\/api\/braid-geometry/);
   assert.match(browser, /materialProfileId: ui\.materialProfile\.value/);
   assert.match(browser, /applyMaterialLighting\(mesh\.materialProfile\)/);
-  assert.match(browser, /lighting\.softboxPosition/);
+  assert.match(browser, /state\.scene\.environment/);
   assert.match(browser, /const optics = profile\.optics/);
   assert.match(browser, /const lightCarrier = optics\.lightCarrier/);
   assert.match(browser, /roughness: resolvedRoughness/);
   assert.match(browser, /sheenRoughnessMap: profileId === "polyester_satin"/);
-  assert.match(browser, /specularIntensityMap: fiberMaps\.specular/);
   assert.match(browser, /specularIntensity: resolvedSpecularIntensity/);
   assert.match(browser, /lightCarrierOpticsMix/);
   assert.match(browser, /specularMapColorSpace/);
