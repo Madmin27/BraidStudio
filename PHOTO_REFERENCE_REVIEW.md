@@ -1,3 +1,5 @@
+> Guncel durum: son canli gorunum kullanici tarafindan reddedildi; uretim 73cacd4 durumuna geri alindi. Bu rapor arsivlenen adaya aittir. Calisma ve denetim araci BraidStudio-photo-study kopyasinda korunur.
+
 # Fotograf referansina gore polyester adayi
 
 Durum: gorsel aday, kullanici kabulu ve canli dagitim yok.

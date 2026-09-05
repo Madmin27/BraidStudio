@@ -191,3 +191,18 @@ Durum: GORSEL KABUL BEKLIYOR, CANLIYA ALINMADI
   (`73cacd4`). Malzeme kontrol noktasi `a536b43`.
 - Canliya aktarim, tum urunun gorsel/uretim kabulunun tamamlandigi anlamina
   gelmez; kullanici deseni canlida inceleyecek.
+
+## GUNCEL DURUM: Canli Dagitim Geri Alindi
+
+- Kullanici parlak plastik/musamba gorunumunu reddetti ve geri almaya izin verdi.
+- Son canli dagitim kaldirildi. Uretim public/server/scripts/data/tests ve
+  paket dosyalari `73cacd4` durumuna geri donduruldu. Yeni malzeme aktif degil.
+- Yalniz braidstudio.service yeniden baslatildi; active. HTTPS app.js eski
+  kaynakla birebir eslesiyor; canli API eski polyester profilini donduruyor.
+- Geri alinan surumun 11 testi ve sozdizimi/diff kontrolleri gecti.
+- Onceki beyaz/kirmizi hakkindaki kismi olumlu geri bildirim, reddedilen
+  son canli gorunum icin kabul sayilamaz. Yeni aday canliya alinmamalidir.
+- Reddedilen calisma `archive/rejected-polyester-live-20260905` dalinda ve
+  `/root/projeler/BraidStudio-photo-study` kopyasinda inceleme icin korunur.
+  Bu calisma kopyasi aktif uretim surumu degildir.
+- Eski raporlar ve ekran kanitlari tarihseldir; aktif durumu bu bolum belirtir.

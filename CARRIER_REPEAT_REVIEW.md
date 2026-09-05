@@ -1,3 +1,5 @@
+> Guncel durum: son canli gorunum kullanici tarafindan reddedildi; uretim 73cacd4 durumuna geri alindi. Bu rapor arsivlenen adaya aittir. Calisma ve denetim araci BraidStudio-photo-study kopyasinda korunur.
+
 # 16 kukla / 8 S + 8 Z tekrar kontrolu
 
 Sonuc: incelenen 16 kuklali Diamond mesh'inde ayni yonde 8 farkli kukladan
