@@ -4,6 +4,9 @@ import { chromium } from "playwright-core";
 const outputDir = process.env.OUTPUT_DIR || "proofs/current-rope";
 const baseUrl = process.env.BASE_URL || "http://127.0.0.1:3217/";
 const requestedBraidAngle = Number(process.env.BRAID_ANGLE || 0);
+const requestedDiameter = Number(process.env.DIAMETER_MM || 0);
+const requestedEnds = Number(process.env.ENDS_PER_CARRIER || 0);
+const requestedDenier = Number(process.env.DENIER_PER_END || 0);
 const requestedMaterialProfile = process.env.MATERIAL_PROFILE || "";
 const requestedGeometryMode = process.env.GEOMETRY_MODE === "crossing" ? "crossing" : "rope";
 const sourceUrl = new URL(baseUrl);
@@ -34,7 +37,22 @@ page.on("response", async (response) => {
     materialProfileId: mesh.materialProfile?.materialProfileId,
     denier: mesh.denier,
     denierScale: mesh.denierScale,
-    effectiveDenier: mesh.effectiveDenier
+    effectiveDenier: mesh.effectiveDenier,
+    endsPerCarrier: mesh.endsPerCarrier,
+    denierPerEnd: mesh.denierPerEnd,
+    effectiveDenierPerEnd: mesh.effectiveDenierPerEnd,
+    totalCarrierDenier: mesh.totalCarrierDenier,
+    effectiveCarrierDenier: mesh.effectiveCarrierDenier,
+    polymerAreaMm2: mesh.polymerAreaMm2,
+    envelopeAreaMm2: mesh.envelopeAreaMm2,
+    yarnWidth: mesh.yarnWidth,
+    yarnThickness: mesh.yarnThickness,
+    packingFraction: mesh.packingFraction,
+    contactPackingFraction: mesh.contactPackingFraction,
+    capacityUtilization: mesh.capacityUtilization,
+    fitStatus: mesh.fitStatus,
+    meshOuterDiameterMm: mesh.meshOuterDiameterMm,
+    diameterErrorMm: mesh.diameterErrorMm
   };
 });
 await page.goto(sourceUrl.href, { waitUntil: "networkidle" });
@@ -53,6 +71,27 @@ if (requestedBraidAngle >= 24 && requestedBraidAngle <= 68) {
   }, requestedBraidAngle);
   settingsChanged = true;
 }
+if (requestedDiameter >= 4 && requestedDiameter <= 80) {
+  await page.locator("#diameter").evaluate((control, value) => {
+    control.value = String(value);
+    control.dispatchEvent(new Event("input", { bubbles: true }));
+  }, requestedDiameter);
+  settingsChanged = true;
+}
+if (requestedEnds >= 8 && requestedEnds <= 40) {
+  await page.locator("#filamentCount").evaluate((control, value) => {
+    control.value = String(value);
+    control.dispatchEvent(new Event("input", { bubbles: true }));
+  }, requestedEnds);
+  settingsChanged = true;
+}
+if (requestedDenier >= 300 && requestedDenier <= 3000) {
+  await page.locator("#denier").evaluate((control, value) => {
+    control.value = String(value);
+    control.dispatchEvent(new Event("input", { bubbles: true }));
+  }, requestedDenier);
+  settingsChanged = true;
+}
 if (requestedMaterialProfile) {
   await page.locator("#materialProfile").selectOption(requestedMaterialProfile);
   settingsChanged = true;
@@ -67,6 +106,22 @@ if (settingsChanged) {
 }
 await page.waitForTimeout(800);
 const runtimeAudit = await page.evaluate(() => window.__BRAIDSTUDIO_RUNTIME_AUDIT__ || null);
+if (
+  requestedGeometryMode === "rope"
+  && Number(runtimeAudit?.measurementProjection?.maximumDiameterSpreadPx) > 0.25
+) {
+  throw new Error(
+    `Non-uniform projected diameter: ${runtimeAudit.measurementProjection.maximumDiameterSpreadPx}px`
+  );
+}
+if (
+  requestedGeometryMode === "rope"
+  && Math.abs(Number(runtimeAudit?.measurementProjection?.diameterErrorMm)) > 0.1
+) {
+  throw new Error(
+    `Mesh diameter differs from selected diameter: ${runtimeAudit.measurementProjection.diameterErrorMm}mm`
+  );
+}
 
 const mount = page.locator("#threeMount");
 const normalBuffer = await mount.screenshot({ path: `${outputDir}/normal.png` });
@@ -113,7 +168,7 @@ await page.screenshot({
 
 const box = await mount.boundingBox();
 await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
-await page.mouse.wheel(0, requestedGeometryMode === "crossing" ? -2600 : -4200);
+await page.mouse.wheel(0, requestedGeometryMode === "crossing" ? -1000 : -9000);
 await page.waitForTimeout(500);
 const closeBuffer = await mount.screenshot({ path: `${outputDir}/close.png` });
 const closeStats = await measureScreenshot(closeBuffer);
@@ -133,6 +188,9 @@ const report = {
   generatedAt: new Date().toISOString(),
   sourceUrl: sourceUrl.href,
   braidAngle: requestedBraidAngle || null,
+  diameterMm: requestedDiameter || null,
+  endsPerCarrier: requestedEnds || null,
+  denierPerEnd: requestedDenier || null,
   requestedMaterialProfile: requestedMaterialProfile || null,
   requestedGeometryMode,
   geometry: geometryReport,

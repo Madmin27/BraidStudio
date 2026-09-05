@@ -93,3 +93,24 @@ Malzeme adayi kullanici kabulunu bekler.
   kaldirildi.
 - Uretim testi yalnizca `tests/unifiedGeometry.test.js` icinde tek mimariyi denetler.
 - Canli kanit `proofs/clean-live` altindadir; kullanici gorsel kabulunu bekler.
+
+## 2026-09-05 Matematik ve Polyester Denetimi
+
+Durum: GORSEL KABUL BEKLIYOR, CANLIYA ALINMADI
+
+- API yalniz cift kukla sayisini kabul eder; S ve Z aileleri daima esittir.
+- Orgu tekrari Diamond icin 2, Regular icin 4, Hercules icin 6 crossing
+  sirasidir; eksenel tekrar uzunlugu crossing araligindan hesaplanir.
+- Orgu acisi ideal formulle raporlanmakla kalmaz, uretilen mesh tegetinden
+  olculur ve test edilir.
+- Cetvel secilen ideal silindiri degil kalibre edilmis mesh dis capini denetler.
+  10 mm varsayilan kanitta cap hatasi 0.001 mm altindadir.
+- 48 kukla/30 sira en buyuk istek 18 MB sunucu sinirinin altinda test edilir.
+- Polyester tek envelope mesh kullanir. Emissive aydinlatma, ikinci fiber shell,
+  specular renk haritasi ve sheen renk haritasi yoktur.
+- Denye PET polimer alanini, paket kalinligini ve optik lif kalinligini; tel
+  sayisi toplam tasiyici denyesini, paket kalinligini ve yuzey bant sayisini
+  birlikte degistirir. Hicbiri carrier yolu veya renk kimligini degistirmez.
+- Guncel kanitlar: `proofs/final-audit-crossing`, `proofs/final-audit-rope`,
+  `proofs/final-audit-denier-500`, `proofs/final-audit-denier-1500`,
+  `proofs/final-audit-ends-12`, `proofs/final-audit-ends-35`.

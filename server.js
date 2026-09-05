@@ -60,8 +60,6 @@ async function loadMaterialProfiles() {
   return profiles;
 }
 
-const materialProfiles = await loadMaterialProfiles();
-
 async function auditRuntime(event) {
   try {
     await mkdir(runtimeAuditDir, { recursive: true });
@@ -97,13 +95,15 @@ async function readRequestJson(req, limitBytes = 256 * 1024) {
 }
 
 function normalizeGeometryPayload(body = {}) {
-  const carrierCount = Math.max(8, Math.min(48, Number(body.carrierCount || 16)));
+  const carrierCount = Number(body.carrierCount || 16);
+  if (!Number.isInteger(carrierCount) || carrierCount < 8 || carrierCount > 48 || carrierCount % 2) {
+    throw Object.assign(new Error("carrier_count_must_be_even"), { statusCode: 400 });
+  }
   const validHex = (value, fallback) => /^#[0-9a-f]{6}$/i.test(String(value || "")) ? String(value) : fallback;
   return {
     mode: body.mode === "crossing" ? "crossing" : "rope",
-    visibleRows: Math.max(8, Math.min(60, Number(body.visibleRows || 30))),
+    visibleRows: Math.max(8, Math.min(30, Number(body.visibleRows || 30))),
     baseColor: validHex(body.baseColor, "#59ee78"),
-    accentColor: validHex(body.accentColor, "#151718"),
     carrierCount,
     diameterMm: Math.max(4, Math.min(80, Number(body.diameterMm || 16))),
     braidAngle: Math.max(24, Math.min(68, Number(body.braidAngle || 34))),
@@ -183,6 +183,7 @@ async function handleBraidGeometry(req, res) {
   const startedAt = Date.now();
   try {
     const payload = normalizeGeometryPayload(await readRequestJson(req));
+    const materialProfiles = await loadMaterialProfiles();
     const materialProfile = materialProfiles.find(
       (profile) => profile.materialProfileId === payload.materialProfileId
     ) || materialProfiles.find((profile) => profile.materialProfileId === "polyester_satin");

@@ -178,14 +178,6 @@ function directionFor(index) {
   return state.flip ? -sign : sign;
 }
 
-function crossingSpan() {
-  return {
-    diamond: 1,
-    regular: 2,
-    hercules: 3
-  }[ui.crossingMode.value] || 1;
-}
-
 function calculateBraid() {
   const carrierCount = Number(ui.carrierCount.value);
   const diameterMm = Number(ui.diameter.value);
@@ -193,69 +185,16 @@ function calculateBraid() {
   const strandWidthScale = Number(ui.strandWidth.value) / 100;
   const filamentCount = Number(ui.filamentCount.value);
   const denier = Number(ui.denier.value);
-  const denierScale = Math.sqrt(denier / 1000);
-  const radiusMm = diameterMm / 2;
-  const angleRad = angleDeg * Math.PI / 180;
-  const angleRad2d = clamp(angleRad * .92, .44, 1.08);
-  const pitchMm = (2 * Math.PI * radiusMm) / Math.tan(angleRad);
-  const lengthMm = 160;
-  const rows = 58;
   const visibleRows = 30;
-  const circumference = Math.PI * diameterMm;
-  const laneWidth = circumference / (carrierCount / 2);
-  const repeatRows = carrierCount / gcd(carrierCount, crossingSpan() * 2);
-  const turns = lengthMm / pitchMm;
-  const rowMm = lengthMm / rows;
-  const visible = [];
-
-  for (let row = 0; row < rows; row += 1) {
-    for (let index = 0; index < carrierCount; index += 1) {
-      const carrier = state.carriers[index];
-      const dir = directionFor(index);
-      const phase = index * (Math.PI * 2 / carrierCount);
-      const z0 = row / rows;
-      const z1 = (row + 1.04) / rows;
-      const zMm0 = z0 * lengthMm;
-      const zMm1 = z1 * lengthMm;
-      const theta0 = phase + dir * (zMm0 / pitchMm) * Math.PI * 2;
-      const theta1 = phase + dir * (zMm1 / pitchMm) * Math.PI * 2;
-      const over = ((row + index + (dir > 0 ? 0 : crossingSpan())) % (crossingSpan() * 2)) < crossingSpan();
-      visible.push({
-        carrierNo: carrier.no,
-        color: carrier.color,
-        dir,
-        row,
-        phase,
-        z0,
-        z1,
-        zMm0,
-        zMm1,
-        theta0,
-        theta1,
-        over
-      });
-    }
-  }
 
   return {
     carrierCount,
     diameterMm,
     angleDeg,
-    angleRad2d,
     strandWidthScale,
     filamentCount,
     denier,
-    denierScale,
-    pitchMm,
-    lengthMm,
-    turns,
-    rowMm,
-    circumference,
-    laneWidth,
-    repeatRows,
     visibleRows,
-    rows,
-    visible,
     carriers: state.carriers.map((carrier, index) => ({
       ...carrier,
       direction: directionFor(index) > 0 ? "saat yonu" : "ters yon",
@@ -428,6 +367,8 @@ function applyMaterialLighting(profile) {
   state.materialLights.fill.intensity = Number(lighting.fill);
   state.materialLights.rim.intensity = Number(lighting.rim);
   state.materialLights.softbox.intensity = Number(lighting.softbox);
+  state.materialLights.softbox.width = Number(lighting.softboxWidth ?? 18);
+  state.materialLights.softbox.height = Number(lighting.softboxHeight ?? 8);
   state.materialLights.softbox.position.set(...softboxPosition.map(Number));
   state.materialLights.softbox.lookAt(0, 0, 0);
 }
@@ -449,11 +390,9 @@ function geometryPayload(result) {
     filamentCount: result.filamentCount,
     denier: result.denier,
     materialProfileId: ui.materialProfile.value,
-    ribbonShader: true,
     crossingMode: ui.crossingMode.value,
     flip: state.flip,
     baseColor: mostCommonCarrierColor(result),
-    accentColor: state.activeColor,
     carriers: result.carriers.map((carrier) => ({
       no: carrier.no,
       color: carrier.color
@@ -495,7 +434,10 @@ async function requestGeometryMesh(result) {
     state.geometryMesh = mesh;
     renderGeometryThree(mesh);
     renderCanvasFromThree();
-    ui.statusPill.textContent = state.simulationDirty ? "Değişiklikler hazır" : "Geometri hazır";
+    renderSummary(state.lastResult, mesh);
+    ui.statusPill.textContent = mesh.fitStatus === "overfilled"
+      ? "Yoğunluk bu çapa sığmıyor"
+      : state.simulationDirty ? "Değişiklikler hazır" : "Geometri hazır";
   } catch (error) {
     if (requestId !== state.geometryRequestId) return;
     drawGeometryWaiting("Geometri hatası");
@@ -527,26 +469,29 @@ function renderGeometryThree(mesh) {
       color: yarn.color || defaultBase,
       materialUuid: material.uuid,
       textureUuid: material.map?.uuid || null,
-      ...material.userData.renderLod
+      ...material.userData.fiberModel
     });
   }
   window.__BRAIDSTUDIO_RUNTIME_AUDIT__ = {
-    mode: mesh.crossingWindow ? "crossing" : mesh.cylindricalWeave ? "rope" : "other",
+    mode: mesh.mode,
     materialProfileId: mesh.materialProfile?.materialProfileId,
     carrierCount: runtimeMaterials.length,
+    selectedDiameterMm: mesh.diameterMm,
+    meshOuterDiameterMm: mesh.meshOuterDiameterMm,
+    diameterErrorMm: mesh.diameterErrorMm,
     materials: runtimeMaterials
   };
 
-  if (mesh.crossingWindow) {
+  if (mesh.mode === "crossing") {
     state.viewRotation = { x: 0, y: 0, z: 0 };
-    state.zoom = 30;
+    state.zoom = 24;
     state.camera.position.set(0, 0, state.zoom);
     state.camera.lookAt(0, 0, 0);
     state.ropeGroup.position.set(0, 0, 0);
     return;
   }
 
-  if (mesh.cylindricalWeave) {
+  if (mesh.mode === "rope") {
     const endPlanes = [
       new THREE.Plane(new THREE.Vector3(1, 0, 0), mesh.length / 2),
       new THREE.Plane(new THREE.Vector3(-1, 0, 0), mesh.length / 2)
@@ -613,95 +558,109 @@ function renderGeometryThree(mesh) {
     return;
   }
 
-  if (mesh.flatWeave) {
-    state.viewRotation = { x: -1.02, y: 0.02, z: -0.30 };
-    state.zoom = 27;
-    state.ropeGroup.position.set(0, 0, 0);
-    return;
-  }
-
-  state.ropeGroup.position.set(0, 0, 0);
-
-  const capMaterial = new THREE.MeshStandardMaterial({
-    color: new THREE.Color(mostCommonCarrierColor(state.lastResult)),
-    roughness: .9,
-    metalness: 0
-  });
-  const coreMaterial = new THREE.MeshStandardMaterial({ color: 0xb8c7b5, roughness: .88, metalness: 0 });
-  for (const z of [-mesh.length / 2, mesh.length / 2]) {
-    const cap = new THREE.Mesh(new THREE.CircleGeometry(mesh.radius * .92, 96), capMaterial);
-    cap.position.z = z;
-    cap.castShadow = true;
-    cap.receiveShadow = true;
-    state.ropeGroup.add(cap);
-  }
-  const core = new THREE.Mesh(new THREE.CircleGeometry(mesh.radius * .38, 72), coreMaterial);
-  core.position.z = -mesh.length / 2 - .01;
-  state.ropeGroup.add(core);
+  throw new Error(`unsupported_geometry_mode:${mesh.mode}`);
 }
 
 function getCarrierMaterial(color, mesh) {
   const profile = mesh.materialProfile || {};
   const profileId = profile.materialProfileId || "polyester_satin";
   const optics = profile.optics || {};
-  const filamentCount = Math.round(mesh.filamentCount || state.lastResult?.filamentCount || 25);
-  const denier = Math.round(mesh.effectiveDenier || mesh.denier || state.lastResult?.denier || 1000);
-  const materialScale = Math.sqrt(denier / 1000);
-  const filamentDiameterScale = mesh.filamentDiameterScale
-    ?? clamp(Math.sqrt(denier / 1000), .45, 1.75);
-  const renderLod = polyesterRenderLod(mesh, filamentCount, profile);
-  const key = `${color.toLowerCase()}:${profileId}:${filamentCount}:${denier}:${renderLod.key}`;
+  const lightCarrier = optics.lightCarrier || {};
+  const endsPerCarrier = Math.round(mesh.endsPerCarrier || mesh.filamentCount || 25);
+  const denierPerEnd = Math.round(mesh.effectiveDenierPerEnd || mesh.effectiveDenier || mesh.denier || 1000);
+  const reliefScale = clamp(Math.sqrt(denierPerEnd / 700), .55, 1.8);
+  const key = `${color.toLowerCase()}:${profileId}:${endsPerCarrier}:${denierPerEnd}`;
   if (state.materialCache.has(key)) return state.materialCache.get(key);
-  const fiberMaps = makePolyesterFiberMaps(filamentCount, denier, profile, renderLod);
   const normalScale = Array.isArray(optics.normalScale) ? optics.normalScale : [.012, .12];
-  const normalBoost = Math.sqrt(renderLod.contrastBoost);
+  const carrierColor = new THREE.Color(color);
+  const carrierLuminance = carrierColor.r * .2126 + carrierColor.g * .7152 + carrierColor.b * .0722;
+  const lightStart = Number(lightCarrier.luminanceStart ?? 1);
+  const lightFull = Math.max(lightStart + .001, Number(lightCarrier.luminanceFull ?? 1.001));
+  const lightAmount = clamp((carrierLuminance - lightStart) / (lightFull - lightStart), 0, 1);
+  const lightMix = lightAmount * lightAmount * (3 - 2 * lightAmount);
+  const fiberMaps = makePolyesterFiberMaps(endsPerCarrier, denierPerEnd, profile, lightMix);
+  const resolveOptic = (name, fallback) => THREE.MathUtils.lerp(
+    Number(optics[name] ?? fallback),
+    Number(lightCarrier[name] ?? optics[name] ?? fallback),
+    lightMix
+  );
+  const bumpScaleMultiplier = THREE.MathUtils.lerp(
+    1,
+    Number(lightCarrier.bumpScaleMultiplier ?? 1),
+    lightMix
+  );
+  const normalScaleMultiplier = THREE.MathUtils.lerp(
+    1,
+    Number(lightCarrier.normalScaleMultiplier ?? 1),
+    lightMix
+  );
+  const resolvedDiffuseMultiplier = THREE.MathUtils.lerp(
+    1,
+    Number(lightCarrier.diffuseMultiplier ?? 1),
+    lightMix
+  );
+  const resolvedBumpScale = clamp(
+    Number(optics.bumpScale ?? .003) * reliefScale * bumpScaleMultiplier,
+    Number(optics.bumpMin ?? .0015),
+    Number(optics.bumpMax ?? .005)
+  );
+  const resolvedNormalScale = [
+    Number(normalScale[0]) * reliefScale * normalScaleMultiplier,
+    Number(normalScale[1]) * reliefScale * normalScaleMultiplier
+  ];
+  const resolvedRoughness = resolveOptic("roughness", .50);
+  const resolvedSheen = resolveOptic("sheen", .28);
+  const resolvedSheenRoughness = resolveOptic("sheenRoughness", .76);
+  const resolvedSpecularIntensity = resolveOptic("specularIntensity", .52);
+  const resolvedAnisotropy = resolveOptic("anisotropy", .84);
+  const materialColor = carrierColor.clone().multiplyScalar(resolvedDiffuseMultiplier);
   const material = new THREE.MeshPhysicalMaterial({
-    color: new THREE.Color(color),
-    emissive: new THREE.Color(color),
-    emissiveIntensity: .012,
+    color: materialColor,
     map: fiberMaps.color,
     bumpMap: fiberMaps.bump,
-    bumpScale: clamp(
-      Number(optics.bumpScale ?? .003) * materialScale * filamentDiameterScale,
-      Number(optics.bumpMin ?? .0015),
-      Number(optics.bumpMax ?? .005)
-    ) * normalBoost,
+    bumpScale: resolvedBumpScale,
     normalMap: fiberMaps.normal,
-    normalScale: new THREE.Vector2(
-      Number(normalScale[0]) * normalBoost,
-      Number(normalScale[1]) * normalBoost
-    ),
+    normalScale: new THREE.Vector2(...resolvedNormalScale),
     roughnessMap: fiberMaps.roughness,
-    roughness: Number(optics.roughness ?? .50),
+    roughness: resolvedRoughness,
     metalness: 0,
     ior: Number(optics.ior ?? 1.5),
-    sheen: Number(optics.sheen ?? .28),
-    sheenRoughness: Number(optics.sheenRoughness ?? .76),
+    sheen: resolvedSheen,
+    sheenRoughness: resolvedSheenRoughness,
     sheenColor: new THREE.Color(color).lerp(
       new THREE.Color(0xffffff),
-      Number(optics.sheenWhiteMix ?? .34)
+      resolveOptic("sheenWhiteMix", .34)
     ),
-    sheenColorMap: profileId === "polyester_satin" ? fiberMaps.specular : null,
     sheenRoughnessMap: profileId === "polyester_satin" ? fiberMaps.roughness : null,
     specularIntensityMap: fiberMaps.specular,
-    specularIntensity: Number(optics.specularIntensity ?? .52),
-    specularColorMap: profileId === "polyester_satin" ? fiberMaps.specular : null,
-    specularColor: new THREE.Color(color).lerp(
-      new THREE.Color(0xffffff),
-      Number(optics.specularWhiteMix ?? .18)
-    ),
-    anisotropy: Number(optics.anisotropy ?? .84),
+    specularIntensity: resolvedSpecularIntensity,
+    specularColor: new THREE.Color(0xffffff),
+    anisotropy: resolvedAnisotropy,
     anisotropyMap: fiberMaps.anisotropy,
     anisotropyRotation: 0,
     side: THREE.DoubleSide
   });
   material.userData.sharedBraidMaterial = true;
-  material.userData.renderLod = {
-    lodKey: renderLod.key,
-    visibleYarnBands: renderLod.visibleYarnBands,
-    microFibersPerYarn: renderLod.microFibersPerYarn,
-    contrastBoost: renderLod.contrastBoost,
-    pixelsPerYarn: renderLod.pixelsPerYarn,
+  material.userData.fiberModel = {
+    endsPerCarrier,
+    requestedDenierPerEnd: Math.round(mesh.denierPerEnd || mesh.denier || denierPerEnd),
+    effectiveDenierPerEnd: denierPerEnd,
+    denierPerEnd,
+    physicalYarnBands: fiberMaps.audit.physicalYarnBands,
+    microFibersPerEnd: fiberMaps.audit.microFibersPerEnd,
+    aggregateFiberClusters: fiberMaps.audit.aggregateFiberClusters,
+    carrierLuminance,
+    lightCarrierOpticsMix: lightMix,
+    resolvedRoughness,
+    resolvedSheen,
+    resolvedSheenRoughness,
+    resolvedSpecularIntensity,
+    resolvedAnisotropy,
+    resolvedDiffuseMultiplier,
+    resolvedBumpScale,
+    resolvedNormalScale,
+    lightTextureClass: fiberMaps.audit.lightTextureClass,
+    specularMapColorSpace: fiberMaps.audit.specularMapColorSpace,
     textureMapKey: fiberMaps.audit.mapKey,
     textureRepeatU: fiberMaps.audit.repeatU,
     textureMinFilter: fiberMaps.audit.minFilter,
@@ -712,82 +671,31 @@ function getCarrierMaterial(color, mesh) {
   return material;
 }
 
-function polyesterRenderLod(mesh, filamentCount, profile) {
+function makePolyesterFiberMaps(endsPerCarrier, denierPerEnd, profile = {}, lightMix = 0) {
   const textureProfile = profile.texture || {};
-  if (profile.materialProfileId !== "polyester_satin") {
-    return {
-      key: "physical",
-      visibleYarnBands: filamentCount,
-      microFibersPerYarn: 1,
-      contrastBoost: 1
-    };
-  }
-  const cameraDistance = mesh.crossingWindow
-    ? 30
-    : mesh.cylindricalWeave
-      ? clamp(mesh.length * 2.15, 52, 80)
-      : 27;
-  const viewportHeight = Math.max(360, ui.threeMount.clientHeight || 520);
-  const verticalSpanMm = 2 * cameraDistance * Math.tan(THREE.MathUtils.degToRad(state.camera.fov * .5));
-  const pixelsPerMm = viewportHeight / Math.max(verticalSpanMm, 1e-6);
-  const pixelsPerYarn = Number(mesh.yarnWidth) * pixelsPerMm / Math.max(filamentCount, 1);
-  const carrierPixels = pixelsPerYarn * filamentCount;
-  const targetYarnPixels = Number(textureProfile.targetPixelsPerYarn ?? 2.0);
-  const visibleYarnBands = clamp(
-    Math.round(carrierPixels / Math.max(targetYarnPixels, 1.25)),
-    Math.min(8, filamentCount),
-    filamentCount
-  );
-  const pixelsPerVisibleYarn = carrierPixels / visibleYarnBands;
-  const physicalMicroFibers = clamp(
-    Math.round(Number(textureProfile.microFibersPerYarn ?? 1)),
-    1,
-    12
-  );
-  const targetMicroPixels = Number(textureProfile.targetPixelsPerMicroFiber ?? 1.35);
-  const visibleMicroFibers = clamp(
-    Math.floor(pixelsPerVisibleYarn / Math.max(targetMicroPixels, .5)),
-    1,
-    physicalMicroFibers
-  );
-  const collapsedYarnBoost = Math.sqrt(filamentCount / visibleYarnBands);
-  const collapsedFiberBoost = Math.sqrt(physicalMicroFibers / visibleMicroFibers);
-  const contrastBoost = clamp(
-    collapsedYarnBoost * collapsedFiberBoost,
-    1,
-    Number(textureProfile.maxLodContrast ?? 2.4)
-  );
-  return {
-    key: `${visibleYarnBands}:${visibleMicroFibers}:${contrastBoost.toFixed(2)}`,
-    visibleYarnBands,
-    microFibersPerYarn: visibleMicroFibers,
-    contrastBoost,
-    pixelsPerYarn
-  };
-}
-
-function makePolyesterFiberMaps(filamentCount, denier, profile = {}, renderLod = {}) {
-  const textureProfile = profile.texture || {};
+  const lightTextureProfile = textureProfile.lightCarrier || {};
   const profileId = profile.materialProfileId || "polyester_satin";
   const isPolyesterSatin = profileId === "polyester_satin";
-  const mapKey = `${profileId}:${filamentCount}:${denier}:${renderLod.key || "physical"}`;
+  const lightTextureClass = isPolyesterSatin && lightMix >= .5 ? "light" : "base";
+  const fiberValue = (name, fallback) => Number(
+    (lightTextureClass === "light" ? lightTextureProfile[name] : undefined)
+      ?? textureProfile[name]
+      ?? fallback
+  );
+  const mapKey = `${profileId}:${endsPerCarrier}:${denierPerEnd}:${lightTextureClass}`;
   if (state.polyesterFiberMaps.has(mapKey)) return state.polyesterFiberMaps.get(mapKey);
   const width = 512;
   const height = isPolyesterSatin ? 512 : 256;
-  const strandCount = clamp(
-    Math.round(renderLod.visibleYarnBands ?? filamentCount),
-    Math.min(8, filamentCount),
-    40
-  );
+  const strandCount = clamp(Math.round(endsPerCarrier), 8, 40);
   const strandSpacing = height / strandCount;
-  const denierScale = Math.sqrt(denier / 1000);
+  const denierScale = Math.sqrt(denierPerEnd / 700);
+  const referenceMicroFibers = Number(textureProfile.referenceMicroFibersPerEnd ?? 6);
   const microFibersPerYarn = clamp(
-    Math.round(Number(renderLod.microFibersPerYarn ?? textureProfile.microFibersPerYarn ?? 1)),
-    1,
+    Math.round(referenceMicroFibers * Math.sqrt(denierPerEnd / 700)),
+    3,
     12
   );
-  const lodContrast = Number(renderLod.contrastBoost ?? 1);
-  const lodDetail = Math.sqrt(lodContrast);
+  const aggregateFiberClusters = clamp(Math.round(Math.sqrt(strandCount) * 1.6), 5, 10);
   const colorCanvas = document.createElement("canvas");
   const bumpCanvas = document.createElement("canvas");
   const normalCanvas = document.createElement("canvas");
@@ -840,16 +748,22 @@ function makePolyesterFiberMaps(filamentCount, denier, profile = {}, renderLod =
         const microPosition = local * microFibersPerYarn
           + fract(Math.sin((strandIndex + 1) * 43.17) * 1973.31) * .72
           + .035 * Math.sin(pathPhase * 3 + strandIndex * .61);
-        const microLocal = fract(microPosition);
         const microIndex = strandIndex * microFibersPerYarn + Math.floor(microPosition);
-        const microFiber = Math.pow(Math.sin(Math.PI * microLocal), 2.35);
-        const microGroove = Math.pow(Math.abs(Math.cos(Math.PI * microLocal)), 10);
         const filamentVariation = fract(Math.sin((microIndex + 1) * 78.233) * 43758.5453);
+        const microLocal = fract(microPosition);
+        const microFiber = Math.pow(
+          Math.sin(Math.PI * microLocal),
+          1.65 + filamentVariation * 1.3
+        );
+        const microGroove = Math.pow(
+          Math.abs(Math.cos(Math.PI * microLocal)),
+          8 + filamentVariation * 6
+        );
+        const pathUnit = x / width;
         const fragmentWave = clamp(
-          .48
-          + .27 * Math.sin(pathPhase * 5 + microIndex * .79)
-          + .17 * Math.sin(pathPhase * 13 - microIndex * .37)
-          + .08 * Math.sin(pathPhase * 29 + strandIndex * .53),
+          .14
+          + .56 * periodicFiberNoise(microIndex, pathUnit * 13, 13, 1)
+          + .30 * periodicFiberNoise(microIndex, pathUnit * 29, 29, 2),
           0,
           1
         );
@@ -859,46 +773,73 @@ function makePolyesterFiberMaps(filamentCount, denier, profile = {}, renderLod =
           + .12 * Math.sin(pathPhase * 3 + strandIndex * .43);
         const edgeMask = Math.pow(Math.abs(y / (height - 1) * 2 - 1), 7);
         const edgeVariation = .5 + .5 * Math.sin(pathPhase * 11 + microIndex * 1.31);
-        const colorSatin = Number(textureProfile.colorSatinAmplitude ?? 3);
+        const crossUnit = y / height;
+        let aggregateGlint = 0;
+        if (lightTextureClass !== "light") {
+          const aggregateSignal = clamp(
+            .58 * periodicNoise2D(
+              pathUnit * 7,
+              crossUnit * aggregateFiberClusters,
+              7,
+              aggregateFiberClusters,
+              3
+            )
+            + .42 * periodicNoise2D(pathUnit * 17, crossUnit * 5, 17, 5, 4),
+            0,
+            1
+          );
+          aggregateGlint = Math.pow(aggregateSignal, 2.8);
+        }
+        const colorSatin = fiberValue("colorSatinAmplitude", 3);
+        const macroColor = fiberValue("macroColorAmplitude", 4);
+        const macroGrooveColor = fiberValue("macroGrooveColor", 3);
+        const microColor = fiberValue("microColorAmplitude", 5);
+        const microGrooveColor = fiberValue("microGrooveColor", 2.5);
+        const filamentColorVariation = fiberValue("filamentColorVariation", 8);
+        const microGrooveVisibility = .58
+          + .42 * periodicFiberNoise(microIndex, pathUnit * 17, 17, 10);
 
         colorValue = clampByte(
-          234
-          + macroCrown * 10 * macroVariation * lodContrast
-          - macroGroove * 9 * lodContrast
-          + microFiber * 6 * lodDetail
-          - microGroove * 2.5 * lodDetail
-          + (filamentVariation - .5) * 6
+          fiberValue("colorBase", 228)
+          + macroCrown * macroColor * macroVariation
+          - macroGroove * macroGrooveColor
+          + microFiber * microColor * (.62 + brokenHighlight * .58)
+          - microGroove * microGrooveColor * microGrooveVisibility
+          + (filamentVariation - .5) * filamentColorVariation
           + brokenHighlight * colorSatin
+          + aggregateGlint * fiberValue("aggregateColor", 12)
           - edgeMask * (2 + edgeVariation * 3)
         );
         bumpValue = clampByte(
           128
-          + macroCrown * Number(textureProfile.macroRelief ?? 3.5) * denierScale
-            * macroVariation * lodDetail
-          - macroGroove * 4 * lodDetail
-          + microFiber * Number(textureProfile.microRelief ?? 10) * denierScale
-            * (.45 + brokenHighlight * .55) * lodDetail
+          + macroCrown * fiberValue("macroRelief", 3.5) * denierScale
+            * macroVariation
+          - macroGroove * 4
+          + microFiber * fiberValue("microRelief", 10) * denierScale
+            * (.45 + brokenHighlight * .55)
           - microGroove * 2.4
           + (brokenHighlight - .5) * 1.4
           + edgeMask * (edgeVariation - .5) * 6
         );
         roughnessValue = clampByte(
-          Number(textureProfile.roughnessBase ?? 226)
+          fiberValue("roughnessBase", 226)
           - microFiber * (
-            Number(textureProfile.roughnessFiber ?? 16)
-            + brokenHighlight * Number(textureProfile.roughnessSatin ?? 30)
-          ) * lodDetail
-          - macroCrown * (7 + brokenHighlight * 12) * lodContrast
+            fiberValue("roughnessFiber", 16)
+            + brokenHighlight * fiberValue("roughnessSatin", 30)
+          )
+          - macroCrown * (7 + brokenHighlight * 12)
+          - aggregateGlint * fiberValue("aggregateRoughness", 42)
           + (1 - brokenHighlight) * 5
-          + edgeMask * Number(textureProfile.edgeRoughness ?? 18)
+          + edgeMask * fiberValue("edgeRoughness", 18)
         );
         specularValue = clampByte(
-          Number(textureProfile.specularBase ?? 58)
+          fiberValue("specularBase", 58)
           + microFiber * (
-            Number(textureProfile.specularFiber ?? 42)
-            + brokenHighlight * Number(textureProfile.specularSatin ?? 92)
-          ) * lodDetail
-          + macroCrown * (12 + brokenHighlight * 28) * lodContrast
+            fiberValue("specularFiber", 42)
+            + brokenHighlight * fiberValue("specularSatin", 92)
+          )
+          + macroCrown * (12 + brokenHighlight * 28)
+          + aggregateGlint * fiberValue("aggregateSpecular", 88)
           - edgeMask * 18
         );
         anisotropyDirection = .035 * Math.sin(pathPhase * 3 + microIndex * .17)
@@ -1018,10 +959,6 @@ function makePolyesterFiberMaps(filamentCount, denier, profile = {}, renderLod =
     texture.wrapT = THREE.RepeatWrapping;
     texture.repeat.set(repeatU, 1);
     texture.anisotropy = Math.min(12, state.renderer.capabilities.getMaxAnisotropy?.() || 1);
-    if (isPolyesterSatin) {
-      texture.minFilter = THREE.LinearMipmapNearestFilter;
-      texture.magFilter = THREE.LinearFilter;
-    }
   }
   colorTexture.colorSpace = THREE.SRGBColorSpace;
   const maps = {
@@ -1034,8 +971,13 @@ function makePolyesterFiberMaps(filamentCount, denier, profile = {}, renderLod =
     audit: {
       mapKey,
       repeatU,
-      minFilter: isPolyesterSatin ? "LinearMipmapNearestFilter" : "LinearMipmapLinearFilter",
-      mipmaps: true
+      minFilter: "LinearMipmapLinearFilter",
+      mipmaps: true,
+      physicalYarnBands: strandCount,
+      microFibersPerEnd: microFibersPerYarn,
+      aggregateFiberClusters,
+      lightTextureClass,
+      specularMapColorSpace: "linear-data"
     }
   };
   state.polyesterFiberMaps.set(mapKey, maps);
@@ -1050,7 +992,6 @@ function geometryFromCarrierMesh(mesh, materialProfile = {}) {
     ? mesh.uvs.map((value, index) => index % 2 === 0 ? value * pathLengthMm : value)
     : mesh.uvs;
   geometry.setAttribute("position", new THREE.Float32BufferAttribute(mesh.vertices, 3));
-  geometry.setAttribute("normal", new THREE.Float32BufferAttribute(mesh.normals, 3));
   geometry.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
   geometry.setIndex(mesh.indices);
   geometry.computeVertexNormals();
@@ -1076,14 +1017,15 @@ function renderCanvasFromThree() {
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
   const mountRect = ui.threeMount.getBoundingClientRect();
-  if (state.geometryMesh?.cylindricalWeave) {
+  if (state.geometryMesh?.mode === "rope") {
     state.camera.position.z = clamp(state.geometryMesh.length * 2.15, 52, 80);
-    state.ropeGroup.rotation.set(0, -.18, 0);
+    state.ropeGroup.rotation.set(0, 0, 0);
   }
   state.camera.aspect = canvas.width / canvas.height;
   state.camera.updateProjectionMatrix();
   state.renderer.setSize(canvas.width, canvas.height, false);
   state.renderer.render(state.scene, state.camera);
+  recordDiameterProjectionAudit(canvas.width, canvas.height, state.geometryMesh);
   ctx.drawImage(state.renderer.domElement, 0, 0, canvas.width, canvas.height);
   drawMeasurementRulers(ctx, canvas.width, canvas.height, state.geometryMesh);
 
@@ -1093,6 +1035,35 @@ function renderCanvasFromThree() {
   state.camera.updateProjectionMatrix();
   state.renderer.setSize(mountRect.width, mountRect.height, false);
   state.renderer.render(state.scene, state.camera);
+}
+
+function recordDiameterProjectionAudit(width, height, mesh) {
+  if (mesh?.mode !== "rope") return;
+  state.ropeGroup.updateMatrixWorld(true);
+  const halfLength = Number(mesh.length) * .45;
+  const diameterMm = Number(mesh.diameterMm);
+  const sampleDiameterPx = (x) => {
+    const top = new THREE.Vector3(x, diameterMm / 2, 0)
+      .applyMatrix4(state.ropeGroup.matrixWorld)
+      .project(state.camera);
+    const bottom = new THREE.Vector3(x, -diameterMm / 2, 0)
+      .applyMatrix4(state.ropeGroup.matrixWorld)
+      .project(state.camera);
+    return Math.abs(top.y - bottom.y) * height * .5;
+  };
+  const samples = [-halfLength, 0, halfLength].map(sampleDiameterPx);
+  const spreadPx = Math.max(...samples) - Math.min(...samples);
+  window.__BRAIDSTUDIO_RUNTIME_AUDIT__ = {
+    ...(window.__BRAIDSTUDIO_RUNTIME_AUDIT__ || {}),
+    measurementProjection: {
+      projection: "front_parallel_perspective",
+      selectedDiameterMm: diameterMm,
+      meshOuterDiameterMm: Number(mesh.meshOuterDiameterMm),
+      diameterErrorMm: Number(mesh.diameterErrorMm),
+      diameterSamplesPx: samples,
+      maximumDiameterSpreadPx: spreadPx
+    }
+  };
 }
 
 function projectedPixelsPerMillimeter(width, height, mesh) {
@@ -1105,7 +1076,7 @@ function projectedPixelsPerMillimeter(width, height, mesh) {
 
 function drawMeasurementRulers(ctx, width, height, mesh, { clear = false } = {}) {
   if (clear) ctx.clearRect(0, 0, width, height);
-  if (!mesh?.cylindricalWeave) return;
+  if (mesh?.mode !== "rope") return;
   const pxPerMm = projectedPixelsPerMillimeter(width, height, mesh);
   if (!(pxPerMm >= 3)) return;
 
@@ -1167,28 +1138,45 @@ function disposeObject(object) {
   if (!object.material?.userData?.sharedBraidMaterial) object.material?.dispose?.();
 }
 
-function renderSummary(result) {
+function renderSummary(result, mesh = null) {
   ui.diameterValue.textContent = `${result.diameterMm} mm`;
   ui.angleValue.textContent = `${result.angleDeg}°`;
   ui.strandWidthValue.textContent = `${Math.round(result.strandWidthScale * 100)}%`;
   ui.filamentCountValue.textContent = `${result.filamentCount}`;
   ui.denierValue.textContent = `${result.denier}D`;
-  ui.repeatBadge.textContent = `${result.repeatRows} sıra tekrar`;
+  const dimensions = mesh?.derivedDimensions;
+  ui.repeatBadge.textContent = dimensions
+    ? `${dimensions.patternRepeatRows} sıra tekrar`
+    : "Hesaplanıyor";
   ui.sceneMeta.textContent = `${result.carrierCount} kukla, ${result.diameterMm} mm, ${result.angleDeg}° örgü`;
+  const fitLabel = {
+    ok: "Uygun",
+    loose: "Gevşek paket",
+    overfilled: "Çapa sığmıyor"
+  }[mesh?.fitStatus] || "Hesaplanıyor";
+  const geometryMetrics = mesh ? [
+    ["Bir tur adımı", `${dimensions.helicalPitchAxialMm.toFixed(1)} mm`],
+    ["Görünen tur", `${(mesh.length / dimensions.helicalPitchAxialMm).toFixed(2)} tur`],
+    ["Yüzey çevresi", `${dimensions.circumferenceMm.toFixed(1)} mm`],
+    ["Kukla aralığı", `${dimensions.circumferentialPitchMm.toFixed(2)} mm`],
+    ["Desen tekrarı", `${dimensions.patternRepeatRows} sıra / ${dimensions.weaveRepeatAxialMm.toFixed(1)} mm`],
+    ["Görünen kesit", mesh.visibleRows ? `${mesh.visibleRows} sıra` : "tek crossing"],
+    ["Taşıyıcı toplamı", `${mesh.totalCarrierDenier}D`],
+    ["Kalibre taşıyıcı", `${mesh.derivedDimensions.effectiveCarrierDenier}D`],
+    ["Blok kesiti", `${mesh.yarnWidth.toFixed(2)} x ${mesh.yarnThickness.toFixed(2)} mm`],
+    ["Temas doluluğu", `%${Math.round(mesh.contactPackingFraction * 100)}`],
+    ["Çap uyumu", fitLabel]
+  ] : [];
   ui.summary.innerHTML = [
     ["Kukla", `${result.carrierCount} adet`],
     ["Gruplar", `${result.carrierCount / 2} S + ${result.carrierCount / 2} Z`],
     ["Çap", `${result.diameterMm} mm`],
     ["Tel / denye", `${result.filamentCount} tel x ${result.denier}D`],
     ["Malzeme", ui.materialProfile.options[ui.materialProfile.selectedIndex].textContent],
-    ["Bir tur adımı", `${result.pitchMm.toFixed(1)} mm`],
-    ["Görünen tur", `${result.turns.toFixed(2)} tur`],
-    ["Yüzey çevresi", `${result.circumference.toFixed(1)} mm`],
-    ["Kukla aralığı", `${result.laneWidth.toFixed(2)} mm`],
-    ["Desen tekrarı", `${result.repeatRows} örgü sırası`],
-    ["Görünen kesit", `${result.visibleRows} sıra`],
     ["Üst-alt", ui.crossingMode.options[ui.crossingMode.selectedIndex].textContent]
-  ].map(([label, value]) => `<div class="metric"><span>${label}</span><strong>${value}</strong></div>`).join("");
+  ].concat(geometryMetrics)
+    .map(([label, value]) => `<div class="metric"><span>${label}</span><strong>${value}</strong></div>`)
+    .join("");
 
   ui.carrierTable.innerHTML = result.carriers.map((carrier) => `
     <div class="carrier-row">
@@ -1275,7 +1263,7 @@ function installThreeInteractions() {
   mount.addEventListener("pointercancel", endThreeDrag);
   mount.addEventListener("wheel", (event) => {
     event.preventDefault();
-    const maxZoom = state.geometryMesh?.flatWeave || state.geometryMesh?.cylindricalWeave ? 90 : 13;
+    const maxZoom = state.geometryMesh?.mode === "rope" ? 90 : 13;
     state.zoom = clamp(state.zoom + event.deltaY * .006, 4.6, maxZoom);
     state.camera.position.z = state.zoom;
     state.camera.lookAt(0, 0, 0);
@@ -1295,7 +1283,7 @@ function animate() {
     state.autoRotation += .006;
   }
   state.camera.position.z = state.zoom;
-  if (state.geometryMesh?.cylindricalWeave) {
+  if (state.geometryMesh?.mode === "rope") {
     state.camera.position.y = 0;
     state.camera.lookAt(0, 0, 0);
   }
@@ -1339,14 +1327,39 @@ function fract(value) {
   return value - Math.floor(value);
 }
 
+function hashNoise2D(x, y, salt) {
+  return fract(Math.sin((x + 1) * 127.1 + (y + 1) * 311.7 + salt * 74.7) * 43758.5453);
+}
+
+function periodicFiberNoise(fiberIndex, position, period, salt) {
+  const left = Math.floor(position);
+  const amount = fract(position);
+  const blend = amount * amount * (3 - 2 * amount);
+  const a = hashNoise2D(fiberIndex, mod(left, period), salt);
+  const b = hashNoise2D(fiberIndex, mod(left + 1, period), salt);
+  return a + (b - a) * blend;
+}
+
+function periodicNoise2D(x, y, periodX, periodY, salt) {
+  const x0 = Math.floor(x);
+  const y0 = Math.floor(y);
+  const tx0 = fract(x);
+  const ty0 = fract(y);
+  const tx = tx0 * tx0 * (3 - 2 * tx0);
+  const ty = ty0 * ty0 * (3 - 2 * ty0);
+  const a = hashNoise2D(mod(x0, periodX), mod(y0, periodY), salt);
+  const b = hashNoise2D(mod(x0 + 1, periodX), mod(y0, periodY), salt);
+  const c = hashNoise2D(mod(x0, periodX), mod(y0 + 1, periodY), salt);
+  const d = hashNoise2D(mod(x0 + 1, periodX), mod(y0 + 1, periodY), salt);
+  const top = a + (b - a) * tx;
+  const bottom = c + (d - c) * tx;
+  return top + (bottom - top) * ty;
+}
+
 function clampByte(value) {
   return Math.max(0, Math.min(255, Math.round(value)));
 }
 
-
-function gcd(a, b) {
-  return b ? gcd(b, a % b) : a;
-}
 
 function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));

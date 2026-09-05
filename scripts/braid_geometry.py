@@ -12,7 +12,8 @@ import sys
 
 MODEL_ID = "unified_carrier_geometry"
 PET_DENSITY_KG_M3 = 1380.0
-PACKING_FRACTION = 0.52
+TARGET_PACKING_FRACTION = 0.65
+MAX_CONTACT_PACKING_FRACTION = 0.90
 SUPERELLIPSE_ORDER = 2.0
 CONTACT_HEIGHT_COMPRESSION = 0.10120590920295836
 CONTACT_CLEARANCE_MM = 0.002
@@ -21,7 +22,6 @@ TOW_EDGE_ROLL_RATIO = 0.0
 TOW_EDGE_ROLL_WIDTH_RATIO = 0.14
 LAYER_TRANSITION_RATIO = 0.32
 BASELINE_WIDTH_PITCH_RATIO = 1.01
-BASELINE_THICKNESS_WIDTH_RATIO = 0.17010620750784015
 
 
 def clamp(value, low, high):
@@ -53,13 +53,19 @@ def crossing_span(mode):
     return {"diamond": 1, "regular": 2, "hercules": 3}.get(mode, 1)
 
 
+def ring_segments_for_carrier_count(carrier_count):
+    return 25 if carrier_count <= 16 else (21 if carrier_count <= 32 else 15)
+
+
 def plus_family_is_over(plus_index, minus_index, span):
     event_index = minus_index - plus_index
     return ((event_index // max(1, span)) % 2) == 0
 
 
 def carrier_dimensions(params):
-    carrier_count = int(clamp(int(params.get("carrierCount", 16)), 8, 48))
+    carrier_count = int(params.get("carrierCount", 16))
+    if carrier_count < 8 or carrier_count > 48 or carrier_count % 2:
+        raise ValueError("carrierCount must be an even number between 8 and 48")
     diameter = float(clamp(float(params.get("diameterMm", 16)), 4, 80))
     angle = float(clamp(float(params.get("braidAngle", 34)), 24, 68))
     denier = float(clamp(float(params.get("denier", 1000)), 300, 3000))
@@ -68,42 +74,93 @@ def carrier_dimensions(params):
     ends = float(clamp(float(params.get("filamentCount", 25)), 8, 40))
     width_scale = float(clamp(float(params.get("strandWidthScale", 1.0)), 0.75, 2.2))
     polymer_area = ((effective_denier * ends * 1e-3 / 9000.0) / PET_DENSITY_KG_M3) * 1e6
-    packed_area = polymer_area / PACKING_FRACTION
+    end_polymer_area = polymer_area / ends
+    equivalent_end_diameter = math.sqrt(4.0 * end_polymer_area / math.pi)
     radius = diameter * 0.5
     family_count = carrier_count // 2
-    circumferential_pitch = math.tau * radius / family_count
+    circumference = math.tau * radius
+    circumferential_pitch = circumference / family_count
     normal_pitch = circumferential_pitch * math.cos(math.radians(angle))
-    package_mass_scale = ends * effective_denier / 25000.0
-    mass_bias = clamp(1.0 + 0.04 * (package_mass_scale ** 0.35 - 1.0), 0.96, 1.07)
-    width = normal_pitch * BASELINE_WIDTH_PITCH_RATIO * width_scale * mass_bias
-    thickness = (
-        width
-        * BASELINE_THICKNESS_WIDTH_RATIO
-        * math.sqrt(package_mass_scale)
-        / max(math.sqrt(width_scale), 1e-9)
+    width = normal_pitch * BASELINE_WIDTH_PITCH_RATIO * width_scale
+    section_area_coefficient = math.pi * 0.25
+    required_thickness = polymer_area / (
+        TARGET_PACKING_FRACTION * section_area_coefficient * width
     )
-    thickness = clamp(thickness, width * 0.10, width * 0.24)
+    minimum_thickness = equivalent_end_diameter * 1.05
+    maximum_thickness = width * 0.42
+    thickness = clamp(required_thickness, minimum_thickness, maximum_thickness)
+    envelope_area = section_area_coefficient * width * thickness
+    packing_fraction = polymer_area / max(envelope_area, 1e-9)
+    contact_packing_fraction = packing_fraction / (1.0 - CONTACT_HEIGHT_COMPRESSION)
+    capacity_utilization = contact_packing_fraction / MAX_CONTACT_PACKING_FRACTION
+    if contact_packing_fraction > MAX_CONTACT_PACKING_FRACTION:
+        fit_status = "overfilled"
+    elif packing_fraction < 0.35:
+        fit_status = "loose"
+    else:
+        fit_status = "ok"
     contact_height = thickness * (1.0 - CONTACT_HEIGHT_COMPRESSION)
-    surface_base_radius = max(radius * 0.5, radius - contact_height)
+    center_separation = contact_height + CONTACT_CLEARANCE_MM
     event_spacing_axial = circumferential_pitch / max(2.0 * math.tan(math.radians(angle)), 0.2)
+    helical_pitch_axial = circumference / max(math.tan(math.radians(angle)), 0.1)
+    span = crossing_span(params.get("crossingMode", "diamond"))
+    pattern_repeat_rows = 2 * span
+    weave_repeat_axial = pattern_repeat_rows * event_spacing_axial
+    sample_events = [
+        (index * event_spacing_axial, 1.0 if ((index // span) % 2) == 0 else -1.0)
+        for index in range(-4 * span, 4 * span + 1)
+    ]
+    event_positions = [event[0] for event in sample_events]
+    maximum_outer_offset = max(
+        layer_order(x, sample_events, thickness) * center_separation * 0.5
+        + thickness * (
+            1.0 - CONTACT_HEIGHT_COMPRESSION
+            * contact_amount(x, event_positions, event_spacing_axial * 0.38)
+        ) * 0.5
+        for x in (
+            sample_events[0][0]
+            + (sample_events[-1][0] - sample_events[0][0]) * index / 4096
+            for index in range(4097)
+        )
+    )
+    surface_base_radius = max(radius * 0.5, radius - maximum_outer_offset)
     return {
         "carrierCount": carrier_count,
         "familyCount": family_count,
         "diameterMm": diameter,
         "radiusMm": radius,
         "surfaceBaseRadiusMm": surface_base_radius,
+        "maximumOuterOffsetMm": maximum_outer_offset,
         "braidAngleDeg": angle,
         "denier": int(round(denier)),
         "denierScale": denier_scale,
         "effectiveDenier": int(round(effective_denier)),
+        "denierPerEnd": int(round(denier)),
+        "effectiveDenierPerEnd": int(round(effective_denier)),
+        "totalCarrierDenier": int(round(denier * ends)),
+        "effectiveCarrierDenier": int(round(effective_denier * ends)),
         "endsPerCarrier": int(round(ends)),
+        "endPolymerAreaMm2": end_polymer_area,
+        "equivalentEndDiameterMm": equivalent_end_diameter,
         "polymerAreaMm2": polymer_area,
-        "packedAreaMm2": packed_area,
-        "packageMassScale": package_mass_scale,
+        "envelopeAreaMm2": envelope_area,
+        "targetPackingFraction": TARGET_PACKING_FRACTION,
+        "packingFraction": packing_fraction,
+        "contactPackingFraction": contact_packing_fraction,
+        "maximumContactPackingFraction": MAX_CONTACT_PACKING_FRACTION,
+        "capacityUtilization": capacity_utilization,
+        "fitStatus": fit_status,
+        "circumferenceMm": circumference,
         "circumferentialPitchMm": circumferential_pitch,
         "normalPitchMm": normal_pitch,
+        "helicalPitchAxialMm": helical_pitch_axial,
+        "patternRepeatRows": pattern_repeat_rows,
+        "weaveRepeatAxialMm": weave_repeat_axial,
         "widthMm": width,
         "thicknessMm": thickness,
+        "requiredThicknessMm": required_thickness,
+        "minimumThicknessMm": minimum_thickness,
+        "maximumThicknessMm": maximum_thickness,
         "aspectRatio": width / thickness,
         "eventSpacingAxialMm": event_spacing_axial,
         "contactHalfLengthAxialMm": event_spacing_axial * 0.38,
@@ -252,22 +309,18 @@ def orthogonalize(vector, tangent):
     return normalize(subtract(vector, multiply(tangent, dot(vector, tangent))))
 
 
-def world_centers(points, dimensions, cylindrical):
+def world_centers(points, dimensions):
     radius = dimensions["radiusMm"]
     surface_base_radius = dimensions["surfaceBaseRadiusMm"]
     centers = []
     outward_references = []
     for point in points:
-        if cylindrical:
-            theta = point["arc"] / radius
-            cosine = math.cos(theta)
-            sine = math.sin(theta)
-            outward = (0.0, cosine, sine)
-            surface = surface_base_radius + point["radial"]
-            center = (point["x"], cosine * surface, sine * surface)
-        else:
-            outward = (0.0, 0.0, 1.0)
-            center = (point["x"], point["arc"], point["radial"])
+        theta = point["arc"] / radius
+        cosine = math.cos(theta)
+        sine = math.sin(theta)
+        outward = (0.0, cosine, sine)
+        surface = surface_base_radius + point["radial"]
+        center = (point["x"], cosine * surface, sine * surface)
         centers.append(center)
         outward_references.append(outward)
     return centers, outward_references
@@ -291,13 +344,12 @@ def transported_frames(centers, outward_references):
     return frames
 
 
-def append_swept_mesh(points, dimensions, ring_segments, cylindrical, ribbon_shader):
+def append_swept_mesh(points, dimensions, ring_segments):
     vertices = []
-    normals = []
     uvs = []
     indices = []
     exponent = 2.0 / SUPERELLIPSE_ORDER
-    centers, outward_references = world_centers(points, dimensions, cylindrical)
+    centers, outward_references = world_centers(points, dimensions)
     frames = transported_frames(centers, outward_references)
     path_length_mm = sum(
         math.dist(centers[index - 1], centers[index])
@@ -354,22 +406,13 @@ def append_swept_mesh(points, dimensions, ring_segments, cylindrical, ribbon_sha
             saddle_offset = (
                 vertex_order - point["order"]
             ) * point["centerSeparation"] * 0.5
+            deformation = outward_offset + saddle_offset
             vertices.extend([
-                center[0] + across_axis[0] * across_offset + outward_axis[0] * (outward_offset + saddle_offset),
-                center[1] + across_axis[1] * across_offset + outward_axis[1] * (outward_offset + saddle_offset),
-                center[2] + across_axis[2] * across_offset + outward_axis[2] * (outward_offset + saddle_offset),
+                center[0] + across_axis[0] * across_offset + outward_axis[0] * deformation,
+                center[1] + across_axis[1] * across_offset + outward_axis[1] * deformation,
+                center[2] + across_axis[2] * across_offset + outward_axis[2] * deformation,
             ])
-            normal = normalize((
-                across_axis[0] * cosine + outward_axis[0] * sine,
-                across_axis[1] * cosine + outward_axis[1] * sine,
-                across_axis[2] * cosine + outward_axis[2] * sine,
-            ))
-            normals.extend(normal)
-            uvs.extend(
-                [path_u, 0.5 + across_shape * 0.5]
-                if ribbon_shader
-                else [segment / ring_segments, path_u]
-            )
+            uvs.extend([path_u, 0.5 + across_shape * 0.5])
 
     for ring in range(len(points) - 1):
         row = ring * ring_segments
@@ -383,7 +426,6 @@ def append_swept_mesh(points, dimensions, ring_segments, cylindrical, ribbon_sha
             indices.extend([a, c, b, b, c, d])
     return {
         "vertices": vertices,
-        "normals": normals,
         "uvs": uvs,
         "indices": indices,
         "pathLengthMm": path_length_mm,
@@ -429,7 +471,17 @@ def common_report(dimensions, ring_segments):
         "denier": dimensions["denier"],
         "denierScale": dimensions["denierScale"],
         "effectiveDenier": dimensions["effectiveDenier"],
-        "packageMassScale": dimensions["packageMassScale"],
+        "endsPerCarrier": dimensions["endsPerCarrier"],
+        "denierPerEnd": dimensions["denierPerEnd"],
+        "effectiveDenierPerEnd": dimensions["effectiveDenierPerEnd"],
+        "totalCarrierDenier": dimensions["totalCarrierDenier"],
+        "effectiveCarrierDenier": dimensions["effectiveCarrierDenier"],
+        "polymerAreaMm2": dimensions["polymerAreaMm2"],
+        "envelopeAreaMm2": dimensions["envelopeAreaMm2"],
+        "packingFraction": dimensions["packingFraction"],
+        "contactPackingFraction": dimensions["contactPackingFraction"],
+        "capacityUtilization": dimensions["capacityUtilization"],
+        "fitStatus": dimensions["fitStatus"],
         "derivedDimensions": dimensions,
     }
 
@@ -441,7 +493,7 @@ def build_carrier_records(params, dimensions, visible_rows):
     slope = math.tan(angle)
     circumference = math.tau * dimensions["radiusMm"]
     pitch = circumference / family_count
-    visible_rows = int(clamp(int(visible_rows), 8, 60))
+    visible_rows = int(clamp(int(visible_rows), 8, 30))
     row_pitch_x = pitch / max(2.0 * slope, 0.2)
     length = max(pitch * 3.0, visible_rows * row_pitch_x)
     xmin = -length * 0.5
@@ -512,18 +564,49 @@ def record_to_yarn(record, dimensions, ring_segments, points=None):
             sampled_points,
             dimensions,
             ring_segments,
-            True,
-            True,
         ),
     }
+
+
+def calibrate_surface_radius(params, dimensions):
+    """Fit the swept mesh, not an ideal cylinder, to the selected rope radius."""
+    target_radius = dimensions["radiusMm"]
+    corrections = []
+    for _ in range(2):
+        topology = build_carrier_records(params, dimensions, 8)
+        yarns = [
+            record_to_yarn(
+                record,
+                dimensions,
+                ring_segments_for_carrier_count(dimensions["carrierCount"]),
+            )
+            for record in topology["records"]
+        ]
+        measured_radius = max(
+            math.hypot(vertices[index + 1], vertices[index + 2])
+            for yarn in yarns
+            for vertices in (yarn["mesh"]["vertices"],)
+            for index in range(0, len(vertices), 3)
+        )
+        correction = target_radius - measured_radius
+        corrections.append(correction)
+        dimensions["surfaceBaseRadiusMm"] += correction
+    dimensions["surfaceRadiusCalibrationMm"] = sum(corrections)
+    return dimensions
 
 
 def build_rope(params, dimensions):
     carrier_count = dimensions["carrierCount"]
     family_count = dimensions["familyCount"]
     topology = build_carrier_records(params, dimensions, params.get("visibleRows", 30))
-    ring_segments = 24 if carrier_count <= 16 else (20 if carrier_count <= 32 else 16)
+    ring_segments = ring_segments_for_carrier_count(carrier_count)
     yarns = [record_to_yarn(record, dimensions, ring_segments) for record in topology["records"]]
+    outer_radius = max(
+        math.hypot(vertices[index + 1], vertices[index + 2])
+        for yarn in yarns
+        for vertices in (yarn["mesh"]["vertices"],)
+        for index in range(0, len(vertices), 3)
+    )
     report = common_report(dimensions, ring_segments)
     report.update({
         "mode": "rope",
@@ -535,8 +618,9 @@ def build_rope(params, dimensions):
         "circumference": topology["circumference"],
         "length": topology["length"],
         "visibleRows": topology["visibleRows"],
-        "cylindricalWeave": True,
-        "flatWeave": False,
+        "meshOuterRadiusMm": outer_radius,
+        "meshOuterDiameterMm": outer_radius * 2.0,
+        "diameterErrorMm": outer_radius * 2.0 - dimensions["diameterMm"],
         "yarns": yarns,
     })
     return report
@@ -549,7 +633,7 @@ def build_crossing(params, dimensions):
     xmin = -length * 0.5
     xmax = length * 0.5
     steps = 201
-    ring_segments = 24
+    ring_segments = 25
     yarns = []
     for record in topology["records"][:2]:
         points = build_carrier_centerline(
@@ -577,9 +661,6 @@ def build_crossing(params, dimensions):
         "directionCounts": {"S": 1, "Z": 1},
         "minimumCrossingTransitions": 1,
         "length": length,
-        "cylindricalWeave": False,
-        "flatWeave": False,
-        "crossingWindow": True,
         "crossingSource": "cropped_from_full_rope_topology",
         "yarns": yarns,
     })
@@ -587,7 +668,7 @@ def build_crossing(params, dimensions):
 
 
 def build_geometry(params):
-    dimensions = carrier_dimensions(params)
+    dimensions = calibrate_surface_radius(params, carrier_dimensions(params))
     mode = params.get("mode", "rope")
     if mode == "crossing":
         return build_crossing(params, dimensions)
