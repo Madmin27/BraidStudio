@@ -173,3 +173,21 @@ Durum: GORSEL KABUL BEKLIYOR, CANLIYA ALINMADI
 - Tekrar denetimi: `python3 scripts/carrier-repeat-audit.py`.
 - Kanitlar: `proofs/carrier-repeat-16/identity-repeat.png`, `audit.json`,
   `normal.png`, `close.png`, `mobile.png`, `report.json`.
+
+## 2026-09-05 Canli Onizleme Dagitimi
+
+- Kullanici acikca canliya aktarim istedi; `79b5d10` surumu asil proje
+  `/root/projeler/BraidStudio` altina aktarildi ve yalniz braidstudio.service
+  yeniden baslatildi.
+- Canli adres: https://braidstudio.minen.com.tr/
+- Beyaz korundu; kirmizi specular 0.60 / ortam 1.35. Goruntu etiketi ve
+  8-blok kukla tekrari aciklamalari canlida.
+- 12 test ve sozdizimi kontrolleri gecti. Servis active/running, HTTPS 200;
+  HTTPS'te sunulan app.js yerel dosyayla birebir ayni.
+- Canli Chromium kaniti: `proofs/live-carrier-repeat-16` (normal, yakin,
+  mobil, PNG, rapor); browserErrors bos. Test recetesi 16 kukla, 16 mm,
+  45 derece, 12 ip x 1000D. Kullaniciya ait kayitli tercihler silinmedi.
+- Onceki canli geri donus dali: `rollback/before-photo-live-20260905`
+  (`73cacd4`). Malzeme kontrol noktasi `a536b43`.
+- Canliya aktarim, tum urunun gorsel/uretim kabulunun tamamlandigi anlamina
+  gelmez; kullanici deseni canlida inceleyecek.
