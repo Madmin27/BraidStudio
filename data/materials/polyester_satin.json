@@ -2,7 +2,7 @@
   "materialProfileId": "polyester_satin",
   "displayName": "Polyester saten",
   "status": "visual_candidate",
-  "denierScale": 0.70,
+  "denierScale": 1.0,
   "optics": {
     "roughness": 0.58,
     "sheen": 0.14,
@@ -14,14 +14,17 @@
     "bumpScale": 0.00042,
     "bumpMin": 0.00018,
     "bumpMax": 0.0008,
-    "normalScale": [0.20, 0.92],
+    "normalScale": [
+      0.2,
+      0.92
+    ],
     "lightCarrier": {
       "luminanceStart": 0.58,
       "luminanceFull": 0.82,
       "roughness": 0.56,
       "sheen": 0.06,
       "sheenRoughness": 0.68,
-      "sheenWhiteMix": 0.10,
+      "sheenWhiteMix": 0.1,
       "specularIntensity": 0.74,
       "anisotropy": 0.95,
       "diffuseMultiplier": 1.04,
@@ -31,7 +34,7 @@
   },
   "texture": {
     "worldSpaceU": true,
-    "repeatPerMm": 0.30,
+    "repeatPerMm": 0.3,
     "referenceMicroFibersPerEnd": 6,
     "macroRelief": 2.5,
     "microRelief": 24,
@@ -76,12 +79,47 @@
     "exposure": 1.02,
     "hemisphere": 0.86,
     "key": 0.58,
-    "keyPosition": [4.5, 5.0, 7.5],
+    "keyPosition": [
+      4.5,
+      5.0,
+      7.5
+    ],
     "fill": 0.38,
     "rim": 0.08,
-    "softbox": 0.20,
+    "softbox": 0.2,
     "softboxWidth": 16.0,
     "softboxHeight": 4.0,
-    "softboxPosition": [0, 2.8, 7.0]
+    "softboxPosition": [
+      0,
+      2.8,
+      7.0
+    ]
+  },
+  "render": {
+    "version": "filament-c-denoised-1",
+    "samples": 256,
+    "assumedFilamentsPerEnd": 192,
+    "surfaceCurvesPerCarrier": 180,
+    "roughness": 0.18,
+    "specular": 0.65,
+    "ior": 1.57,
+    "coreRoughness": 0.85,
+    "grooveDepthMm": 0.023,
+    "coreInsetMm": 0.026,
+    "exposure": 0.7,
+    "worldStrength": 0.22,
+    "lightScale": 4,
+    "referenceColors": {
+      "#bb0615": [
+        0.5,
+        0.003,
+        0.008
+      ],
+      "#f6f5ee": [
+        0.74,
+        0.75,
+        0.72
+      ]
+    }
   }
 }

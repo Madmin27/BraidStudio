@@ -48,7 +48,7 @@
               <input id="strandWidth" type="range" min="80" max="190" step="5" value="100">
             </label>
             <label>
-              Tel sayısı <strong id="filamentCountValue">25</strong>
+              Kukla başına iplik sayısı <strong id="filamentCountValue">25</strong>
               <input id="filamentCount" type="range" min="8" max="40" step="1" value="25">
             </label>
             <label>
@@ -106,19 +106,28 @@
           <div class="canvas-card">
             <div class="viewer-head">
               <div>
-                <h2>Üretilecek halat çıktısı</h2>
+                <h2>Hızlı önizleme</h2>
                 <span>Silindir yüzeyinde yakın plan desen</span>
               </div>
               <button id="downloadPng" type="button">PNG indir</button>
             </div>
             <canvas id="patternCanvas" width="1400" height="780"></canvas>
           </div>
+          <section class="canvas-card render-card">
+            <div class="viewer-head"><h2>Gerçekçi polyester çıktısı</h2><button id="renderRealistic" type="button">Gerçekçi çıktı oluştur</button></div>
+            <p id="renderStatus" role="status">Seçili reçeteden hesaplanır. İşlem birkaç dakika sürebilir.</p>
+            <p id="renderRecipe"></p>
+            <div id="renderResult" hidden>
+              <a id="renderDownload" download="halat.png">Tam halatı indir</a> · <a id="renderClose" target="_blank" rel="noopener">Yakın planı aç</a>
+              <img id="renderImage" alt="Seçili reçeteden oluşturulmuş polyester halat">
+            </div>
+          </section>
         </section>
 
         <aside class="output">
           <section class="panel">
             <div class="panel-head">
-              <h2>Kesin reçete</h2>
+              <h2>Reçete</h2>
               <span id="confidence">Deterministik</span>
             </div>
             <div id="summary" class="summary"></div>

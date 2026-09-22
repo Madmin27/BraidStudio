@@ -20,7 +20,7 @@ CONTACT_CLEARANCE_MM = 0.002
 CONTACT_FACE_HALF_WIDTH_RATIO = 0.55
 TOW_EDGE_ROLL_RATIO = 0.0
 TOW_EDGE_ROLL_WIDTH_RATIO = 0.14
-LAYER_TRANSITION_RATIO = 0.32
+LAYER_TRANSITION_RATIO = 0.48
 BASELINE_WIDTH_PITCH_RATIO = 1.01
 
 
@@ -155,6 +155,9 @@ def carrier_dimensions(params):
         "normalPitchMm": normal_pitch,
         "helicalPitchAxialMm": helical_pitch_axial,
         "patternRepeatRows": pattern_repeat_rows,
+        "carrierReturnBlocks": family_count,
+        "carrierReturnAxialMm": helical_pitch_axial,
+        "carrierRevolutionCrossingEvents": carrier_count,
         "weaveRepeatAxialMm": weave_repeat_axial,
         "widthMm": width,
         "thicknessMm": thickness,
@@ -501,7 +504,9 @@ def build_carrier_records(params, dimensions, visible_rows):
     offsets = [-circumference * 0.5 + (index + 0.5) * pitch for index in range(family_count)]
     opposite_lines = periodic_crossing_lines(offsets, circumference, slope, xmin, xmax)
     span = crossing_span(params.get("crossingMode", "diamond"))
-    steps = max(192, visible_rows * 7)
+    # Resolve the rounded approach to each contact rather than interpolating
+    # a small number of long, visibly faceted sweep segments.
+    steps = max(192, visible_rows * (12 if carrier_count <= 16 else 7))
     carriers = params.get("carriers") if isinstance(params.get("carriers"), list) else []
     base_color = normalize_hex(params.get("baseColor"), "#f6f5ee")
     colors = [

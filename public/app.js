@@ -1146,7 +1146,7 @@ function renderSummary(result, mesh = null) {
   ui.denierValue.textContent = `${result.denier}D`;
   const dimensions = mesh?.derivedDimensions;
   ui.repeatBadge.textContent = dimensions
-    ? `${dimensions.patternRepeatRows} sıra tekrar`
+    ? `${result.carrierCount / 2} blokta aynı kukla`
     : "Hesaplanıyor";
   ui.sceneMeta.textContent = `${result.carrierCount} kukla, ${result.diameterMm} mm, ${result.angleDeg}° örgü`;
   const fitLabel = {
@@ -1159,7 +1159,8 @@ function renderSummary(result, mesh = null) {
     ["Görünen tur", `${(mesh.length / dimensions.helicalPitchAxialMm).toFixed(2)} tur`],
     ["Yüzey çevresi", `${dimensions.circumferenceMm.toFixed(1)} mm`],
     ["Kukla aralığı", `${dimensions.circumferentialPitchMm.toFixed(2)} mm`],
-    ["Desen tekrarı", `${dimensions.patternRepeatRows} sıra / ${dimensions.weaveRepeatAxialMm.toFixed(1)} mm`],
+    ["Aynı kuklanın dönüşü", `${result.carrierCount / 2} blok / ${dimensions.helicalPitchAxialMm.toFixed(1)} mm`],
+    ["Üst-alt tekrarı", `${dimensions.patternRepeatRows} sıra / ${dimensions.weaveRepeatAxialMm.toFixed(1)} mm`],
     ["Görünen kesit", mesh.visibleRows ? `${mesh.visibleRows} sıra` : "tek crossing"],
     ["Taşıyıcı toplamı", `${mesh.totalCarrierDenier}D`],
     ["Kalibre taşıyıcı", `${mesh.derivedDimensions.effectiveCarrierDenier}D`],
@@ -1207,6 +1208,11 @@ function markSimulationDirty() {
   state.simulationDirty = true;
   refreshGenerateButton();
   if (!state.generating) ui.statusPill.textContent = "Değişiklikler hazır";
+  if (!document.querySelector('#renderRealistic').disabled) {
+    document.querySelector('#renderStatus').textContent = document.querySelector('#renderResult').hidden
+      ? 'Seçili reçeteden hesaplanır. İşlem birkaç dakika sürebilir.'
+      : 'Ayarlar değişti. Gösterilen çıktı aşağıdaki önceki reçeteye aittir; yenisini oluşturabilirsiniz.';
+  }
 }
 
 function renderAll() {
@@ -1436,3 +1442,35 @@ renderFixedPalette();
 renderCarrierControls();
 updateControlReadouts();
 renderAll();
+
+// Offline appearance output uses the same recipe function as the WebGL preview.
+const realisticButton = document.querySelector('#renderRealistic');
+realisticButton.addEventListener('click', async () => {
+  const status = document.querySelector('#renderStatus');
+  realisticButton.disabled = true;
+  const payload = geometryPayload(calculateBraid());
+  payload.mode = 'rope';
+  const label = `${payload.carrierCount} kukla · ${payload.diameterMm} mm · ${payload.braidAngle}° · ${payload.filamentCount} iplik × ${payload.denier}D`;
+  document.querySelector('#renderResult').hidden = true;
+  document.querySelector('#renderRecipe').textContent = label;
+  status.textContent = 'Görüntü hesaplanıyor… Ayar değişiklikleri sonraki çıktıya uygulanır.';
+  try {
+    let response = await fetch('/api/renders', {method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(payload)});
+    let job = await response.json();
+    if (!response.ok) throw new Error(job.error);
+    const id = job.id;
+    while (job.status === 'rendering') {
+      await new Promise(resolve => setTimeout(resolve,2000));
+      response = await fetch(`/api/renders/${id}`);
+      job = await response.json();
+      if (!response.ok) throw new Error(job.error);
+    }
+    if (job.status !== 'complete') throw new Error(job.error || 'Çıktı hazırlanamadı.');
+    document.querySelector('#renderImage').src=job.image;
+    document.querySelector('#renderDownload').href=job.image;
+    document.querySelector('#renderClose').href=job.close;
+    document.querySelector('#renderResult').hidden=false;
+    status.textContent='Çıktı hazır. Yukarıdaki reçeteye aittir; sonuçlar geçici olarak saklanır.';
+  } catch(error) { status.textContent=error.message; }
+  finally {realisticButton.disabled=false;}
+});

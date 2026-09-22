@@ -1,0 +1,191 @@
+{
+  "id": "73489edc-a550-4aed-b3aa-5e9947a0151c",
+  "status": "complete",
+  "recipe": {
+    "mode": "rope",
+    "visibleRows": 30,
+    "baseColor": "#59ee78",
+    "carrierCount": 16,
+    "diameterMm": 16,
+    "braidAngle": 45,
+    "strandWidthScale": 1,
+    "filamentCount": 25,
+    "denier": 1000,
+    "materialProfileId": "polyester_satin",
+    "crossingMode": "diamond",
+    "flip": false,
+    "carriers": [
+      {
+        "no": 1,
+        "color": "#bb0615"
+      },
+      {
+        "no": 2,
+        "color": "#f6f5ee"
+      },
+      {
+        "no": 3,
+        "color": "#f6f5ee"
+      },
+      {
+        "no": 4,
+        "color": "#f6f5ee"
+      },
+      {
+        "no": 5,
+        "color": "#f6f5ee"
+      },
+      {
+        "no": 6,
+        "color": "#f6f5ee"
+      },
+      {
+        "no": 7,
+        "color": "#f6f5ee"
+      },
+      {
+        "no": 8,
+        "color": "#f6f5ee"
+      },
+      {
+        "no": 9,
+        "color": "#f6f5ee"
+      },
+      {
+        "no": 10,
+        "color": "#f6f5ee"
+      },
+      {
+        "no": 11,
+        "color": "#f6f5ee"
+      },
+      {
+        "no": 12,
+        "color": "#f6f5ee"
+      },
+      {
+        "no": 13,
+        "color": "#f6f5ee"
+      },
+      {
+        "no": 14,
+        "color": "#f6f5ee"
+      },
+      {
+        "no": 15,
+        "color": "#f6f5ee"
+      },
+      {
+        "no": 16,
+        "color": "#f6f5ee"
+      }
+    ],
+    "denierScale": 1
+  },
+  "report": {
+    "recipe": {
+      "mode": "rope",
+      "visibleRows": 30,
+      "baseColor": "#59ee78",
+      "carrierCount": 16,
+      "diameterMm": 16,
+      "braidAngle": 45,
+      "strandWidthScale": 1,
+      "filamentCount": 25,
+      "denier": 1000,
+      "materialProfileId": "polyester_satin",
+      "crossingMode": "diamond",
+      "flip": false,
+      "carriers": [
+        {
+          "no": 1,
+          "color": "#bb0615"
+        },
+        {
+          "no": 2,
+          "color": "#f6f5ee"
+        },
+        {
+          "no": 3,
+          "color": "#f6f5ee"
+        },
+        {
+          "no": 4,
+          "color": "#f6f5ee"
+        },
+        {
+          "no": 5,
+          "color": "#f6f5ee"
+        },
+        {
+          "no": 6,
+          "color": "#f6f5ee"
+        },
+        {
+          "no": 7,
+          "color": "#f6f5ee"
+        },
+        {
+          "no": 8,
+          "color": "#f6f5ee"
+        },
+        {
+          "no": 9,
+          "color": "#f6f5ee"
+        },
+        {
+          "no": 10,
+          "color": "#f6f5ee"
+        },
+        {
+          "no": 11,
+          "color": "#f6f5ee"
+        },
+        {
+          "no": 12,
+          "color": "#f6f5ee"
+        },
+        {
+          "no": 13,
+          "color": "#f6f5ee"
+        },
+        {
+          "no": 14,
+          "color": "#f6f5ee"
+        },
+        {
+          "no": 15,
+          "color": "#f6f5ee"
+        },
+        {
+          "no": 16,
+          "color": "#f6f5ee"
+        }
+      ],
+      "denierScale": 1
+    },
+    "profileVersion": "filament-c-denoised-1",
+    "geometrySha256": "031c33ef1b20a817d4347fe9096cbddca986bb2785f1fdd547754eaf44aa7816",
+    "carrierCount": 16,
+    "directions": {
+      "S": 8,
+      "Z": 8
+    },
+    "denoising": true,
+    "blender": "4.0.2",
+    "assumedFilamentsPerEnd": 192,
+    "renders": [
+      {
+        "file": "rope.png",
+        "seconds": 73.31665182113647
+      },
+      {
+        "file": "close.png",
+        "seconds": 96.06850838661194
+      }
+    ],
+    "seconds": 174.46548414230347
+  },
+  "image": "/api/renders/73489edc-a550-4aed-b3aa-5e9947a0151c/rope.png",
+  "close": "/api/renders/73489edc-a550-4aed-b3aa-5e9947a0151c/close.png"
+}

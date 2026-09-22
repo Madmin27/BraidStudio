@@ -7,3 +7,5 @@ overlap-test-*.png
 debug-*.png
 debug-*.json
 paint-face-*.png
+
+.render-cache/

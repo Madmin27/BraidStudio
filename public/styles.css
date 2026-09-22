@@ -471,3 +471,7 @@ input[type="color"] {
     height: 420px;
   }
 }
+
+.render-card { padding: 16px; }
+.render-card img { width:100%; height:auto; display:block; margin-top:12px; }
+.render-card p { color: #405550; font-size: 13px; line-height:1.5; }

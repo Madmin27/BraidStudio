@@ -1,6 +1,7 @@
+import { randomUUID } from "node:crypto";
 import { createServer } from "node:http";
 import { spawn } from "node:child_process";
-import { appendFile, mkdir, readFile, readdir } from "node:fs/promises";
+import { appendFile, mkdir, readFile, readdir, writeFile, rm, access } from "node:fs/promises";
 import { extname, join, normalize } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -95,9 +96,15 @@ async function readRequestJson(req, limitBytes = 256 * 1024) {
 }
 
 function normalizeGeometryPayload(body = {}) {
-  const carrierCount = Number(body.carrierCount || 16);
+  if (!body || typeof body !== 'object' || Array.isArray(body)) throw Object.assign(new Error('invalid_recipe'),{statusCode:400});
+  const carrierCount = Number(body.carrierCount ?? 16);
   if (!Number.isInteger(carrierCount) || carrierCount < 8 || carrierCount > 48 || carrierCount % 2) {
     throw Object.assign(new Error("carrier_count_must_be_even"), { statusCode: 400 });
+  }
+  for (const key of ['visibleRows','diameterMm','braidAngle','strandWidthScale','filamentCount','denier']) {
+    if (body[key] !== undefined && !Number.isFinite(Number(body[key]))) {
+      throw Object.assign(new Error('invalid_numeric_parameter'), {statusCode:400});
+    }
   }
   const validHex = (value, fallback) => /^#[0-9a-f]{6}$/i.test(String(value || "")) ? String(value) : fallback;
   return {
@@ -179,16 +186,20 @@ function runBraidGeometry(payload) {
   });
 }
 
+async function recipeAndMaterial(body) {
+  const payload = normalizeGeometryPayload(body);
+  const materialProfiles = await loadMaterialProfiles();
+  const materialProfile = materialProfiles.find(p => p.materialProfileId === payload.materialProfileId)
+    || materialProfiles.find(p => p.materialProfileId === 'polyester_satin');
+  payload.materialProfileId = materialProfile.materialProfileId;
+  payload.denierScale = materialProfile.denierScale;
+  return {payload, materialProfile};
+}
+
 async function handleBraidGeometry(req, res) {
   const startedAt = Date.now();
   try {
-    const payload = normalizeGeometryPayload(await readRequestJson(req));
-    const materialProfiles = await loadMaterialProfiles();
-    const materialProfile = materialProfiles.find(
-      (profile) => profile.materialProfileId === payload.materialProfileId
-    ) || materialProfiles.find((profile) => profile.materialProfileId === "polyester_satin");
-    payload.materialProfileId = materialProfile.materialProfileId;
-    payload.denierScale = materialProfile.denierScale;
+    const {payload, materialProfile} = await recipeAndMaterial(await readRequestJson(req));
     const mesh = await runBraidGeometry(payload);
     await auditRuntime({
       type: "geometry",
@@ -223,7 +234,76 @@ function publicAssetPath(requestUrl) {
   return join(publicDir, relativePath);
 }
 
+
+const renderJobs = new Map();
+let activeRender = null;
+const renderDir = join(rootDir, '.render-cache');
+await rm(renderDir,{recursive:true,force:true});
+const blender = process.env.BLENDER_BIN || '/root/.cache/braid-render/blender-4.0.2-linux-x64/blender';
+async function performRender(job, request) {
+  let child;
+  try {
+    await mkdir(job.dir, {recursive:true, mode:0o700});
+    await writeFile(join(job.dir, 'request.json'), JSON.stringify(request));
+    await new Promise((resolve,reject) => {
+      child = spawn(blender, ['-b','-t','12','--python',join(rootDir,'scripts/render_braid.py'),'--',join(job.dir,'request.json'),job.dir], {cwd:rootDir, stdio:['ignore','pipe','pipe']});
+      let errorText = '';
+      const timer = setTimeout(() => { child.kill('SIGKILL'); reject(new Error('render_timeout')); }, 600000);
+      child.stdout.on('data', () => {});
+      child.stderr.on('data', chunk => { errorText = (errorText + chunk).slice(-4000); });
+      child.on('error', error => { clearTimeout(timer); reject(error); });
+      child.on('close', code => { clearTimeout(timer); code === 0 ? resolve() : reject(new Error('render_failed:'+errorText)); });
+    });
+    job.report = JSON.parse(await readFile(join(job.dir,'report.json'),'utf8'));
+    await access(join(job.dir,'rope.png')); await access(join(job.dir,'close.png'));
+    job.status='complete';
+  } catch(error) {
+    job.status='failed'; job.error=error.message.startsWith('render_timeout') ? 'İşlem süre sınırını aştı.' : 'Görüntü oluşturulamadı.';
+    await auditRuntime({type:'render', status:'error', error:error.message});
+  } finally { activeRender=null; }
+}
+async function handleRender(req,res) {
+  try {
+    const url = new URL(req.url,'http://localhost');
+    if (url.pathname === '/api/renders' && req.method === 'POST') {
+      if (activeRender) return jsonResponse(res,429,{error:'Sunucuda bir görüntü hesaplanıyor. Tamamlandığında yeniden deneyin.'});
+      // Acquire before the first await: two simultaneous clients must not launch two workers.
+      activeRender='starting';
+      try {
+        const {payload,materialProfile} = await recipeAndMaterial(await readRequestJson(req));
+        if (payload.materialProfileId !== 'polyester_satin') throw Object.assign(new Error('Gerçekçi çıktı şu anda polyester için kullanılabilir.'),{statusCode:400});
+        payload.mode='rope';
+        await access(blender);
+        // Bound storage and memory; old results are temporary.
+        for (const [id,old] of renderJobs) {
+          if (Date.now()-old.created>6*3600000 || renderJobs.size>=16) {
+            await rm(old.dir,{recursive:true,force:true}); renderJobs.delete(id);
+          }
+        }
+        const id=randomUUID(); const job={id,status:'rendering',created:Date.now(),recipe:payload,dir:join(renderDir,id)};
+        renderJobs.set(id,job); activeRender=id;
+        void performRender(job,{recipe:payload,material:materialProfile});
+        return jsonResponse(res,202,{id,status:job.status,recipe:payload});
+      } catch(error) {activeRender=null; throw error;}
+    }
+    const match=url.pathname.match(/^\/api\/renders\/([a-f0-9-]{36})(?:\/(rope\.png|close\.png))?$/);
+    const job=match && renderJobs.get(match[1]);
+    if (!job) return jsonResponse(res,404,{error:'Çıktı bulunamadı; yeniden oluşturun.'});
+    if(req.method!=='GET') return jsonResponse(res,405,{error:'method_not_allowed'});
+    if(match[2]) {
+      if(job.status!=='complete') return jsonResponse(res,409,{error:'not_ready'});
+      const data=await readFile(join(job.dir,match[2]));
+      res.writeHead(200,{'content-type':'image/png','cache-control':'no-store'}); return res.end(data);
+    }
+    return jsonResponse(res,200,{id:job.id,status:job.status,error:job.error,recipe:job.recipe,report:job.report,
+      ...(job.status==='complete'?{image:'/api/renders/'+job.id+'/rope.png',close:'/api/renders/'+job.id+'/close.png'}:{})});
+  } catch(error) {jsonResponse(res,error.statusCode||500,{error:error.statusCode?error.message:'Görüntü servisi kullanılamıyor.'});}
+}
+
 const server = createServer(async (req, res) => {
+  if (req.url?.split('?')[0] === '/api/renders' || req.url?.startsWith('/api/renders/')) {
+    await handleRender(req,res); return;
+  }
   if (req.url === "/api/braid-geometry" && req.method === "POST") {
     await handleBraidGeometry(req, res);
     return;

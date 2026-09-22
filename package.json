@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node server.js",
     "test": "node --test tests/*.test.js",
-    "check": "node --check server.js && node --check public/app.js && node --check scripts/textile-proof-screenshot.mjs && python3 -c \"import ast,pathlib; ast.parse(pathlib.Path('scripts/braid_geometry.py').read_text())\"",
+    "check": "node --check server.js && node --check public/app.js && node --check scripts/textile-proof-screenshot.mjs && python3 -c \"import ast,pathlib; ast.parse(pathlib.Path('scripts/braid_geometry.py').read_text())\" && python3 -c \"import ast,pathlib; ast.parse(pathlib.Path('scripts/render_braid.py').read_text())\"",
     "build": "npm run check"
   },
   "engines": {
