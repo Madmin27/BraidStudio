@@ -66,3 +66,27 @@ polyester. Existing ports and service topology remain unchanged.
 an isolated server. The integration check runs real Blender, asserts 400 on invalid
 input, 429 for a simultaneous request, 409 for pending PNG, correct recipe and S/Z,
 denoising enabled, and real PNG bytes. Browser desktop/mobile proof is separate.
+
+## Executed validation — 2026-09-22
+
+- Integration commit: `61343e6`; rollback branch
+  `rollback/before-filament-live-20260922` points to `326f559`.
+- Syntax checks passed; unified geometry suite passed all 12 tests, including
+  the 16-carrier return after eight same-family blocks with both flip settings.
+- Isolated real Blender/API check passed in 175.25 seconds, including input
+  rejection, concurrency reservation, pending-image handling and PNG output.
+- Production HTTPS browser test completed a real render in 243.78 seconds with
+  16 carriers, 16 mm, 45 degrees, 25 ends of 1000D and the actual two-red-carrier
+  UI palette. Desktop and mobile checks passed without page errors or overflow.
+  Evidence: `proofs/filament-live/report.json` and `render-report.json`.
+- Live HTML, JavaScript and CSS bytes match deployed files; hashes are recorded
+  in `proofs/filament-live/assets.json`. Only braidstudio.service was restarted.
+- The live test exposed a stale preview recipe after changing inputs and directly
+  requesting a realistic output. The output action now refreshes the preview too.
+  A separate UI regression check reused the completed real job (no second Blender
+  run), asserting 16 mm and 45 degrees in the refreshed preview. Evidence:
+  `proofs/filament-live-synced/report.json` and desktop/mobile screenshots.
+- This verifies local-server access through the production HTTPS URL, not an
+  independent external-network availability test. Visual approval remains about
+  80 percent per the user; physical calibration and final acceptance remain open.
+- Changes are committed locally. No Git push was performed.

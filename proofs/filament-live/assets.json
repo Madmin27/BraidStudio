@@ -1,0 +1,14 @@
+{
+  "app.js": {
+    "sameBytes": true,
+    "sha256": "ffb5b7e6aa6e19e44b29fcb4c2036e70aab024400a921c628a7e1b7ecc724fc6"
+  },
+  "index.html": {
+    "sameBytes": true,
+    "sha256": "6f1502b9074b41c3ba9b106cad64a2c47bfac9ade8f19248a01b902cea8d1594"
+  },
+  "styles.css": {
+    "sameBytes": true,
+    "sha256": "3834d532ebae4c855a73a7e1b664fd453375d8da9a42abf922179714f3d16e28"
+  }
+}

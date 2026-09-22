@@ -1450,6 +1450,7 @@ realisticButton.addEventListener('click', async () => {
   realisticButton.disabled = true;
   const payload = geometryPayload(calculateBraid());
   payload.mode = 'rope';
+  renderAll(); // Keep preview and its recipe summary in sync with this submission.
   const label = `${payload.carrierCount} kukla · ${payload.diameterMm} mm · ${payload.braidAngle}° · ${payload.filamentCount} iplik × ${payload.denier}D`;
   document.querySelector('#renderResult').hidden = true;
   document.querySelector('#renderRecipe').textContent = label;

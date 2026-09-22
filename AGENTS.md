@@ -1,5 +1,26 @@
 # BraidStudio Calisma Sozlesmesi
 
+## Etkin durum — 2026-09-22 filament cikti entegrasyonu
+
+Bu bolum asagidaki tarihsel durum notlarindan once gelir. Kullanici temiz
+Blender gorunumunu yaklasik %80 yeterli buldu ve canli testini yetkilendirdi;
+nihai fotograf/uretim kabulu verilmis sayilmaz. Git push sonraya birakildi.
+
+- Canli entegrasyon commit: `61343e6`. Geri donus dali:
+  `rollback/before-filament-live-20260922` (`326f559`).
+- Tek geometri cekirdegi `scripts/braid_geometry.py` korunur. Hizli Three.js
+  onizleme ve Blender bitmis cikti ayni normalize recete/profil olcegini kullanir.
+- Geometri API'si `/api/braid-geometry`; ek `/api/renders` is API'si ayni cekirdegi
+  kullanan `scripts/render_braid.py` goruntuleme adaptorunu calistirir. Ikinci bir
+  orgu motoru degildir. Gorunumleri piksel bazinda esit diye sunma.
+- Polyester denye olcegi 1.0, goruntu profili `data/materials/polyester_satin.json`.
+  Resmi Blender 4.0.2 + OpenImageDenoise; ayni anda tek render, 12 CPU thread.
+- Eski `proofs/` ve photo-study dosyalari calisan uygulamanin bagimliligi degildir.
+- Denetim, sinirlar ve tekrar uretim: `docs/RENDER-INTEGRATION.md`.
+- 192F ve 180 yuzey lifi optik varsayimdir; tam carpisma/fiziksel kalibrasyon
+  kaniti yoktur. Nihai kalite veya anlik performans garantisi verme.
+
+
 ## Hedef
 
 Tres/maypole makinesindeki gergin polyester multifilament halati uretmek:
@@ -206,3 +227,22 @@ Durum: GORSEL KABUL BEKLIYOR, CANLIYA ALINMADI
   `/root/projeler/BraidStudio-photo-study` kopyasinda inceleme icin korunur.
   Bu calisma kopyasi aktif uretim surumu degildir.
 - Eski raporlar ve ekran kanitlari tarihseldir; aktif durumu bu bolum belirtir.
+
+## Kabul Edilen Tekil Referans ve Canli Farkinin Incelenmesi
+
+- Kullanici `red-reflection-soft-crossing/close.png` gorunumunu kabul ettigini
+  yeniden netlestirdi. Reddedilen, bu gorunumun canlidaki tam-halatta karsiligiydi.
+  Tekil referans reddedilmis sayilmamalidir; tam halat kabul edilmis sayilmaz.
+- Ana canli proje halen 73cacd4 runtime'ina geri alinmis durumda.
+- Reddedilen/arsiv calisma kopyasinda `scripts/material-parity-proof.mjs`
+  ile 32 kukla / 16 mm / 45 derece / 12 ip x 1000D kosullarinda karsilastirma yapildi.
+  Onayli kesismenin 202 yol noktasi ve 25 kesit noktasi var; gercek halattan
+  secilen kisa bolumun 11 yol noktasi ve 21 kesit noktasi var. Halattan alinan
+  bolum gercek vertex'lerin kesilmesi ve ortak rijit donusle gosterilir;
+  yeni tasiyici yolu veya baska bir uretim motoru uretilmez.
+- UV baslangici/uzunlugu da ayni degildir. Ayni malzeme JSON'u gorunum
+  esdegerligini tek basina kanitlamaz. Buyutulmus karsilastirma ise tek
+  basina kullanicinin canlidaki plastik gorunumunun nedenini kanitlamadi.
+- Malzeme yeniden ayarlanmadi, canliya aktarim yapilmadi. Kullaniciya
+  canlidaki malzeme/kukla/cap/aci/ip sayisi soruldu; henuz bilinmiyor.
+- Kanit: BraidStudio-photo-study/proofs/crossing-rope-parity.

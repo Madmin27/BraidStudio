@@ -12,9 +12,17 @@ try {
  await p.locator('#materialProfile').selectOption('polyester_satin');
  if(process.env.RUN_RENDER==='1') {
   await p.evaluate(()=>{for(const [id,v] of [['diameter',16],['braidAngle',45],['filamentCount',25]]) {let el=document.getElementById(id);el.value=v;el.dispatchEvent(new Event('input',{bubbles:true}));}});
+  if (process.env.REUSE_JOB) {
+    const previous=await (await fetch(new URL('/api/renders/'+process.env.REUSE_JOB,base))).json();
+    await p.route('**/api/renders', r=>r.fulfill({status:202,contentType:'application/json',body:JSON.stringify(previous)}));
+    report.method='UI synchronization using previously completed real render';
+  }
   await p.locator('#renderRealistic').click();
   await p.waitForFunction(()=>document.querySelector('#renderStatus').textContent.startsWith('Çıktı hazır'),{},{timeout:600000});
   await p.locator('#renderImage').evaluate(im=>im.decode());
+  await p.waitForFunction(()=>document.querySelector('#statusPill').textContent.includes('hazır'));
+  assert.match(await p.locator('#summary').textContent(), /16 mm/);
+  assert.match(await p.locator('#sceneMeta').textContent(), /45°/);
   report.image=await p.locator('#renderImage').getAttribute('src');report.recipe=await p.locator('#renderRecipe').textContent();
  }
  await p.locator('.render-card').scrollIntoViewIfNeeded();await p.screenshot({path:`${out}/desktop.png`});
