@@ -90,3 +90,14 @@ denoising enabled, and real PNG bytes. Browser desktop/mobile proof is separate.
   independent external-network availability test. Visual approval remains about
   80 percent per the user; physical calibration and final acceptance remain open.
 - Changes are committed locally. No Git push was performed.
+
+## Preview reflection correction
+
+User clarified that excessive oily reflection concerned the fast Three.js preview,
+not the Blender output. In polyester preview optics, specularIntensity and sheen
+are now zero for both base and light-carrier overrides. Lighting, filament normal
+detail, geometry and the complete Blender render profile are unchanged.
+Rollback: `f2c3a09`. Twelve geometry/profile tests passed. Production HTTPS
+normal/close/mobile evidence is under `proofs/preview-no-reflection/`.
+The initial offline no-reflection Blender experiment was stopped after the
+clarification and was never applied to the runtime profile. No Git push.

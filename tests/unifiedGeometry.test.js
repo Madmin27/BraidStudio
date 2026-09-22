@@ -252,8 +252,10 @@ test("material library preserves accepted Polip and calibrated Polyester profile
   assert.ok(polyester.texture.lightCarrier.colorSatinAmplitude > 0);
   assert.ok(polyester.texture.lightCarrier.colorSatinAmplitude < polyester.texture.colorSatinAmplitude);
   assert.ok(polyester.optics.lightCarrier.roughness <= polyester.optics.roughness);
-  assert.ok(polyester.optics.lightCarrier.specularIntensity > 0.7);
-  assert.ok(polyester.optics.lightCarrier.sheen < polyester.optics.sheen);
+  assert.equal(polyester.optics.specularIntensity, 0);
+  assert.equal(polyester.optics.lightCarrier.specularIntensity, 0);
+  assert.equal(polyester.optics.sheen, 0);
+  assert.equal(polyester.optics.lightCarrier.sheen, 0);
   assert.ok(polyester.optics.lightCarrier.sheenRoughness > polyester.optics.sheenRoughness);
   assert.ok(polyester.optics.anisotropy > polip.optics.anisotropy);
   assert.ok(polyester.optics.bumpScale < polip.optics.bumpScale);
