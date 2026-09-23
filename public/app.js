@@ -1,1593 +1,1477 @@
-import {
-  applyUserSelection,
-  generateRecipe,
-  initialRecipeState
-} from "../src/state.js";
-import { machineProfiles } from "../src/machineProfiles.js";
-import { buildBraidMatrix, getCarrierDirection } from "../src/utils/braidMatrix.js";
-import { renderTechnicalSheetCanvases } from "../src/utils/braidCanvasRenderer.js";
+import * as THREE from "/vendor/three.module.js";
 
-const patterns = [
-  { id: "diamond", name: "Diamond", carriers: [16, 24], colors: ["siyah", "kırmızı"], material: "polyester", walk: "two-over-two" },
-  { id: "spiral", name: "Spiral", carriers: [12, 16, 24], colors: ["lacivert", "beyaz"], material: "polypropylene", walk: "standard" },
-  { id: "plain", name: "Düz örgü", carriers: [8, 12, 16], colors: ["siyah"], material: "cotton", walk: "standard" },
-  { id: "herringbone", name: "Balıksırtı", carriers: [24, 32], colors: ["gri", "siyah"], material: "nylon", walk: "counter-rotating" },
-  { id: "ladder", name: "Merdiven", carriers: [16, 24], colors: ["sarı", "siyah"], material: "polyester", walk: "standard" },
-  { id: "chevron", name: "Chevron", carriers: [24, 32], colors: ["kırmızı", "beyaz"], material: "polypropylene", walk: "two-over-two" }
-];
+const $ = (selector) => document.querySelector(selector);
 
-const colorMap = {
-  siyah: "#1b1f1d",
-  kırmızı: "#bd2f2b",
-  lacivert: "#1f3d70",
-  mavi: "#1f3d70",
-  beyaz: "#f8faf9",
-  white: "#f8faf9",
-  blue: "#1f3d70",
-  red: "#bd2f2b",
-  black: "#1b1f1d",
-  gray: "#77817b",
-  gri: "#77817b",
-  nylon: "#d8dde0",
-  sarı: "#d7a800",
-  yellow: "#d7d900",
-  yeşil: "#2d7d46",
-  green: "#2d7d46",
-  turuncu: "#d96c1a",
-  orange: "#d96c1a",
-  mor: "#6b3fa0",
-  purple: "#6b3fa0",
-  pembe: "#d45087",
-  pink: "#d45087"
+const ui = {
+  carrierCount: $("#carrierCount"),
+  diameter: $("#diameter"),
+  diameterValue: $("#diameterValue"),
+  braidAngle: $("#braidAngle"),
+  angleValue: $("#angleValue"),
+  strandWidth: $("#strandWidth"),
+  strandWidthValue: $("#strandWidthValue"),
+  filamentCount: $("#filamentCount"),
+  filamentCountValue: $("#filamentCountValue"),
+  denier: $("#denier"),
+  denierValue: $("#denierValue"),
+  materialProfile: $("#materialProfile"),
+  crossingMode: $("#crossingMode"),
+  generateBraid: $("#generateBraid"),
+  carrierGrid: $("#carrierGrid"),
+  carrierPopover: $("#carrierPopover"),
+  fixedPalette: $("#fixedPalette"),
+  bulkColor: $("#bulkColor"),
+  paintAll: $("#paintAll"),
+  resetColors: $("#resetColors"),
+  invertFlow: $("#invertFlow"),
+  repeatBadge: $("#repeatBadge"),
+  sceneMeta: $("#sceneMeta"),
+  summary: $("#summary"),
+  carrierTable: $("#carrierTable"),
+  patternCanvas: $("#patternCanvas"),
+  threeMount: $("#threeMount"),
+  threeRuler: $("#threeRuler"),
+  toggleSpin: $("#toggleSpin"),
+  downloadPng: $("#downloadPng"),
+  statusPill: $("#statusPill"),
+  imageModal: $("#imageModal"),
+  modalImage: $("#modalImage"),
+  closeImageModal: $("#closeImageModal")
 };
 
-let state = structuredClone(initialRecipeState);
-let currentImage = null;
-let selectedPatternId = "spiral";
-
-const analyzeButton = document.querySelector("#analyzeButton");
-const generateButton = document.querySelector("#generateButton");
-const selectionForm = document.querySelector("#selectionForm");
-const imageInput = document.querySelector("#imageInput");
-const toggleUploadButton = document.querySelector("#toggleUploadButton");
-const uploadPanel = document.querySelector("#uploadPanel");
-const imagePreview = document.querySelector("#imagePreview");
-const imageStatus = document.querySelector("#imageStatus");
-const uploadPrompt = document.querySelector("#uploadPrompt");
-const imageContextPanel = document.querySelector("#imageContextPanel");
-const imageContextUse = document.querySelector("#imageContextUse");
-const imageContextDiameter = document.querySelector("#imageContextDiameter");
-const imageContextCarrierHint = document.querySelector("#imageContextCarrierHint");
-const imageContextFlowHint = document.querySelector("#imageContextFlowHint");
-const imageContextWhiteCount = document.querySelector("#imageContextWhiteCount");
-const imageContextNotes = document.querySelector("#imageContextNotes");
-const patternAlbum = document.querySelector("#patternAlbum");
-const patternSelect = document.querySelector("#patternSelect");
-const colorsInput = document.querySelector("#colorsInput");
-const carrierSelect = document.querySelector("#carrierSelect");
-const machineProfileSelect = document.querySelector("#machineProfileSelect");
-const walkTypeSelect = document.querySelector("#walkTypeSelect");
-const sheathInput = document.querySelector("#sheathInput");
-const coreEnabledSelect = document.querySelector("#coreEnabledSelect");
-const coreMaterialInput = document.querySelector("#coreMaterialInput");
-const coreMaterialLabel = document.querySelector("#coreMaterialLabel");
-const recipeSheet = document.querySelector("#recipeSheet");
-const downloadPngButton = document.querySelector("#downloadPngButton");
-const printPdfButton = document.querySelector("#printPdfButton");
-const recipeImagePreview = document.querySelector("#recipeImagePreview");
-const recipeImageOutput = document.querySelector(".recipe-image-output");
-const processLog = document.querySelector("#processLog");
-const processStatus = document.querySelector("#processStatus");
-const mismatchReport = document.querySelector("#mismatchReport");
-const analysisProgress = document.querySelector("#analysisProgress");
-const analysisProgressTitle = document.querySelector("#analysisProgressTitle");
-const analysisProgressPercent = document.querySelector("#analysisProgressPercent");
-const analysisProgressBar = document.querySelector("#analysisProgressBar");
-const analysisProgressSteps = document.querySelector("#analysisProgressSteps");
-recipeImagePreview.addEventListener("error", () => {
-  recipeImagePreview.hidden = true;
-  recipeImagePreview.removeAttribute("src");
-  recipeImageOutput.hidden = true;
-});
-const analysisSteps = [];
-const processSteps = [];
-const analysisProgressItems = [
-  "Görsel base64 hazırlanıyor",
-  "Backend hibrit analiz yapıyor",
-  "AI reçete adayını doğruluyor",
-  "Sonuç kullanıcı seçimlerine aktarılıyor"
+const defaultAccent = "#151718";
+const defaultBase = "#59ee78";
+const defaultMarker = "#e11912";
+const defaultGround = "#f6f5ee";
+const preferenceKey = "braidstudio.preferences.v1";
+const fixedColors = [
+  ["#59ee78", "yesil"],
+  ["#151718", "siyah"],
+  ["#f6f5ee", "beyaz"],
+  ["#e11912", "kirmizi"],
+  ["#174f92", "mavi"],
+  ["#f2c230", "sari"],
+  ["#148d62", "koyu yesil"],
+  ["#f07518", "turuncu"],
 ];
-function cacheKey(imageHash) {
-  return `braidstudio:analysis:fingerprint-v1:${imageHash}`;
+const colorNames = {
+  "#e11912": "kirmizi",
+  "#f6f5ee": "beyaz",
+  "#35df67": "yesil",
+  "#59ee78": "yesil",
+  "#151718": "siyah",
+  "#174f92": "mavi",
+  "#f2c230": "sari",
+  "#148d62": "yesil",
+  "#f07518": "turuncu",
+  "#7a3db8": "mor"
+};
+
+const state = {
+  carriers: [],
+  spin: false,
+  flip: false,
+  scene: null,
+  camera: null,
+  renderer: null,
+  materialLights: null,
+  ropeGroup: null,
+  materialCache: new Map(),
+  polyesterFiberMaps: new Map(),
+  viewRotation: { x: -0.58, y: 1.18, z: -0.18 },
+  autoRotation: 0,
+  zoom: 8.8,
+  drag: null,
+  activeColor: defaultAccent,
+  lastResult: null,
+  geometryRequestId: 0,
+  geometryMesh: null,
+  simulationDirty: false,
+  generating: false
+};
+
+function defaultCarrierColor(no) {
+  return no === 1 || no === 3 ? defaultMarker : defaultGround;
 }
 
-async function hashFile(file) {
-  const buffer = await file.arrayBuffer();
-  const hashBuffer = await crypto.subtle.digest("SHA-256", buffer);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray.map((byte) => byte.toString(16).padStart(2, "0")).join("");
+function validHexColor(value) {
+  return /^#[0-9a-f]{6}$/i.test(String(value || ""));
 }
 
-function saveCachedAnalysis(analysis) {
-  localStorage.setItem(cacheKey(analysis.image_hash), JSON.stringify(analysis));
-}
-
-function collectImageContext() {
-  return {
-    productUse: imageContextUse?.value.trim() || "",
-    knownDiameter: imageContextDiameter?.value.trim() || "",
-    expectedCarrierCount: imageContextCarrierHint?.value || "",
-    markerFlowHint: imageContextFlowHint?.value || "",
-    whiteStrandCountHint: imageContextWhiteCount?.value.trim() || "",
-    notes: imageContextNotes?.value.trim() || ""
-  };
-}
-
-function setAnalysisProgress({ active = true, step = 0, title = "", status = "active" } = {}) {
-  if (!analysisProgress) return;
-  analysisProgress.hidden = false;
-  analysisProgress.dataset.status = status;
-  const maxStep = analysisProgressItems.length;
-  const safeStep = Math.max(0, Math.min(step, maxStep));
-  const percent = Math.round((safeStep / maxStep) * 100);
-  analysisProgressTitle.textContent = title || analysisProgressItems[Math.max(0, safeStep - 1)] || "Analiz hazırlanıyor";
-  analysisProgressPercent.textContent = `${percent}%`;
-  analysisProgressBar.style.width = `${percent}%`;
-  analyzeButton.classList.toggle("is-loading", active && status === "active");
-  analysisProgressSteps.innerHTML = analysisProgressItems.map((item, index) => {
-    const itemStatus = index < safeStep ? "done" : index === safeStep && status === "active" ? "active" : "pending";
-    const errorClass = status === "error" && index === Math.max(0, safeStep - 1) ? " error" : "";
-    return `<li class="${itemStatus}${errorClass}"><span></span>${escapeHtml(item)}</li>`;
-  }).join("");
-}
-
-function finishAnalysisProgress(title) {
-  setAnalysisProgress({ active: false, step: analysisProgressItems.length, title, status: "done" });
-  analyzeButton.classList.remove("is-loading");
-}
-
-function failAnalysisProgress(title, step = 1) {
-  setAnalysisProgress({ active: false, step, title, status: "error" });
-  analyzeButton.classList.remove("is-loading");
-}
-
-function colorToHex(color) {
-  return colorMap[String(color || "").toLowerCase()] || "#8d9892";
-}
-
-function logAnalysis(message) {
-  console.info(`[BraidStudio] ${message}`);
-  const analysisLog = document.querySelector("#analysisLog");
-  if (!analysisLog) return;
-  const time = new Date().toLocaleTimeString("tr-TR");
-  analysisSteps.unshift(`${time} - ${message}`);
-  analysisLog.innerHTML = analysisSteps.slice(0, 8).map((step) => `<div>${step}</div>`).join("");
-}
-
-function escapeHtml(value) {
-  return String(value ?? "")
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
-}
-
-function logProcess(stage, message, details = {}, status = "info") {
-  const item = {
-    time: new Date().toLocaleTimeString("tr-TR"),
-    stage,
-    message,
-    details,
-    status
-  };
-  processSteps.unshift(item);
-  console.info("[BraidStudio]", stage, message, details);
-  renderProcessLog();
-}
-
-function renderProcessLog() {
-  if (!processLog) return;
-  processStatus.textContent = processSteps[0]?.message || "Bekliyor";
-  processLog.innerHTML = processSteps.slice(0, 18).map((step) => `
-    <details class="process-item ${step.status}" ${step.status === "error" || step.status === "warn" ? "open" : ""}>
-      <summary><span>${escapeHtml(step.time)}</span><strong>${escapeHtml(step.stage)}</strong>${escapeHtml(step.message)}</summary>
-      <pre>${escapeHtml(JSON.stringify(step.details || {}, null, 2))}</pre>
-    </details>
-  `).join("");
-}
-
-function updateMismatchReport(report = []) {
-  if (!mismatchReport) return;
-  if (!report.length) {
-    mismatchReport.innerHTML = `<div class="mismatch-ok">Tutarsızlık yok.</div>`;
-    return;
-  }
-  mismatchReport.innerHTML = report.map((item) => `
-    <div class="mismatch-${item.level}">
-      <strong>${escapeHtml(item.title)}</strong>
-      <span>${escapeHtml(item.message)}</span>
-    </div>
-  `).join("");
-}
-
-function buildMismatchReport({ analysis = state.ai_analysis_result, finalSelection = state.user_selected_options, recipe = state.generated_recipe } = {}) {
-  const report = [];
-  const predictions = analysis?.predictions || {};
-  const predictor = predictions.predictor_result || analysis?.predictor_result || {};
-  const structural = predictions.structuralAnalysis || predictions.fingerprint?.structuralAnalysis || {};
-  const selectedCarrierCount = Number(finalSelection.carrier_count || 0);
-  const aiCarrierCount = Number(structural.carrierCount || predictions.estimatedCarrierCount || predictions.estimated_carrier_count || 0);
-  const layoutCount = Array.isArray(finalSelection.carrier_layout) ? finalSelection.carrier_layout.length : 0;
-  const candidate = finalSelection.ai_selected_candidate;
-  const profile = machineProfiles.find((item) => item.machineProfileId === finalSelection.machine_profile_id);
-
-  if (aiCarrierCount && selectedCarrierCount && aiCarrierCount !== selectedCarrierCount) {
-    report.push({
-      level: "warn",
-      title: "Kukla sayısı farkı",
-      message: `AI ${aiCarrierCount} tahmin etti, finalSelection ${selectedCarrierCount} kullanıyor. Reçete finalSelection'a göre çizilir.`
-    });
-  }
-
-  if (layoutCount && selectedCarrierCount && layoutCount !== selectedCarrierCount) {
-    report.push({
-      level: "error",
-      title: "Carrier layout sayısı hatalı",
-      message: `carrier_layout ${layoutCount}, seçilen kukla sayısı ${selectedCarrierCount}. Desen burada bozulur.`
-    });
-  }
-
-  if (candidate?.recipeId && candidate.visualSignature && predictor.visualSignature && candidate.visualSignature !== predictor.visualSignature) {
-    report.push({
-      level: "warn",
-      title: "Candidate / predictor imzası farklı",
-      message: `Candidate ${candidate.visualSignature}, predictor ${predictor.visualSignature}.`
-    });
-  }
-
-  if (predictor.analysis?.braidLogic && finalSelection.braid_walk_type && normalizeWalkType(predictor.analysis.braidLogic, finalSelection.colors) !== finalSelection.braid_walk_type) {
-    report.push({
-      level: "error",
-      title: "Yürüyüş tipi tutarsız",
-      message: `Predictor ${predictor.analysis.braidLogic}, kullanıcı seçimi ${finalSelection.braid_walk_type}. Desen mekaniği burada kopar.`
-    });
-  }
-
-  const finalColors = finalSelection.colors || [];
-  const layoutColors = new Set((finalSelection.carrier_layout || []).map((carrier) => carrier.color));
-  for (const color of finalColors.slice(1)) {
-    if (layoutCount && !layoutColors.has(color)) {
-      report.push({
-        level: "error",
-        title: "Renk carrier layout'ta yok",
-        message: `${color} renk listesinde var ama carrier_layout içinde yok. Tracer çizimi eksik çıkar.`
-      });
+function loadPreferences() {
+  try {
+    const value = JSON.parse(localStorage.getItem(preferenceKey) || "null");
+    if (!value || typeof value !== "object") return null;
+    if (value.schemaVersion !== 2) {
+      if (Number(value.strandWidth) === 130) value.strandWidth = 100;
+      if (Number(value.filamentCount) === 20) value.filamentCount = 25;
+      value.schemaVersion = 2;
     }
+    return value;
+  } catch {
+    return null;
   }
+}
 
-  const expectedSignature = predictor.visualSignature || candidate?.visualSignature;
-  const markerDirections = markerDirectionSummary(finalSelection.carrier_layout, profile);
-  if (expectedSignature === "dual_counter_spiral" && markerDirections.markerCount > 1 && markerDirections.directionCount < 2) {
-    report.push({
-      level: "warn",
-      title: "Dual tracer için yön eksik",
-      message: `Beklenen dual_counter_spiral ama renkli kuklalar ${markerDirections.directions.join(", ")} grubunda. X görünüm oluşmaz.`
-    });
+function setSavedControl(control, value) {
+  if (value === undefined || value === null) return;
+  const next = String(value);
+  if (control.tagName === "SELECT" && ![...control.options].some((option) => option.value === next)) return;
+  const numeric = Number(next);
+  if (control.type === "range" && (!Number.isFinite(numeric) || numeric < Number(control.min) || numeric > Number(control.max))) return;
+  control.value = next;
+}
+
+function applySavedPreferences(preferences) {
+  if (!preferences) return;
+  setSavedControl(ui.carrierCount, preferences.carrierCount);
+  setSavedControl(ui.diameter, preferences.diameter);
+  setSavedControl(ui.braidAngle, preferences.braidAngle);
+  setSavedControl(ui.strandWidth, preferences.strandWidth);
+  setSavedControl(ui.filamentCount, preferences.filamentCount);
+  setSavedControl(ui.denier, preferences.denier);
+  setSavedControl(ui.materialProfile, preferences.materialProfile);
+  setSavedControl(ui.crossingMode, preferences.crossingMode);
+  state.flip = Boolean(preferences.flip);
+  if (validHexColor(preferences.activeColor)) {
+    state.activeColor = preferences.activeColor;
+    ui.bulkColor.value = preferences.activeColor;
   }
-  if (expectedSignature === "spiral_tracer" && markerDirections.markerCount > 1 && markerDirections.directionCount > 1) {
-    report.push({
-      level: "warn",
-      title: "Paralel tracer için yön karışık",
-      message: "Beklenen spiral_tracer ama renkli kuklalar iki yönde. Paralel sarmal yerine kesişen iz oluşabilir."
-    });
-  }
-
-  if (recipe?.technical_sheet) {
-    const sheet = recipe.technical_sheet;
-    if (sheet.carrier_layout.length !== sheet.carrier_count) {
-      report.push({
-        level: "error",
-        title: "Renderer girdisi hatalı",
-        message: `Sheet carrier_layout ${sheet.carrier_layout.length}, carrier_count ${sheet.carrier_count}.`
-      });
-    }
-  }
-
-  return report;
 }
 
-function fileToBase64(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.addEventListener("load", () => {
-      resolve(String(reader.result).split(",")[1] || "");
-    });
-    reader.addEventListener("error", () => reject(reader.error));
-    reader.readAsDataURL(file);
-  });
-}
-
-function patternPreview(pattern) {
-  const bars = pattern.colors.map((color, index) => `<i style="--i:${index}"></i>`).join("");
-  return `<div class="pattern-preview pattern-${pattern.id}">${bars}</div>`;
-}
-
-function renderAlbum() {
-  patternAlbum.innerHTML = patterns.map((pattern) => `
-    <button class="pattern-card ${pattern.id === selectedPatternId ? "selected" : ""}" type="button" data-pattern="${pattern.id}">
-      ${patternPreview(pattern)}
-      <strong>${pattern.name}</strong>
-      <span>${pattern.carriers.join("/")} kukla</span>
-    </button>
-  `).join("");
-}
-
-function renderMachineProfiles() {
-  machineProfileSelect.innerHTML = machineProfiles.map((profile) => `
-    <option value="${profile.machineProfileId}">
-      ${profile.carrierCount} kukla - ${profile.walkType} - ${profile.status}
-    </option>
-  `).join("");
-}
-
-function collectUserSelection() {
-  const form = new FormData(selectionForm);
-  const coreEnabled = form.get("core_enabled") === "true";
-  return {
-    pattern_type: form.get("pattern_type"),
-    colors: String(form.get("colors")).split(",").map((color) => color.trim()).filter(Boolean),
-    material: "polyester",
-    carrier_count: Number(form.get("carrier_count")),
-    machine_id: "default-machine",
-    machine_profile_id: form.get("machine_profile_id"),
-    direction: "clockwise",
-    braid_walk_type: form.get("braid_walk_type"),
-    sheath: {
-      enabled: true,
-      material: form.get("sheath_material") || "polyester"
-    },
-    core: {
-      enabled: coreEnabled,
-      material: coreEnabled ? form.get("core_material") || "polyester" : null,
-      diameter_mm: null
-    }
-  };
-}
-
-function syncSelectionState() {
-  state = applyUserSelection(state, collectUserSelection());
-}
-
-function normalizeMaterial(material) {
-  const value = String(material || "").toLowerCase();
-  if (value.includes("polyester") || value === "pes") return "polyester";
-  if (value.includes("polypropylene") || value.includes("pp")) return "polypropylene";
-  if (value.includes("nylon") || value.includes("polyamide")) return "nylon";
-  if (value.includes("cotton")) return "cotton";
-  return "polyester";
-}
-
-function normalizePattern(patternType) {
-  const value = String(patternType || "").toLowerCase();
-  const options = Array.from(patternSelect.options).map((option) => option.value);
-  if (options.includes(value)) return value;
-  if (value.includes("fleck")) return "solid_with_flecks";
-  if (value.includes("marker") || value.includes("tracer") || value.includes("dual_counter_spiral")) return "solid_with_markers";
-  if (value.includes("diagonal_rib")) return "herringbone";
-  if (value.includes("spiral")) return "spiral";
-  return "plain";
-}
-
-function normalizeWalkType(value, colors = []) {
-  const text = String(value || "").toLowerCase();
-  const colorSet = new Set(colors.map((color) => String(color).toLowerCase()));
-  if (text.includes("2_over_2") || text.includes("two-over-two") || text.includes("twill") || text.includes("2 üst") || text.includes("2 alt")) return "two-over-two";
-  if (text.includes("counter-rotating") || text.includes("counter_rotating") || text.includes("karşı")) return "counter-rotating";
-  if (text.includes("standard")) return "standard";
-  if (text.includes("1_over_1") || text.includes("one-over-one") || text.includes("1 over 1") || text.includes("diamond")) return "1_over_1";
-  if (colorSet.has("yellow") && colorSet.has("black")) return "two-over-two";
-  return "1_over_1";
-}
-
-function pickRecipeCandidate(analysis, carrierCount) {
-  const candidates = Array.isArray(analysis?.recipe_candidates) ? analysis.recipe_candidates : [];
-  return candidates.find((candidate) => {
-    const count = Object.keys(candidate.carrierColorMap || {}).length;
-    return count === carrierCount;
-  }) || null;
-}
-
-function carrierLayoutFromColorMap(carrierColorMap) {
-  return Object.entries(carrierColorMap || {})
-    .map(([carrierNo, color]) => ({
-      carrier_no: Number(carrierNo),
-      color,
-      strand_role: "sheath"
-    }))
-    .filter((carrier) => Number.isFinite(carrier.carrier_no))
-    .sort((a, b) => a.carrier_no - b.carrier_no);
-}
-
-function carrierLayoutFromPrediction(predictions) {
-  if (Array.isArray(predictions.estimated_carrier_layout) && predictions.estimated_carrier_layout.length) {
-    return predictions.estimated_carrier_layout.map((carrier, index) => ({
-      carrier_no: Number(carrier.carrier_no || index + 1),
-      color: carrier.color || "white",
-      strand_role: carrier.role || carrier.strand_role || "sheath"
+function savePreferences() {
+  try {
+    localStorage.setItem(preferenceKey, JSON.stringify({
+      schemaVersion: 2,
+      carrierCount: Number(ui.carrierCount.value),
+      diameter: Number(ui.diameter.value),
+      braidAngle: Number(ui.braidAngle.value),
+      strandWidth: Number(ui.strandWidth.value),
+      filamentCount: Number(ui.filamentCount.value),
+      denier: Number(ui.denier.value),
+      materialProfile: ui.materialProfile.value,
+      crossingMode: ui.crossingMode.value,
+      flip: state.flip,
+      activeColor: state.activeColor,
+      carrierColors: state.carriers.map((carrier) => carrier.color)
     }));
+  } catch {
+    // Private browsing or storage restrictions should not block the simulator.
   }
-  return [];
 }
 
-function markerLayoutFromColors(carrierCount, colors, visualSignature = "spiral_tracer") {
-  const base = colors[0] || "white";
-  const accentColors = colors.slice(1);
-  const layout = Array.from({ length: carrierCount }, (_, index) => ({
-    carrier_no: index + 1,
-    color: base,
-    strand_role: "sheath"
-  }));
-
-  if (!accentColors.length) return layout;
-
-  // Eğer 3+ renk varsa, fazla renkleri marker olmayan kuklalara round-robin dağıt
-  // Önce marker kümelerini yerleştir
-  const yellow = accentColors.find((color) => String(color).toLowerCase().includes("yellow") || String(color).toLowerCase().includes("sarı"));
-  const black = accentColors.find((color) => String(color).toLowerCase().includes("black") || String(color).toLowerCase().includes("siyah"));
-  const cluster = yellow && black
-    ? [black, yellow, black]
-    : accentColors.length >= 2
-      ? [accentColors[1], accentColors[0], accentColors[1]]
-      : [accentColors[0]];
-  const wantsDual = visualSignature === "dual_counter_spiral";
-  const starts = carrierCount === 16
-    ? (wantsDual ? [1, 8] : [1, 9])
-    : carrierCount === 24
-      ? (wantsDual ? [1, 8, 17] : [1, 13])
-      : carrierCount === 32
-        ? (wantsDual ? [1, 8, 17, 24] : [1, 17])
-        : Array.from({ length: Math.max(1, Math.round(carrierCount / 8)) }, (_, index) => 1 + index * Math.max(4, Math.floor(carrierCount / Math.max(1, Math.round(carrierCount / 8)))));
-
-  // Marker pozisyonlarını işaretle
-  const markerSet = new Set();
-  for (const start of starts) {
-    cluster.forEach((color, index) => {
-      const carrierOffset = wantsDual ? index : index * 2;
-      const carrierNo = ((start + carrierOffset - 1) % carrierCount) + 1;
-      markerSet.add(carrierNo);
-      layout[carrierNo - 1] = {
-        carrier_no: carrierNo,
-        color,
-        strand_role: "sheath_marker"
-      };
-    });
-  }
-
-  // 3+ renk varsa: marker dışında kalan kuklalara base dışındaki diğer renkleri dağıt
-  if (accentColors.length >= 2) {
-    const extraColors = accentColors.filter((c) => !cluster.includes(c));
-    if (extraColors.length) {
-      const nonMarkerIndices = [];
-      for (let i = 0; i < carrierCount; i++) {
-        if (!markerSet.has(i + 1)) nonMarkerIndices.push(i);
-      }
-      let colorIndex = 0;
-      for (const idx of nonMarkerIndices) {
-        layout[idx] = {
-          carrier_no: idx + 1,
-          color: extraColors[colorIndex % extraColors.length],
-          strand_role: "sheath"
-        };
-        colorIndex++;
-      }
-    }
-  }
-
-  return layout;
-}
-
-function buildPatternCarrierLayout(selection, patternId = selection.pattern_type) {
-  const carrierCount = Number(selection.carrier_count || 0);
-  const colors = Array.isArray(selection.colors) && selection.colors.length ? selection.colors : ["beyaz"];
-  const base = colors[0] || "beyaz";
-  const accents = colors.slice(1);
-  const layout = Array.from({ length: carrierCount }, (_, index) => ({
-    carrier_no: index + 1,
-    color: base,
-    strand_role: "sheath"
-  }));
-  if (!carrierCount) return layout;
-
-  const normalizedPattern = String(patternId || "").toLowerCase();
-  if (normalizedPattern === "plain") {
-    return layout.map((carrier, index) => ({
-      ...carrier,
-      color: colors[index % colors.length] || base,
-      strand_role: index % colors.length === 0 ? "sheath" : "sheath_marker"
-    }));
-  }
-
-  if (!accents.length) return layout;
-
-  const half = Math.max(1, Math.floor(carrierCount / 2));
-  const quarter = Math.max(1, Math.floor(carrierCount / 4));
-  const markerPositionsByPattern = {
-    spiral: [1, half + 1],
-    diamond: [1, 2],
-    ladder: [1, 3, half + 1, half + 3],
-    herringbone: [1, 2, half + 1, half + 2],
-    chevron: [1, 2, quarter + 1, quarter + 2, half + 1, half + 2]
-  };
-  const positions = markerPositionsByPattern[normalizedPattern] || [1, half + 1];
-  const used = new Set();
-  positions.forEach((position, index) => {
-    const carrierNo = ((position - 1) % carrierCount) + 1;
-    if (used.has(carrierNo)) return;
-    used.add(carrierNo);
-    layout[carrierNo - 1] = {
-      carrier_no: carrierNo,
-      color: accents[index % accents.length],
-      strand_role: "sheath_marker"
+function initCarriers(count, { preserveExisting = true, colors = null } = {}) {
+  const old = new Map(state.carriers.map((carrier) => [carrier.no, carrier.color]));
+  state.carriers = Array.from({ length: count }, (_, index) => {
+    const no = index + 1;
+    const storedColor = Array.isArray(colors) && validHexColor(colors[index]) ? colors[index] : null;
+    const existingColor = preserveExisting ? old.get(no) : null;
+    return {
+      no,
+      color: storedColor || existingColor || defaultCarrierColor(no)
     };
   });
-  return layout;
 }
 
-function isMarkerPattern(patternType) {
-  const value = String(patternType || "").toLowerCase();
-  return value.includes("marker") || value.includes("fleck") || value.includes("izli") || value.includes("tracer") || value.includes("solid_with");
+function directionFor(index) {
+  const sign = index % 2 === 0 ? 1 : -1;
+  return state.flip ? -sign : sign;
 }
 
-function currentVisualSignature() {
-  const predictions = state.ai_analysis_result?.predictions || {};
-  return predictions.predictor_result?.visualSignature
-    || state.ai_analysis_result?.predictor_result?.visualSignature
-    || predictions.fingerprint?.predictedSignature
-    || predictions.predictedSignature
-    || state.user_selected_options.ai_selected_candidate?.visualSignature
-    || (isMarkerPattern(state.user_selected_options.pattern_type) ? "spiral_tracer" : "plain_weave");
-}
+function calculateBraid() {
+  const carrierCount = Number(ui.carrierCount.value);
+  const diameterMm = Number(ui.diameter.value);
+  const angleDeg = Number(ui.braidAngle.value);
+  const strandWidthScale = Number(ui.strandWidth.value) / 100;
+  const filamentCount = Number(ui.filamentCount.value);
+  const denier = Number(ui.denier.value);
+  const visibleRows = 30;
 
-function rebuildCarrierLayoutForSelection(selection, visualSignature = currentVisualSignature()) {
-  const carrierCount = Number(selection.carrier_count || 0);
-  const colors = Array.isArray(selection.colors) && selection.colors.length ? selection.colors : ["white"];
-  if (!carrierCount) return [];
-  if (isMarkerPattern(selection.pattern_type) && colors.length > 1) {
-    return markerLayoutFromColors(carrierCount, colors, visualSignature);
-  }
-  return Array.from({ length: carrierCount }, (_, index) => ({
-    carrier_no: index + 1,
-    color: colors[index % colors.length],
-    strand_role: "sheath"
-  }));
-}
-
-function colorsFromCarrierLayout(carrierLayout = [], fallbackColors = []) {
-  const layoutColors = carrierLayout
-    .map((carrier) => String(carrier.color || "").trim())
-    .filter(Boolean);
-  if (!layoutColors.length) {
-    return fallbackColors.length ? [...fallbackColors] : ["beyaz"];
-  }
-  const counts = new Map();
-  for (const color of layoutColors) {
-    const key = color.toLowerCase();
-    const current = counts.get(key) || { color, count: 0, firstIndex: layoutColors.length };
-    current.count += 1;
-    current.firstIndex = Math.min(current.firstIndex, layoutColors.indexOf(color));
-    counts.set(key, current);
-  }
-  return [...counts.values()]
-    .sort((a, b) => b.count - a.count || a.firstIndex - b.firstIndex)
-    .map((item) => item.color);
-}
-
-function shouldRebuildCarrierLayout(selection) {
-  const carrierCount = Number(selection.carrier_count || 0);
-  const layout = Array.isArray(selection.carrier_layout) ? selection.carrier_layout : [];
-  if (!carrierCount) return false;
-  if (layout.length !== carrierCount) return true;
-  const allowedColors = new Set((selection.colors || []).map((color) => String(color).toLowerCase()));
-  return layout.some((carrier) => !allowedColors.has(String(carrier.color).toLowerCase()));
-}
-
-function syncMachineProfileToCarrierCount() {
-  const carrierCount = Number(carrierSelect.value);
-  const matchedProfile = machineProfiles.find((profile) => (
-    profile.carrierCount === carrierCount && profile.machineFamily === "maypole_circular"
-  ));
-  if (matchedProfile) {
-    machineProfileSelect.value = matchedProfile.machineProfileId;
-  }
-}
-
-function syncSelectionStateWithLayout(reason = "selection_sync") {
-  const previousLayout = Array.isArray(state.user_selected_options.carrier_layout)
-    ? state.user_selected_options.carrier_layout
-    : [];
-  syncSelectionState();
-  if (
-    reason === "recipe_generate"
-    && previousLayout.length === Number(state.user_selected_options.carrier_count || 0)
-  ) {
-    const syncedColors = colorsFromCarrierLayout(previousLayout, state.user_selected_options.colors);
-    state = applyUserSelection(state, {
-      carrier_layout: previousLayout,
-      colors: syncedColors
-    });
-    if (colorsInput) colorsInput.value = syncedColors.join(", ");
-    return { rebuilt: false, layout: previousLayout };
-  }
-  const forceRebuild = ["carrier_count", "colors"].includes(reason);
-  if (!forceRebuild && !shouldRebuildCarrierLayout(state.user_selected_options)) {
-    return { rebuilt: false, layout: state.user_selected_options.carrier_layout };
-  }
-  const layout = rebuildCarrierLayoutForSelection(state.user_selected_options);
-  state = applyUserSelection(state, { carrier_layout: layout });
-  logProcess("Kullanıcı değişikliği", "Carrier layout kullanıcı seçimine göre yeniden kuruldu", {
-    reason,
-    carrierCount: state.user_selected_options.carrier_count,
-    colors: state.user_selected_options.colors,
-    patternType: state.user_selected_options.pattern_type,
-    visualSignature: currentVisualSignature(),
-    carrierLayoutCount: layout.length,
-    carrierLayoutPreview: layout.slice(0, 24)
-  });
-  return { rebuilt: true, layout };
-}
-
-function markerDirectionSummary(carrierLayout = [], machineProfile = null) {
-  const base = mostCommonColor(carrierLayout.map((carrier) => carrier.color));
-  const markers = carrierLayout.filter((carrier) => carrier.color !== base);
-  const directions = [...new Set(markers.map((carrier) => carrierDirection(carrier.carrier_no, machineProfile)))];
   return {
-    markerCount: markers.length,
-    directionCount: directions.filter((direction) => direction !== "unknown").length,
-    directions
+    carrierCount,
+    diameterMm,
+    angleDeg,
+    strandWidthScale,
+    filamentCount,
+    denier,
+    visibleRows,
+    carriers: state.carriers.map((carrier, index) => ({
+      ...carrier,
+      direction: directionFor(index) > 0 ? "saat yonu" : "ters yon",
+      group: directionFor(index) > 0 ? "S" : "Z"
+    }))
   };
 }
 
-function applyAiSuggestionToSelection(analysis) {
-  const predictions = analysis?.predictions || {};
-  const fingerprint = predictions.fingerprint || {};
-  const predictorResult = predictions.predictor_result || analysis?.predictor_result || {};
-  const structuralAnalysis = fingerprint.structuralAnalysis || predictions.structuralAnalysis || {};
-  const allowedCarrierCounts = [8, 12, 16, 24, 32];
-  const suggestedCarrierCount = Number(structuralAnalysis.carrierCount || predictions.carrier_count || predictions.estimated_carrier_count || 0);
-  const currentCarrierCount = Number(carrierSelect.value || state.user_selected_options.carrier_count || 0);
-  const hasReliableCarrierCount = allowedCarrierCounts.includes(suggestedCarrierCount);
-  const normalizedCarrierCount = hasReliableCarrierCount ? suggestedCarrierCount : currentCarrierCount;
-  const bestCandidate = pickRecipeCandidate(analysis, normalizedCarrierCount);
-  const candidateLayout = carrierLayoutFromColorMap(bestCandidate?.carrierColorMap);
-  const predictedLayout = carrierLayoutFromPrediction(predictions);
-  const colors = Array.isArray(predictions.colors) && predictions.colors.length ? predictions.colors : ["white", "blue"];
-  const visualSignature = predictorResult.visualSignature || fingerprint.predictedSignature || bestCandidate?.visualSignature || predictions.predictedSignature;
-  const markerLayout = markerLayoutFromColors(normalizedCarrierCount, colors, visualSignature);
-  const matchedProfile = machineProfiles.find((profile) => profile.carrierCount === normalizedCarrierCount && profile.machineFamily === "maypole_circular");
-  const candidateLayoutCoversAllColors = colors.every((color) =>
-    candidateLayout.some((c) => String(c.color).toLowerCase() === String(color).toLowerCase())
-  );
-  const candidateUsable = candidateLayout.length === normalizedCarrierCount
-    && candidateLayoutCoversAllColors
-    && !hasMarkerDirectionMismatch(candidateLayout, matchedProfile, visualSignature);
-  const predictedUsable = predictedLayout.length === normalizedCarrierCount && !hasMarkerDirectionMismatch(predictedLayout, matchedProfile, visualSignature);
-  logProcess("AI sonucu", "AI/predictor sonucu alındı", {
-    model: analysis?.model,
-    rawSignature: fingerprint.predictedSignature || predictions.predictedSignature,
-    predictorSignature: predictorResult.visualSignature,
-    predictorReliable: predictorResult.isReliable,
-    predictorWarnings: predictorResult.warnings,
-    aiCarrierCount: suggestedCarrierCount || null,
-    selectedCarrierCount: normalizedCarrierCount,
-    carrierCountSource: hasReliableCarrierCount ? "ai_analysis" : "user_selection_kept",
-    colors,
-    predictorBraidLogic: predictorResult.analysis?.braidLogic,
-    structuralBraidLogic: structuralAnalysis.braidLogic,
-    recipeCandidateCount: analysis?.recipe_candidates?.length || 0
-  });
-  patternSelect.value = normalizePattern(predictorResult.visualSignature || fingerprint.predictedSignature || predictions.predictedSignature || predictions.visualSignature || predictions.pattern_type);
-  colorsInput.value = colors.join(", ");
-  if (hasReliableCarrierCount) {
-    carrierSelect.value = String(normalizedCarrierCount);
-  }
-  machineProfileSelect.value = matchedProfile?.machineProfileId || machineProfileSelect.value || "mp_16_std";
-  walkTypeSelect.value = normalizeWalkType(predictorResult.analysis?.braidLogic || bestCandidate?.braidLogic || structuralAnalysis.braidLogic || predictions.braid_walk_type, colors);
-  sheathInput.value = "polyester";
-  // coreEnabled: predictions.core varsa ve bilinmiyor değilse true
-  const aiCoreEnabled = Boolean(predictions.core && String(predictions.core).toLowerCase() !== "unknown" && String(predictions.core).toLowerCase() !== "no");
-  coreEnabledSelect.value = String(aiCoreEnabled);
-  coreMaterialInput.value = aiCoreEnabled ? "polyester" : "";
-
-  syncSelectionState();
-  state = applyUserSelection(state, {
-    carrier_layout: candidateUsable
-      ? candidateLayout
-      : markerLayout.length
-        ? markerLayout
-        : predictedUsable
-          ? predictedLayout
-          : predictedLayout,
-    ai_selected_candidate: bestCandidate ? {
-      recipeId: bestCandidate.recipeId,
-      confidence: bestCandidate.confidence,
-      visualSignature: bestCandidate.visualSignature,
-      status: bestCandidate.status
-    } : null,
-    ai_suggestion_applied_at: new Date().toISOString()
-  });
-  logProcess("Kullanıcı seçimine aktarım", "AI önerisi finalSelection alanlarına aktarıldı", {
-    selectedPattern: patternSelect.value,
-    selectedWalkType: walkTypeSelect.value,
-    selectedCarrierCount: Number(carrierSelect.value),
-    selectedColors: colors,
-    candidate: bestCandidate ? {
-      recipeId: bestCandidate.recipeId,
-      visualSignature: bestCandidate.visualSignature,
-      carrierMapCount: Object.keys(bestCandidate.carrierColorMap || {}).length,
-      braidLogic: bestCandidate.braidLogic,
-      confidence: bestCandidate.confidence,
-      used: candidateUsable,
-      rejectedReason: candidateLayout.length && !candidateUsable
-        ? (!candidateLayoutCoversAllColors
-          ? "candidate tüm renkleri kapsamıyor, markerLayout kullanıldı"
-          : "marker yönleri visualSignature ile uyuşmuyor")
-        : null
-    } : null,
-    carrierLayoutCount: state.user_selected_options.carrier_layout.length,
-    carrierLayoutPreview: state.user_selected_options.carrier_layout.slice(0, 16)
-  }, buildMismatchReport().some((item) => item.level === "error") ? "error" : "info");
-  updateMismatchReport(buildMismatchReport());
-  clearGeneratedRecipe();
-  generateButton.disabled = false;
-  logAnalysis(`${bestCandidate ? `${bestCandidate.recipeId} adayı` : "AI önerisi"} kullanıcı seçimi alanlarına aktarıldı. Reçete Görseli butonuna basınca teknik resim üretilecek.`);
-  if (!hasReliableCarrierCount) {
-    logAnalysis("AI kukla sayısını güvenilir vermedi; mevcut kullanıcı kukla seçimi korundu.");
-  }
-}
-
-function hasMarkerDirectionMismatch(carrierLayout = [], machineProfile = null, visualSignature = "") {
-  const summary = markerDirectionSummary(carrierLayout, machineProfile);
-  if (summary.markerCount <= 1) return false;
-  if (visualSignature === "dual_counter_spiral") return summary.directionCount < 2;
-  if (visualSignature === "spiral_tracer") return summary.directionCount > 1;
-  return false;
-}
-
-function renderCarrierSimulation() {
-  const container = document.getElementById("carrierSimulation");
-  if (!container) return;
-
-  const layout = state.user_selected_options.carrier_layout;
-  const colors = state.user_selected_options.colors;
-
-  container.hidden = false;
-
-  const profile = machineProfiles.find(
-    (p) => p.machineProfileId === state.user_selected_options.machine_profile_id
-  ) || null;
-
-  if (!Array.isArray(layout) || layout.length === 0) {
-    container.innerHTML = `
-      <div class="sim-svg-wrap">
-        <svg viewBox="0 0 360 220" role="img" aria-label="Kukla simülasyonu">
-          <circle cx="180" cy="105" r="82" fill="none" stroke="#bbb" stroke-width="1.2" stroke-dasharray="4 3"/>
-          <text x="180" y="105" text-anchor="middle" font-size="14" fill="#6f7e78">Kukla dizilimi bekleniyor</text>
-        </svg>
-      </div>
-    `;
-    return;
-  }
-
-  const dots = layout.map((carrier) => {
-    const angle = (Math.PI * 2 * (carrier.carrier_no - 1)) / layout.length - Math.PI / 2;
-    const x = 180 + Math.cos(angle) * 82;
-    const y = 105 + Math.sin(angle) * 82;
-    const hex = colorToHex(carrier.color);
-    const dir = getCarrierDirection(carrier.carrier_no, profile);
-    const arrow = dir === "clockwise" ? "↻" : "↺";
-    // label rengi: koyu arka planda beyaz, açıkta siyah
-    const labelBrightness = (parseInt(hex.slice(1,3),16)*299 + parseInt(hex.slice(3,5),16)*587 + parseInt(hex.slice(5,7),16)*114) / 1000;
-    const labelColor = labelBrightness > 160 ? "#1a2e2a" : "#fff";
-    const strokeColor = "#666";
-    const strokeW = 1.2;
-    return `<g class="carrier-circle" data-carrier="${carrier.carrier_no}" role="button" tabindex="0" aria-label="Kukla ${carrier.carrier_no} — ${carrier.color}">
-      <circle cx="${x}" cy="${y}" r="15" fill="${hex}" stroke="${strokeColor}" stroke-width="${strokeW}" stroke-opacity="0.85"/>
-      <text class="carrier-label" x="${x}" y="${y - 1}" font-size="11" fill="${labelColor}" font-weight="700">${carrier.carrier_no}</text>
-      <text class="carrier-arrow" x="${x}" y="${y + 14}" font-size="9" fill="rgba(255,255,255,0.8)">${arrow}</text>
-    </g>`;
-  }).join("");
-
-  container.innerHTML = `
-    <div class="sim-svg-wrap">
-      <svg viewBox="0 0 360 220" role="img" aria-label="Kukla dizilim simülasyonu">
-        <circle cx="180" cy="105" r="82" fill="none" stroke="#bbb" stroke-width="1.2" stroke-dasharray="4 3"/>
-        ${dots}
-        <g class="carrier-count-group" role="button" tabindex="0" aria-label="Kukla sayısını değiştir">
-          <circle class="carrier-count-badge" cx="180" cy="105" r="24" fill="#0f684f" stroke="#fff" stroke-width="2.5"/>
-          <text x="180" y="111" text-anchor="middle" font-size="18" font-weight="800" fill="#fff" font-family="system-ui,sans-serif">${layout.length}</text>
-        </g>
-      </svg>
+function renderCarrierControls() {
+  ui.carrierGrid.innerHTML = state.carriers.map((carrier, index) => `
+    <div class="carrier" data-carrier="${carrier.no}" role="button" tabindex="0" style="--carrier-color:${carrier.color}">
+      <span>${carrier.no}<small>${directionFor(index) > 0 ? "S / sag" : "Z / sol"}</small></span>
+      <i class="carrier-swatch" aria-hidden="true"></i>
     </div>
-    <p class="click-hint">${layout.length} kukla · ${colors.length} renk · kuklaya tıkla renk paleti · ortadaki sayıya tıkla kukla adedi</p>
-  `;
-}
+  `).join("");
 
-function render() {
-  renderCarrierSimulation();
-  renderRecipeSheet(state.generated_recipe);
-  renderAlbum();
-}
-
-function clearGeneratedRecipe() {
-  state = {
-    ...state,
-    generated_recipe: null
-  };
-  recipeImageOutput.hidden = true;
-  recipeImagePreview.hidden = true;
-  recipeImagePreview.removeAttribute("src");
-  updateMismatchReport(buildMismatchReport());
-}
-
-function renderRecipeSheet(recipe) {
-  if (!recipe) {
-    recipeSheet.innerHTML = `
-      <div class="empty-sheet">
-        <strong>Henüz teknik reçete yok</strong>
-        <span>Final seçimleri yapıp reçete üret.</span>
-      </div>
-    `;
-    recipeImagePreview.hidden = true;
-    recipeImagePreview.removeAttribute("src");
-    return;
-  }
-
-  const sheet = recipe.technical_sheet;
-  const renderMatrix = buildBraidMatrix({
-    carrierLayout: sheet.carrier_layout,
-    machineProfile: sheet.machineProfile,
-    braidLogic: sheet.braid_walk_type,
-    steps: 34
-  });
-  const title = `${sheet.carrier_count || ""} Kukla ${sheet.material || ""} ${sheet.pattern_type || "Halat"} Reçetesi`.trim();
-
-  recipeSheet.innerHTML = `
-    <header class="ts-header">
-      <div class="ts-recipe-id">${recipe.recipe_id}</div>
-      <div><h2>${title}</h2><p>${sheet.material || "Material"} deterministic technical recipe sheet</p></div>
-      <table><tbody><tr><th>Revizyon</th><td>1.0</td></tr><tr><th>Tarih</th><td>${new Date(recipe.generated_at).toLocaleDateString("tr-TR")}</td></tr><tr><th>Durum</th><td>${recipe.shop_validation.production_ready ? "ONAYLI" : "DRAFT"}</td></tr></tbody></table>
-    </header>
-    <section class="ts-block ts-specs"><h3>Teknik özellikler</h3>${renderSpecs(sheet)}</section>
-    <section class="ts-block ts-main"><h3>Ana halat görünümü</h3>${renderMainRopeSvg(sheet)}</section>
-    <section class="ts-block"><h3>Kesit görünümü</h3>${renderSectionSvg(sheet)}</section>
-    <section class="ts-block"><h3>Renk dizilimi</h3>${renderColorSequence(sheet)}</section>
-    <section class="ts-block"><h3>Kukla dizilimi</h3>${renderCarrierRingSvg(sheet)}</section>
-    <section class="ts-block"><h3>Kukla yürüyüş diyagramı</h3>${renderWalkSvg(sheet)}</section>
-    <section class="ts-block"><h3>Üretim tarifi</h3>${renderKeyValues([["Makine", "Maypole / Tres örgü"], ["Kukla", sheet.carrier_count], ["Yürüyüş", sheet.braid_walk_type], ["İplik takma", "Renk dizilimine göre"]])}</section>
-    <section class="ts-block"><h3>Malzeme önerisi</h3>${renderKeyValues([["Dış kılıf", sheet.sheath.material || sheet.material], ["İç dolgu", sheet.core.enabled ? sheet.core.material : "Yok"], ["Renk", sheet.color_sequence.join(" / ")]])}</section>
-    <section class="ts-block"><h3>Nasıl yapılır</h3>${renderSteps(sheet.recipeSteps || recipe.technical_sheet.recipeSteps)}</section>
-    <section class="ts-block"><h3>Notlar</h3><p>Bu teknik taslak kullanıcı onaylı seçimlerden deterministik olarak üretilmiştir; üretim onayı için saha doğrulaması gerekir.</p></section>
-    <section class="ts-block"><h3>Onay / kontrol</h3>${renderKeyValues([["Hazırlayan", "BraidStudio"], ["Kontrol", "________"], ["Onay", recipe.shop_validation.production_ready ? "ONAYLI" : "Bekliyor"]])}</section>
-    <section class="ts-block"><h3>Kullanım alanları</h3><div class="usage-icons"><span>Yelken</span><span>Marina</span><span>Endüstriyel</span><span>Mooring</span></div></section>
-  `;
-  const canvasRender = renderTechnicalSheetCanvases(recipeSheet, sheet);
-
-  // Canvas tıklandığında orijinal boyutta modal aç
-  requestAnimationFrame(() => {
-    const canvas = recipeSheet.querySelector('[data-braid-canvas="main"]');
-    if (canvas && !canvas.dataset.modalBound) {
-      canvas.dataset.modalBound = "1";
-      canvas.style.cursor = "zoom-in";
-      canvas.addEventListener("click", () => {
-        const dataUrl = canvas.toDataURL("image/png");
-        const overlay = document.createElement("div");
-        overlay.className = "canvas-modal-overlay";
-        overlay.innerHTML = `<div class="canvas-modal-bg"></div><div class="canvas-modal-wrap"><img class="canvas-modal-img" src="${dataUrl}" alt="Ana halat görünümü" draggable="false"><button class="canvas-modal-close" aria-label="Kapat">✕</button></div>`;
-        document.body.appendChild(overlay);
-        requestAnimationFrame(() => overlay.classList.add("active"));
-        const close = () => { overlay.classList.remove("active"); setTimeout(() => overlay.remove(), 300); };
-        overlay.querySelector(".canvas-modal-bg").addEventListener("click", close);
-        overlay.querySelector(".canvas-modal-close").addEventListener("click", close);
-        document.addEventListener("keydown", function esc(e) { if (e.key === "Escape") { close(); document.removeEventListener("keydown", esc); } });
-      });
-    }
-  });
-
-  logProcess("Renderer girdisi", "Teknik sheet DOM üretildi", {
-    recipeId: recipe.recipe_id,
-    patternType: sheet.pattern_type,
-    carrierCount: sheet.carrier_count,
-    walkType: sheet.braid_walk_type,
-    colorSequence: sheet.color_sequence,
-    carrierLayoutCount: sheet.carrier_layout.length,
-    markerStarts: markerClusterStarts(sheet),
-    markerColors: tracerClusterColors(sheet),
-    markerDirections: markerDirectionSummary(sheet.carrier_layout, sheet.machineProfile),
-    matrix: {
-      steps: renderMatrix.steps,
-      carrierCount: renderMatrix.carrierCount,
-      cellCount: renderMatrix.steps * renderMatrix.carrierCount,
-      braidLogic: renderMatrix.braidLogic
-    },
-    canvasRender,
-    previewConfidence: recipe.preview.previewConfidence,
-    warnings: recipe.preview.warnings
-  }, buildMismatchReport({ recipe }).some((item) => item.level === "error") ? "error" : "info");
-  updateMismatchReport(buildMismatchReport({ recipe }));
-}
-
-function renderSpecs(sheet) {
-  return renderKeyValues([
-    ["Çap", "Kullanıcı girecek"],
-    ["Hammadde", sheet.material],
-    ["Yapı", sheet.sheath.enabled ? "Kılıflı örgü" : "Tek örgü"],
-    ["İç dolgu", sheet.core.enabled ? sheet.core.material : "Yok"],
-    ["Örgü tipi", sheet.pattern_type],
-    ["Makine", sheet.machine_id],
-    ["Profil", sheet.machineProfile.machineProfileId],
-    ["Profil durumu", sheet.machine_profile_status],
-    ["Track model", sheet.machineProfile.trackModel],
-    ["Kukla sayısı", sheet.carrier_count],
-    ["Yürüyüş", sheet.braid_walk_type],
-    ["Doğrulama", sheet.validationRequired ? "Gerekli" : "Tamam"]
-  ]);
-}
-
-function renderKeyValues(rows) {
-  return `<table class="kv"><tbody>${rows.map(([key, value]) => `<tr><th>${key}</th><td>${value ?? "Tanımsız"}</td></tr>`).join("")}</tbody></table>`;
-}
-
-function renderSteps(steps = []) {
-  return `<ol class="step-list">${steps.map((step) => `<li>${step}</li>`).join("")}</ol>`;
-}
-
-function ropeLines(sheet, width = 760, height = 120, close = false) {
-  const id = `ropeClip${width}x${height}${close ? "c" : "m"}`;
-  const matrix = buildBraidMatrix({
-    carrierLayout: sheet.carrier_layout,
-    machineProfile: sheet.machineProfile,
-    braidLogic: sheet.braid_walk_type,
-    steps: close ? 26 : 34
-  });
-  const cellW = width / Math.max(matrix.steps, 1);
-  const cellH = height / Math.max(matrix.carrierCount, 1);
-  const strandStroke = close ? Math.max(9, cellH * 1.25) : Math.max(3.6, cellH * 0.92);
-  const baseColor = mostCommonColor(sheet.color_sequence || []);
-  const gradientIds = new Map();
-  const lines = [];
-
-  lines.push(`<defs><clipPath id="${id}"><rect x="0" y="0" width="${width}" height="${height}" rx="${close ? 0 : 3}"/></clipPath>${volumeFilter(id)}${colorGradients(sheet.color_sequence || [], id, gradientIds)}</defs>`);
-  lines.push(`<g clip-path="url(#${id})">`);
-  lines.push(`<rect width="${width}" height="${height}" fill="#f3f5f1"/>`);
-
-  matrix.cells.forEach((row) => {
-    row.forEach((cell) => {
-      if (!cell.topCarrier) return;
-      const x = cell.time * cellW;
-      const y = cell.column * cellH;
-      const direction = cell.topDirection;
-      const isMarker = cell.topCarrier.color !== baseColor;
-      const x1 = x - cellW * 0.18;
-      const x2 = x + cellW * 1.18;
-      const y1 = direction === "clockwise" ? y + cellH * 0.92 : y + cellH * 0.08;
-      const y2 = direction === "clockwise" ? y + cellH * 0.08 : y + cellH * 0.92;
-      const stroke = isMarker ? strandStroke * 1.08 : strandStroke;
-      const gradientId = gradientIds.get(normalizeColorKey(cell.visibleColor));
-      lines.push(`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#667069" stroke-width="${stroke + 2.2}" stroke-linecap="round" opacity="${isMarker ? ".34" : ".22"}"/>`);
-      lines.push(`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="url(#${gradientId})" stroke-width="${stroke}" stroke-linecap="round" opacity="${isMarker ? "1" : ".99"}" filter="url(#${id}Volume)"/>`);
-      lines.push(`<line x1="${x1 + cellW * 0.22}" y1="${y1}" x2="${x2 - cellW * 0.22}" y2="${y2}" stroke="#fff" stroke-width="${Math.max(1, stroke * 0.18)}" stroke-linecap="round" opacity="${isMarker ? ".25" : ".7"}"/>`);
+  ui.carrierGrid.querySelectorAll(".carrier").forEach((card) => {
+    const openCard = (event) => {
+      showCarrierPopover(card, Number(card.dataset.carrier));
+    };
+    card.addEventListener("click", openCard);
+    card.addEventListener("keydown", (event) => {
+      if (event.key !== "Enter" && event.key !== " ") return;
+      event.preventDefault();
+      openCard(event);
     });
   });
 
-  lines.push("</g>");
-  return lines.join("");
 }
 
-function volumeFilter(id) {
-  return `<filter id="${id}Volume" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="1.1" stdDeviation="0.7" flood-color="#6f7972" flood-opacity=".38"/></filter>`;
-}
+function showCarrierPopover(card, carrierNo) {
+  const carrier = state.carriers.find((item) => item.no === carrierNo);
+  if (!carrier) return;
+  const rect = card.getBoundingClientRect();
+  ui.carrierPopover.innerHTML = `
+    <div class="popover-title">Kukla ${carrier.no}</div>
+    <div class="popover-palette">
+      ${fixedColors.map(([hex, name]) => `
+        <button
+          type="button"
+          class="palette-color${hex.toLowerCase() === carrier.color.toLowerCase() ? " active" : ""}"
+          style="--swatch:${hex}"
+          data-color="${hex}"
+          title="${name}"
+          aria-label="${name}"
+        ></button>
+      `).join("")}
+    </div>
+  `;
+  ui.carrierPopover.hidden = false;
+  ui.carrierPopover.style.left = `${clamp(rect.left, 8, window.innerWidth - 258)}px`;
+  ui.carrierPopover.style.top = `${clamp(rect.bottom + 8, 8, window.innerHeight - 190)}px`;
 
-function colorGradients(colors = [], id, gradientIds) {
-  const unique = [...new Set(colors.map((color) => normalizeColorKey(color)))];
-  if (!unique.includes("white")) unique.push("white");
-  return unique.map((colorKey, index) => {
-    const base = colorToHex(colorKey);
-    const gradId = `${id}Grad${index}`;
-    gradientIds.set(colorKey, gradId);
-    return `<linearGradient id="${gradId}" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="${shadeHex(base, -22)}"/><stop offset="42%" stop-color="${shadeHex(base, 32)}"/><stop offset="58%" stop-color="${shadeHex(base, 46)}"/><stop offset="100%" stop-color="${shadeHex(base, -18)}"/></linearGradient>`;
-  }).join("");
-}
-
-function normalizeColorKey(color) {
-  return String(color || "white").trim().toLowerCase();
-}
-
-function shadeHex(hex, percent) {
-  const value = hex.replace("#", "");
-  const num = parseInt(value.length === 3 ? value.split("").map((char) => char + char).join("") : value, 16);
-  const amount = Math.round(2.55 * percent);
-  const r = Math.max(0, Math.min(255, (num >> 16) + amount));
-  const g = Math.max(0, Math.min(255, ((num >> 8) & 0xff) + amount));
-  const b = Math.max(0, Math.min(255, (num & 0xff) + amount));
-  return `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`;
-}
-
-function markerClusters(sheet) {
-  const carriers = Array.isArray(sheet.carrier_layout) ? sheet.carrier_layout : [];
-  const sequence = sheet.color_sequence || [];
-  const base = mostCommonColor(sequence);
-  const markers = carriers.filter((carrier) => carrier.color !== base);
-  const clusters = [];
-  for (const marker of markers) {
-    const previous = markers.find((item) => item.carrier_no === marker.carrier_no - 1);
-    if (previous) continue;
-    const colors = [];
-    let current = marker.carrier_no;
-    while (markers.find((item) => item.carrier_no === current)) {
-      const item = markers.find((candidate) => candidate.carrier_no === current);
-      colors.push(item.color);
-      current += 1;
-    }
-    clusters.push({
-      start: marker.carrier_no,
-      colors,
-      direction: carrierDirection(marker.carrier_no, sheet.machineProfile)
+  ui.carrierPopover.querySelectorAll("[data-color]").forEach((button) => {
+    button.addEventListener("click", () => {
+      applyCarrierColor(carrier.no, button.dataset.color);
+      hideCarrierPopover();
     });
-  }
-  return clusters;
+  });
 }
 
-function markerClusterStarts(sheet) {
-  return markerClusters(sheet).map((cluster) => cluster.start);
+function applyCarrierColor(carrierNo, color, closeAfterRender = true) {
+  const carrier = state.carriers.find((item) => item.no === carrierNo);
+  if (!carrier) return;
+  carrier.color = color;
+  state.activeColor = color;
+  ui.bulkColor.value = color;
+  renderFixedPalette();
+  renderCarrierControls();
+  markSimulationDirty();
+  if (closeAfterRender) hideCarrierPopover();
 }
 
-function tracerClusterColors(sheet) {
-  return markerClusters(sheet).map((cluster) => cluster.colors.join("+"));
+function hideCarrierPopover() {
+  ui.carrierPopover.hidden = true;
 }
 
-function carrierDirection(carrierNo, machineProfile = null) {
-  return getCarrierDirection(carrierNo, machineProfile);
+function renderFixedPalette() {
+  ui.fixedPalette.innerHTML = fixedColors.map(([hex, name]) => `
+    <button
+      type="button"
+      class="palette-color${hex.toLowerCase() === state.activeColor.toLowerCase() ? " active" : ""}"
+      style="--swatch:${hex}"
+      data-color="${hex}"
+      title="${name}"
+      aria-label="${name}"
+    ></button>
+  `).join("");
+
+  ui.fixedPalette.querySelectorAll("button").forEach((button) => {
+    button.addEventListener("click", () => {
+      state.activeColor = button.dataset.color;
+      ui.bulkColor.value = state.activeColor;
+      renderFixedPalette();
+    });
+  });
 }
 
-function mostCommonColor(colors = []) {
+function mostCommonCarrierColor(result) {
   const counts = new Map();
-  for (const color of colors) counts.set(color, (counts.get(color) || 0) + 1);
-  return [...counts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] || colors[0];
-}
-
-function renderMainRopeSvg(sheet) {
-  return `<div class="canvas-rope-frame"><canvas data-braid-canvas="main" width="1520" height="280" aria-label="Ana halat görünümü"></canvas><div class="rope-scale"><span>0</span><span>30 cm</span></div></div>`;
-}
-
-function renderSectionSvg(sheet) {
-  const carriers = sheet.carrier_layout;
-  const dots = carriers.map((carrier, index) => {
-    const angle = (Math.PI * 2 * index) / carriers.length - Math.PI / 2;
-    const x = 180 + Math.cos(angle) * 76;
-    const y = 105 + Math.sin(angle) * 76;
-    return `<circle cx="${x}" cy="${y}" r="7" fill="${colorToHex(carrier.color)}" stroke="#111"/>`;
-  }).join("");
-  return `<svg viewBox="0 0 360 220" role="img"><circle cx="180" cy="105" r="88" fill="#fff" stroke="#111"/><circle cx="180" cy="105" r="48" fill="#f5f2e9" stroke="#777"/>${dots}<text x="245" y="92">Kılıf</text><text x="245" y="124">İç dolgu</text></svg>`;
-}
-
-function renderColorSequence(sheet) {
-  const carriers = orderedCarrierLayout(sheet);
-  return `<div class="color-strip">${carriers.map((carrier) => `<span><i style="background:${colorToHex(carrier.color)}"></i>${carrier.carrier_no}</span>`).join("")}</div>`;
-}
-
-function renderCarrierRingSvg(sheet) {
-  const carriers = orderedCarrierLayout(sheet);
-  const dots = carriers.map((carrier, index) => {
-    const angle = (Math.PI * 2 * index) / carriers.length - Math.PI / 2;
-    const x = 180 + Math.cos(angle) * 82;
-    const y = 105 + Math.sin(angle) * 82;
-    const fill = colorToHex(carrier.color);
-    const textColor = readableTextColor(fill);
-    return `<g><circle cx="${x}" cy="${y}" r="13" fill="${fill}" stroke="#222" stroke-width="1.4"/><text x="${x}" y="${y + 4}" text-anchor="middle" font-size="10" font-weight="800" fill="${textColor}">${carrier.carrier_no}</text></g>`;
-  }).join("");
-  return `<svg viewBox="0 0 360 220" role="img"><circle cx="180" cy="105" r="82" fill="none" stroke="#888"/>${dots}</svg>`;
-}
-
-function readableTextColor(hex) {
-  const value = String(hex || "#ffffff").replace("#", "");
-  const r = parseInt(value.slice(0, 2), 16) || 255;
-  const g = parseInt(value.slice(2, 4), 16) || 255;
-  const b = parseInt(value.slice(4, 6), 16) || 255;
-  const brightness = (r * 299 + g * 587 + b * 114) / 1000;
-  return brightness > 160 ? "#111" : "#fff";
-}
-
-function orderedCarrierLayout(sheet) {
-  const carriers = Array.isArray(sheet.carrier_layout) ? sheet.carrier_layout : [];
-  return [...carriers].sort((a, b) => Number(a.carrier_no) - Number(b.carrier_no));
-}
-
-function renderWalkSvg(sheet) {
-  return `<canvas class="canvas-walk" data-braid-canvas="walk" width="720" height="360" aria-label="Kukla yürüyüş diyagramı"></canvas>`;
-}
-
-function applyPattern(patternId) {
-  const pattern = patterns.find((item) => item.id === patternId);
-  if (!pattern) return;
-
-  const previousLayout = Array.isArray(state.user_selected_options.carrier_layout)
-    ? state.user_selected_options.carrier_layout
-    : [];
-  const formSelection = collectUserSelection();
-  const preservedColors = colorsFromCarrierLayout(previousLayout, formSelection.colors);
-
-  selectedPatternId = pattern.id;
-  window.__applyingFromAlbum = true;
-  patternSelect.value = pattern.id;
-  window.__applyingFromAlbum = false;
-  state = applyUserSelection(state, {
-    ...formSelection,
-    pattern_type: pattern.id,
-    colors: preservedColors
-  });
-  if (colorsInput) colorsInput.value = preservedColors.join(", ");
-  const layout = buildPatternCarrierLayout(state.user_selected_options, pattern.id);
-  state = applyUserSelection(state, {
-    pattern_type: pattern.id,
-    colors: preservedColors,
-    carrier_layout: layout
-  });
-  clearGeneratedRecipe();
-  logProcess("Desen seçimi", "Desen değişti; renk, kukla ve yürüyüş tercihleri korundu, kukla yerleşimi desene göre güncellendi", {
-    selectedPattern: selectedPatternId,
-    colors: state.user_selected_options.colors,
-    carrierCount: state.user_selected_options.carrier_count,
-    walkType: state.user_selected_options.braid_walk_type,
-    carrierLayoutPreview: layout.slice(0, 24)
-  });
-  render();
-}
-
-imageInput.addEventListener("change", async () => {
-  const file = imageInput.files?.[0];
-  if (!file) return;
-
-  const imageHash = await hashFile(file);
-  currentImage = { file, imageHash };
-  imagePreview.src = URL.createObjectURL(file);
-  imagePreview.alt = file.name;
-  imagePreview.hidden = false;
-  uploadPrompt.hidden = true;
-  imageContextPanel.hidden = false;
-  imageContextPanel.open = true;
-  uploadPanel.hidden = false;
-  toggleUploadButton?.setAttribute("aria-expanded", "true");
-  if (toggleUploadButton) toggleUploadButton.textContent = "Görseli gizle";
-  imageStatus.textContent = "Yüklendi";
-  clearGeneratedRecipe();
-  logProcess("Görsel yükleme", "Görsel yüklendi", {
-    name: file.name,
-    type: file.type,
-    size: file.size,
-    imageHash: imageHash.slice(0, 16)
-  });
-  logAnalysis(`Görsel hazır. AI analiz için butona bas: ${imageHash.slice(0, 12)}`);
-  render();
-});
-
-analyzeButton.addEventListener("click", async () => {
-  if (!currentImage) {
-    imageStatus.textContent = "Önce görsel seç";
-    return;
+  for (const carrier of result.carriers) {
+    counts.set(carrier.color, (counts.get(carrier.color) || 0) + 1);
   }
+  return [...counts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] || defaultBase;
+}
 
-  analyzeButton.disabled = true;
-  analyzeButton.textContent = "Analiz sürüyor";
-  imageStatus.textContent = "Analiz ediliyor";
-  setAnalysisProgress({
-    step: 0,
-    title: "Analiz kuyruğa alındı"
-  });
-  logProcess("AI analiz", "Analiz başlatıldı", {
-    imageHash: currentImage.imageHash.slice(0, 16),
-    fileType: currentImage.file.type,
-    forceRefresh: true,
-    imageContext: collectImageContext()
-  });
-  logAnalysis("Görsel base64 hazırlanıyor.");
+function initThree() {
+  state.scene = new THREE.Scene();
+  state.scene.background = null;
+  state.camera = new THREE.PerspectiveCamera(35, 1, .1, 100);
+  state.camera.position.set(0, 2.8, 8.8);
+  state.camera.lookAt(0, 0, 0);
+
+  state.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+  state.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  state.renderer.shadowMap.enabled = true;
+  state.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  state.renderer.outputColorSpace = THREE.SRGBColorSpace;
+  state.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  state.renderer.toneMappingExposure = 1.04;
+  ui.threeMount.appendChild(state.renderer.domElement);
+
+  const hemisphere = new THREE.HemisphereLight(0xffffff, 0xaeb4b0, .92);
+  state.scene.add(hemisphere);
+  const key = new THREE.DirectionalLight(0xfffaf4, .78);
+  key.position.set(4.5, 7, 6);
+  key.castShadow = true;
+  key.shadow.bias = -0.0001;
+  key.shadow.normalBias = 0.025;
+  state.scene.add(key);
+  const fill = new THREE.DirectionalLight(0xe7efff, .46);
+  fill.position.set(-5, 1.5, 4);
+  state.scene.add(fill);
+  const rim = new THREE.DirectionalLight(0xffffff, .24);
+  rim.position.set(-2, 5, -6);
+  state.scene.add(rim);
+  const satinSoftbox = new THREE.RectAreaLight(0xfffdf8, .62, 18, 8);
+  satinSoftbox.position.set(0, 7, 8);
+  satinSoftbox.lookAt(0, 0, 0);
+  state.scene.add(satinSoftbox);
+  state.materialLights = { hemisphere, key, fill, rim, softbox: satinSoftbox };
+  state.ropeGroup = new THREE.Group();
+  state.scene.add(state.ropeGroup);
+  installThreeInteractions();
+  resizeThree();
+  window.addEventListener("resize", resizeThree);
+  animate();
+}
+
+function clearRopeGroup() {
+  while (state.ropeGroup.children.length) {
+    const child = state.ropeGroup.children.pop();
+    disposeObject(child);
+  }
+}
+
+function applyMaterialLighting(profile) {
+  const lighting = profile?.lighting;
+  if (!lighting || !state.materialLights) return;
+  const keyPosition = Array.isArray(lighting.keyPosition)
+    ? lighting.keyPosition
+    : [4.5, 7, 6];
+  const softboxPosition = Array.isArray(lighting.softboxPosition)
+    ? lighting.softboxPosition
+    : [0, 7, 8];
+  state.renderer.toneMappingExposure = Number(lighting.exposure);
+  state.materialLights.hemisphere.intensity = Number(lighting.hemisphere);
+  state.materialLights.key.intensity = Number(lighting.key);
+  state.materialLights.key.position.set(...keyPosition.map(Number));
+  state.materialLights.fill.intensity = Number(lighting.fill);
+  state.materialLights.rim.intensity = Number(lighting.rim);
+  state.materialLights.softbox.intensity = Number(lighting.softbox);
+  state.materialLights.softbox.width = Number(lighting.softboxWidth ?? 18);
+  state.materialLights.softbox.height = Number(lighting.softboxHeight ?? 8);
+  state.materialLights.softbox.position.set(...softboxPosition.map(Number));
+  state.materialLights.softbox.lookAt(0, 0, 0);
+}
+
+function geometryMode() {
+  return new URLSearchParams(window.location.search).get("geometryMode") === "crossing"
+    ? "crossing"
+    : "rope";
+}
+
+function geometryPayload(result) {
+  return {
+    mode: geometryMode(),
+    visibleRows: result.visibleRows,
+    carrierCount: result.carrierCount,
+    diameterMm: result.diameterMm,
+    braidAngle: result.angleDeg,
+    strandWidthScale: result.strandWidthScale,
+    filamentCount: result.filamentCount,
+    denier: result.denier,
+    materialProfileId: ui.materialProfile.value,
+    crossingMode: ui.crossingMode.value,
+    flip: state.flip,
+    baseColor: mostCommonCarrierColor(result),
+    carriers: result.carriers.map((carrier) => ({
+      no: carrier.no,
+      color: carrier.color
+    }))
+  };
+}
+
+function drawGeometryWaiting(text = "Geometri hesaplanıyor") {
+  const canvas = ui.patternCanvas;
+  const ctx = canvas.getContext("2d");
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = "#234238";
+  ctx.font = "700 28px system-ui, sans-serif";
+  ctx.textAlign = "center";
+  ctx.fillText(text, canvas.width / 2, canvas.height / 2);
+}
+
+async function requestGeometryMesh(result) {
+  const requestId = ++state.geometryRequestId;
+  state.generating = true;
+  refreshGenerateButton();
+  drawGeometryWaiting();
+  clearRopeGroup();
+  ui.statusPill.textContent = "Geometri hesaplanıyor";
+
   try {
-    setAnalysisProgress({
-      step: 1,
-      title: "Görsel base64 hazırlanıyor"
-    });
-    const dataBase64 = await fileToBase64(currentImage.file);
-    logProcess("AI analiz", "Görsel base64 hazırlandı", {
-      base64Length: dataBase64.length
-    });
-    setAnalysisProgress({
-      step: 2,
-      title: "Backend hibrit analiz yapıyor (Flash + R1)"
-    });
-    logAnalysis("Backend /api/analyze-image isteği gönderildi.");
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 240000);
-    const response = await fetch("/api/analyze-image", {
+    const response = await fetch("/api/braid-geometry", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      signal: controller.signal,
-      body: JSON.stringify({
-        imageHash: currentImage.imageHash,
-        mimeType: currentImage.file.type,
-        dataBase64,
-        imageContext: collectImageContext(),
-        force: true
-      })
-    }).finally(() => clearTimeout(timeout));
-    const payload = await response.json();
-    if (!response.ok) {
-      throw new Error(`${payload.error || "analysis_failed"}${payload.details?.http_status ? ` (${payload.details.http_status})` : ""}`);
+      body: JSON.stringify(geometryPayload(result))
+    });
+    const mesh = await response.json();
+    if (requestId !== state.geometryRequestId) return;
+    if (!response.ok || mesh.error) {
+      throw new Error(mesh.error || "geometry_failed");
     }
-    setAnalysisProgress({
-      step: 3,
-      title: "AI reçete adayını doğruladı"
-    });
-    saveCachedAnalysis(payload.analysis);
-    state = { ...state, ai_analysis_result: payload.analysis };
-    imageStatus.textContent = "Analiz tamamlandı";
-    logProcess("AI analiz", "Backend analiz cevabı alındı", {
-      cache: payload.cache,
-      provider: payload.analysis.provider,
-      model: payload.analysis.model,
-      durationMs: payload.analysis.duration_ms,
-      predictions: payload.analysis.predictions,
-      visualAnalysis: payload.analysis.visual_analysis,
-      mathRecipe: payload.analysis.math_recipe,
-      predictorResult: payload.analysis.predictor_result,
-      candidateCount: payload.analysis.recipe_candidates?.length || 0
-    });
-    logAnalysis(`${payload.cache === "refresh" ? "Cache bypass edildi, yeni OpenRouter cevabı alındı" : "OpenRouter cevabı alındı"}: ${payload.analysis.model}`);
-    setAnalysisProgress({
-      step: 4,
-      title: "Sonuç kullanıcı seçimlerine aktarılıyor"
-    });
-    applyAiSuggestionToSelection(payload.analysis);
-    finishAnalysisProgress("Analiz tamamlandı");
+    state.geometryMesh = mesh;
+    renderGeometryThree(mesh);
+    renderCanvasFromThree();
+    renderSummary(state.lastResult, mesh);
+    ui.statusPill.textContent = mesh.fitStatus === "overfilled"
+      ? "Yoğunluk bu çapa sığmıyor"
+      : state.simulationDirty ? "Değişiklikler hazır" : "Geometri hazır";
   } catch (error) {
-    const message = error.name === "AbortError" ? "analysis_client_timeout" : error.message;
-    imageStatus.textContent = `Hata: ${message}`;
-    failAnalysisProgress(`Analiz hata verdi: ${message}`, 2);
-    logProcess("AI analiz", "Analiz hata verdi", {
-      error: message
-    }, "error");
-    logAnalysis(`Hata: ${message}`);
+    if (requestId !== state.geometryRequestId) return;
+    drawGeometryWaiting("Geometri hatası");
+    ui.statusPill.textContent = "Geometri hatası";
+    console.error(error);
   } finally {
-    analyzeButton.disabled = false;
-    analyzeButton.textContent = "AI ile analiz et";
-    render();
-  }
-});
-
-generateButton.addEventListener("click", () => {
-  syncMachineProfileToCarrierCount();
-  const layoutSync = syncSelectionStateWithLayout("recipe_generate");
-  logProcess("Reçete üretimi", "Reçete üretimi başlatıldı", {
-    finalSelection: state.user_selected_options,
-    layoutRebuilt: layoutSync.rebuilt,
-    mismatchBeforeGenerate: buildMismatchReport()
-  }, buildMismatchReport().some((item) => item.level === "error") ? "error" : "info");
-  state = generateRecipe(state);
-  recipeImageOutput.hidden = true;
-  recipeImagePreview.hidden = true;
-  recipeImagePreview.removeAttribute("src");
-  logProcess("Reçete üretimi", "generated_recipe oluşturuldu", {
-    recipeId: state.generated_recipe.recipe_id,
-    productionReady: state.generated_recipe.production_ready,
-    technicalSheet: {
-      carrierCount: state.generated_recipe.technical_sheet.carrier_count,
-      walkType: state.generated_recipe.technical_sheet.braid_walk_type,
-      colorSequence: state.generated_recipe.technical_sheet.color_sequence,
-      carrierLayoutCount: state.generated_recipe.technical_sheet.carrier_layout.length
-    }
-  });
-  updateMismatchReport(buildMismatchReport({ recipe: state.generated_recipe }));
-  render();
-});
-
-selectionForm.addEventListener("change", (event) => {
-  if (window.__applyingFromAlbum) return;
-  const previousLayout = Array.isArray(state.user_selected_options.carrier_layout)
-    ? state.user_selected_options.carrier_layout
-    : [];
-  const previousColors = colorsFromCarrierLayout(previousLayout, state.user_selected_options.colors);
-  selectedPatternId = patternSelect.value;
-  if (event.target === carrierSelect) {
-    syncMachineProfileToCarrierCount();
-  }
-  const reason = event.target?.name || "selection_change";
-  let layoutSync = syncSelectionStateWithLayout(reason);
-  if (event.target === patternSelect) {
-    state = applyUserSelection(state, { colors: previousColors });
-    if (colorsInput) colorsInput.value = previousColors.join(", ");
-    const layout = buildPatternCarrierLayout(state.user_selected_options, selectedPatternId);
-    state = applyUserSelection(state, { carrier_layout: layout });
-    layoutSync = { rebuilt: true, layout };
-  }
-  clearGeneratedRecipe();
-  logProcess("Kullanıcı değişikliği", "Final seçim manuel değişti, eski reçete temizlendi", {
-    finalSelection: state.user_selected_options,
-    layoutRebuilt: layoutSync.rebuilt,
-    mismatch: buildMismatchReport()
-  });
-  render();
-});
-
-/* ── Cycle carrier count (center badge click) ── */
-function cycleCarrierCount() {
-  const layout = state.user_selected_options.carrier_layout;
-  const colors = state.user_selected_options.colors;
-  if (!Array.isArray(layout) || layout.length === 0 || !Array.isArray(colors) || colors.length === 0) return;
-
-  const currentCount = layout.length;
-  const counts = [8, 16, 24, 32];
-  const currentIdx = counts.indexOf(currentCount);
-  const nextCount = counts[(currentIdx + 1) % counts.length];
-
-  // Find repeating color period in current layout
-  const colorSeq = layout.map(c => String(c.color).toLowerCase());
-  let period = colorSeq.length;
-  for (let p = 1; p <= Math.min(16, colorSeq.length); p++) {
-    if (colorSeq.length % p === 0) {
-      const prefix = colorSeq.slice(0, p);
-      let matches = true;
-      for (let i = 0; i < colorSeq.length; i++) {
-        if (colorSeq[i] !== prefix[i % p]) { matches = false; break; }
-      }
-      if (matches) { period = p; break; }
+    if (requestId === state.geometryRequestId) {
+      state.generating = false;
+      refreshGenerateButton();
     }
   }
-
-  // Also check if colors array forms a smaller period
-  if (period === colorSeq.length && colors.length > 0 && colors.length < colorSeq.length) {
-    const colorListLower = colors.map(c => String(c).toLowerCase());
-    let matches = true;
-    for (let i = 0; i < colorSeq.length; i++) {
-      if (colorSeq[i] !== colorListLower[i % colorListLower.length]) { matches = false; break; }
-    }
-    if (matches) period = colorListLower.length;
-  }
-
-  const patternColors = colorSeq.slice(0, period);
-  const baseColor = String(colors[0]).toLowerCase();
-  const newLayout = Array.from({ length: nextCount }, (_, index) => {
-    const color = patternColors[index % period];
-    return {
-      carrier_no: index + 1,
-      color: color,
-      strand_role: String(color).toLowerCase() === baseColor ? "sheath" : "sheath_marker"
-    };
-  });
-
-  state = applyUserSelection(state, { carrier_layout: newLayout, carrier_count: nextCount });
-  if (carrierSelect) carrierSelect.value = String(nextCount);
-  syncMachineProfileToCarrierCount();
-  clearGeneratedRecipe();
-  render();
 }
 
-/* ── Apply a color to a carrier ── */
-function applyColorToCarrier(carrierNo, newColor) {
-  const layout = state.user_selected_options.carrier_layout;
-  const colors = state.user_selected_options.colors;
-
-  const carrier = layout.find((c) => c.carrier_no === carrierNo);
-  if (!carrier) return;
-
-  const oldColor = carrier.color;
-  const baseColor = String(colors[0]).toLowerCase();
-  const isBase = String(newColor).toLowerCase() === baseColor;
-
-  const updatedLayout = layout.map((c) =>
-    c.carrier_no === carrierNo
-      ? { ...c, color: newColor, strand_role: isBase ? "sheath" : "sheath_marker" }
-      : c
-  );
-
-  const updatedColors = colorsFromCarrierLayout(updatedLayout, colors);
-  state = applyUserSelection(state, {
-    carrier_layout: updatedLayout,
-    colors: updatedColors
-  });
-  if (colorsInput) colorsInput.value = updatedColors.join(", ");
-  clearGeneratedRecipe();
-  logProcess("Simülasyon", `Kukla ${carrierNo} rengi değişti: ${oldColor} → ${newColor}`, {
-    carrierNo,
-    oldColor,
-    newColor,
-    strandRole: isBase ? "sheath" : "sheath_marker",
-    colors: updatedColors
-  });
-  render();
-}
-
-/* ── Color palette popup ── */
-const PALETTE_COLORS = [
-  "beyaz", "siyah", "kırmızı", "lacivert",
-  "gri", "sarı", "yeşil", "turuncu",
-  "mor", "pembe", "nylon"
-];
-
-function showColorPalette(carrierNo) {
-  const layout = state.user_selected_options.carrier_layout;
-  if (!Array.isArray(layout)) return;
-
-  const carrier = layout.find((c) => c.carrier_no === carrierNo);
-  if (!carrier) return;
-
-  // Remove existing palette
-  document.querySelector(".color-palette-overlay")?.remove();
-
-  const overlay = document.createElement("div");
-  overlay.className = "color-palette-overlay";
-  overlay.setAttribute("role", "dialog");
-  overlay.setAttribute("aria-label", `Kukla ${carrierNo} rengini seç`);
-
-  const currentColor = String(carrier.color).toLowerCase();
-
-  const popup = document.createElement("div");
-  popup.className = "color-palette-popup";
-
-  const swatchesHtml = PALETTE_COLORS.map((color) => {
-    const hex = colorToHex(color);
-    const isCurrent = String(color).toLowerCase() === currentColor;
-    // Dinamik yazı rengi (parlaklık hesapla)
-    const r = parseInt(hex.slice(1,3),16);
-    const g = parseInt(hex.slice(3,5),16);
-    const b = parseInt(hex.slice(5,7),16);
-    const brightness = (r*299 + g*587 + b*114) / 1000;
-    const textColor = brightness > 160 ? "#1a2e2a" : "#fff";
-    return `<button class="color-palette-swatch${isCurrent ? " is-current" : ""}" data-color="${color}" style="background:${hex}; color:${textColor}" aria-label="${color}" type="button">${isCurrent ? "✓" : ""}</button>`;
-  }).join("");
-
-  popup.innerHTML = `
-    <h3>Kukla ${carrierNo} — renk seç</h3>
-    <div class="color-palette-swatches">${swatchesHtml}</div>
-  `;
-
-  overlay.appendChild(popup);
-  document.body.appendChild(overlay);
-
-  // Handle color selection
-  popup.querySelectorAll(".color-palette-swatch").forEach((btn) => {
-    btn.addEventListener("click", (e) => {
-      e.stopPropagation();
-      applyColorToCarrier(carrierNo, btn.dataset.color);
-      overlay.remove();
+function renderGeometryThree(mesh) {
+  clearRopeGroup();
+  applyMaterialLighting(mesh.materialProfile);
+  state.renderer.localClippingEnabled = false;
+  const runtimeMaterials = [];
+  for (const yarn of mesh.yarns || []) {
+    const geometry = geometryFromCarrierMesh(yarn.mesh, mesh.materialProfile);
+    const material = getCarrierMaterial(yarn.color || defaultBase, mesh);
+    material.clippingPlanes = null;
+    const object = new THREE.Mesh(geometry, material);
+    object.castShadow = false;
+    object.receiveShadow = true;
+    state.ropeGroup.add(object);
+    runtimeMaterials.push({
+      carrierNo: yarn.carrierNo,
+      color: yarn.color || defaultBase,
+      materialUuid: material.uuid,
+      textureUuid: material.map?.uuid || null,
+      ...material.userData.fiberModel
     });
-  });
-
-  // Close on overlay click (outside popup)
-  overlay.addEventListener("click", (e) => {
-    if (e.target === overlay) {
-      overlay.remove();
-    }
-  });
-
-  // Close on Escape
-  const onKey = (e) => {
-    if (e.key === "Escape") {
-      overlay.remove();
-      document.removeEventListener("keydown", onKey);
-    }
+  }
+  window.__BRAIDSTUDIO_RUNTIME_AUDIT__ = {
+    mode: mesh.mode,
+    materialProfileId: mesh.materialProfile?.materialProfileId,
+    carrierCount: runtimeMaterials.length,
+    selectedDiameterMm: mesh.diameterMm,
+    meshOuterDiameterMm: mesh.meshOuterDiameterMm,
+    diameterErrorMm: mesh.diameterErrorMm,
+    materials: runtimeMaterials
   };
-  document.addEventListener("keydown", onKey);
-}
 
-/* ── Interactive carrier simulation ── */
-document.getElementById("carrierSimulation")?.addEventListener("click", (event) => {
-  // Center count badge click
-  if (event.target.closest(".carrier-count-group")) {
-    cycleCarrierCount();
+  if (mesh.mode === "crossing") {
+    state.viewRotation = { x: 0, y: 0, z: 0 };
+    state.zoom = 24;
+    state.camera.position.set(0, 0, state.zoom);
+    state.camera.lookAt(0, 0, 0);
+    state.ropeGroup.position.set(0, 0, 0);
     return;
   }
 
-  const circleGroup = event.target.closest(".carrier-circle");
-  if (!circleGroup) return;
-
-  const carrierNo = Number(circleGroup.dataset.carrier);
-  showColorPalette(carrierNo);
-});
-
-patternAlbum.addEventListener("click", (event) => {
-  const card = event.target.closest("[data-pattern]");
-  if (card) applyPattern(card.dataset.pattern);
-});
-
-toggleUploadButton?.addEventListener("click", () => {
-  const willOpen = uploadPanel.hidden;
-  uploadPanel.hidden = !willOpen;
-  toggleUploadButton.setAttribute("aria-expanded", String(willOpen));
-  toggleUploadButton.textContent = willOpen ? "Görseli gizle" : "Görsel yükle";
-  if (willOpen) {
-    imageStatus.textContent = currentImage ? "Yüklendi" : "İsteğe bağlı";
-  }
-});
-
-downloadPngButton.addEventListener("click", async () => {
-  if (!state.generated_recipe) return;
-  try {
-    logProcess("PNG üretimi", "Ana halat görünümü PNG indiriliyor", {
-      recipeId: state.generated_recipe.recipe_id,
-      target: "main_rope_canvas"
-    });
-    const mainCanvas = recipeSheet.querySelector("[data-braid-canvas='main']");
-    if (!mainCanvas) {
-      throw new Error("main_rope_canvas_missing");
+  if (mesh.mode === "rope") {
+    const endPlanes = [
+      new THREE.Plane(new THREE.Vector3(1, 0, 0), mesh.length / 2),
+      new THREE.Plane(new THREE.Vector3(-1, 0, 0), mesh.length / 2)
+    ];
+    state.renderer.localClippingEnabled = true;
+    for (const object of state.ropeGroup.children) {
+      object.material.clippingPlanes = endPlanes;
+      object.material.clipShadows = true;
     }
-    const pngUrl = mainCanvas.toDataURL("image/png");
-    const link = document.createElement("a");
-    link.download = "braidstudio-main-rope-view.png";
-    link.href = pngUrl;
-    link.click();
-    logProcess("PNG üretimi", "Ana halat görünümü PNG indirildi", {
-      bytesApprox: pngUrl.length
+
+    const sheathColor = new THREE.Color(mostCommonCarrierColor(state.lastResult)).multiplyScalar(.98);
+    const sheathMaterial = new THREE.MeshBasicMaterial({
+      color: sheathColor,
+      side: THREE.DoubleSide
     });
-  } catch (error) {
-    logAnalysis(`Ana halat PNG indirilemedi: ${error.message}`);
-    recipeImageOutput.hidden = true;
-    recipeImagePreview.hidden = true;
-    recipeImagePreview.removeAttribute("src");
-    logProcess("PNG üretimi", "Ana halat PNG indirme hata verdi", {
-      error: error.message
-    }, "error");
+    const sheathRadius = Math.max(
+      mesh.radius * .72,
+      (mesh.surfaceBaseRadius || mesh.radius) - mesh.yarnThickness * .5
+    );
+    const sheath = new THREE.Mesh(
+      new THREE.CylinderGeometry(sheathRadius, sheathRadius, mesh.length, 96, 1, true),
+      sheathMaterial
+    );
+    sheath.rotation.z = Math.PI / 2;
+    sheath.receiveShadow = false;
+    state.ropeGroup.add(sheath);
+
+    const coreMaterial = new THREE.MeshStandardMaterial({
+      color: 0xb7c1ba,
+      roughness: .96,
+      metalness: 0
+    });
+    const core = new THREE.Mesh(
+      new THREE.CylinderGeometry(mesh.radius * .72, mesh.radius * .72, mesh.length + .012, 64, 1, false),
+      coreMaterial
+    );
+    core.rotation.z = Math.PI / 2;
+    core.castShadow = true;
+    core.receiveShadow = true;
+    state.ropeGroup.add(core);
+
+    const cutRingMaterial = new THREE.MeshStandardMaterial({
+      color: new THREE.Color(mostCommonCarrierColor(state.lastResult)).multiplyScalar(.9),
+      roughness: .82,
+      metalness: 0,
+      side: THREE.DoubleSide
+    });
+    for (const x of [-mesh.length / 2 - .008, mesh.length / 2 + .008]) {
+      const cutRing = new THREE.Mesh(
+        new THREE.RingGeometry(mesh.radius * .72, mesh.radius * .99, 96, 3),
+        cutRingMaterial
+      );
+      cutRing.rotation.y = Math.PI / 2;
+      cutRing.position.x = x;
+      cutRing.receiveShadow = true;
+      state.ropeGroup.add(cutRing);
+    }
+
+    state.viewRotation = { x: 0, y: 0, z: 0 };
+    state.zoom = clamp(mesh.length * 2.15, 52, 80);
+    state.camera.position.set(0, 0, state.zoom);
+    state.camera.lookAt(0, 0, 0);
+    state.ropeGroup.position.set(0, 0, 0);
+    return;
   }
-});
 
-printPdfButton.addEventListener("click", () => {
-  window.print();
-});
+  throw new Error(`unsupported_geometry_mode:${mesh.mode}`);
+}
 
-renderMachineProfiles();
-
-/* ── Initialize with the calibrated Tres 16-carrier simulation ── */
-const defaultCount = 16;
-const defaultColors = ["beyaz", "sarı"];
-const defaultPattern = "solid_with_markers";
-const defaultMachineProfileId = "tres_16x2_calibrated";
-const defaultWalkType = "1_over_1";
-const defaultColorByCarrier = new Map([
-  [1, "sarı"],
-  [9, "sarı"]
-]);
-const defaultLayout = Array.from({ length: defaultCount }, (_, index) => ({
-  carrier_no: index + 1,
-  color: defaultColorByCarrier.get(index + 1) || "beyaz",
-  strand_role: defaultColorByCarrier.has(index + 1) ? "sheath_marker" : "sheath"
-}));
-
-// Set the form defaults
-if (carrierSelect) carrierSelect.value = String(defaultCount);
-if (colorsInput) colorsInput.value = defaultColors.join(", ");
-if (sheathInput) sheathInput.value = "polyester";
-selectedPatternId = defaultPattern;
-if (patternSelect) patternSelect.value = defaultPattern;
-if (walkTypeSelect) walkTypeSelect.value = defaultWalkType;
-if (machineProfileSelect) machineProfileSelect.value = defaultMachineProfileId;
-
-state = applyUserSelection(state, {
-  carrier_layout: defaultLayout,
-  carrier_count: defaultCount,
-  colors: [...defaultColors],
-  material: "polyester",
-  pattern_type: defaultPattern,
-  machine_profile_id: defaultMachineProfileId,
-  braid_walk_type: defaultWalkType
-});
-generateButton.disabled = false;
-
-/* ── Sayfa yüklenince default ayarlarla desen üret (tek sefer) ── */
-requestAnimationFrame(() => {
-  requestAnimationFrame(() => {
-    state = generateRecipe(state);
-    render();
+function getCarrierMaterial(color, mesh) {
+  const profile = mesh.materialProfile || {};
+  const profileId = profile.materialProfileId || "polyester_satin";
+  const optics = profile.optics || {};
+  const lightCarrier = optics.lightCarrier || {};
+  const endsPerCarrier = Math.round(mesh.endsPerCarrier || mesh.filamentCount || 25);
+  const denierPerEnd = Math.round(mesh.effectiveDenierPerEnd || mesh.effectiveDenier || mesh.denier || 1000);
+  const reliefScale = clamp(Math.sqrt(denierPerEnd / 700), .55, 1.8);
+  const key = `${color.toLowerCase()}:${profileId}:${endsPerCarrier}:${denierPerEnd}`;
+  if (state.materialCache.has(key)) return state.materialCache.get(key);
+  const normalScale = Array.isArray(optics.normalScale) ? optics.normalScale : [.012, .12];
+  const carrierColor = new THREE.Color(color);
+  const carrierLuminance = carrierColor.r * .2126 + carrierColor.g * .7152 + carrierColor.b * .0722;
+  const lightStart = Number(lightCarrier.luminanceStart ?? 1);
+  const lightFull = Math.max(lightStart + .001, Number(lightCarrier.luminanceFull ?? 1.001));
+  const lightAmount = clamp((carrierLuminance - lightStart) / (lightFull - lightStart), 0, 1);
+  const lightMix = lightAmount * lightAmount * (3 - 2 * lightAmount);
+  const fiberMaps = makePolyesterFiberMaps(endsPerCarrier, denierPerEnd, profile, lightMix);
+  const resolveOptic = (name, fallback) => THREE.MathUtils.lerp(
+    Number(optics[name] ?? fallback),
+    Number(lightCarrier[name] ?? optics[name] ?? fallback),
+    lightMix
+  );
+  const bumpScaleMultiplier = THREE.MathUtils.lerp(
+    1,
+    Number(lightCarrier.bumpScaleMultiplier ?? 1),
+    lightMix
+  );
+  const normalScaleMultiplier = THREE.MathUtils.lerp(
+    1,
+    Number(lightCarrier.normalScaleMultiplier ?? 1),
+    lightMix
+  );
+  const resolvedDiffuseMultiplier = THREE.MathUtils.lerp(
+    1,
+    Number(lightCarrier.diffuseMultiplier ?? 1),
+    lightMix
+  );
+  const resolvedBumpScale = clamp(
+    Number(optics.bumpScale ?? .003) * reliefScale * bumpScaleMultiplier,
+    Number(optics.bumpMin ?? .0015),
+    Number(optics.bumpMax ?? .005)
+  );
+  const resolvedNormalScale = [
+    Number(normalScale[0]) * reliefScale * normalScaleMultiplier,
+    Number(normalScale[1]) * reliefScale * normalScaleMultiplier
+  ];
+  const resolvedRoughness = resolveOptic("roughness", .50);
+  const resolvedSheen = resolveOptic("sheen", .28);
+  const resolvedSheenRoughness = resolveOptic("sheenRoughness", .76);
+  const resolvedSpecularIntensity = resolveOptic("specularIntensity", .52);
+  const resolvedAnisotropy = resolveOptic("anisotropy", .84);
+  const materialColor = carrierColor.clone().multiplyScalar(resolvedDiffuseMultiplier);
+  const material = new THREE.MeshPhysicalMaterial({
+    color: materialColor,
+    map: fiberMaps.color,
+    bumpMap: fiberMaps.bump,
+    bumpScale: resolvedBumpScale,
+    normalMap: fiberMaps.normal,
+    normalScale: new THREE.Vector2(...resolvedNormalScale),
+    roughnessMap: fiberMaps.roughness,
+    roughness: resolvedRoughness,
+    metalness: 0,
+    ior: Number(optics.ior ?? 1.5),
+    sheen: resolvedSheen,
+    sheenRoughness: resolvedSheenRoughness,
+    sheenColor: new THREE.Color(color).lerp(
+      new THREE.Color(0xffffff),
+      resolveOptic("sheenWhiteMix", .34)
+    ),
+    sheenRoughnessMap: profileId === "polyester_satin" ? fiberMaps.roughness : null,
+    specularIntensityMap: fiberMaps.specular,
+    specularIntensity: resolvedSpecularIntensity,
+    specularColor: new THREE.Color(0xffffff),
+    anisotropy: resolvedAnisotropy,
+    anisotropyMap: fiberMaps.anisotropy,
+    anisotropyRotation: 0,
+    side: THREE.DoubleSide
   });
+  material.userData.sharedBraidMaterial = true;
+  material.userData.fiberModel = {
+    endsPerCarrier,
+    requestedDenierPerEnd: Math.round(mesh.denierPerEnd || mesh.denier || denierPerEnd),
+    effectiveDenierPerEnd: denierPerEnd,
+    denierPerEnd,
+    physicalYarnBands: fiberMaps.audit.physicalYarnBands,
+    microFibersPerEnd: fiberMaps.audit.microFibersPerEnd,
+    aggregateFiberClusters: fiberMaps.audit.aggregateFiberClusters,
+    carrierLuminance,
+    lightCarrierOpticsMix: lightMix,
+    resolvedRoughness,
+    resolvedSheen,
+    resolvedSheenRoughness,
+    resolvedSpecularIntensity,
+    resolvedAnisotropy,
+    resolvedDiffuseMultiplier,
+    resolvedBumpScale,
+    resolvedNormalScale,
+    lightTextureClass: fiberMaps.audit.lightTextureClass,
+    specularMapColorSpace: fiberMaps.audit.specularMapColorSpace,
+    textureMapKey: fiberMaps.audit.mapKey,
+    textureRepeatU: fiberMaps.audit.repeatU,
+    textureMinFilter: fiberMaps.audit.minFilter,
+    textureMipmaps: fiberMaps.audit.mipmaps,
+    worldSpaceU: profile.texture?.worldSpaceU === true
+  };
+  state.materialCache.set(key, material);
+  return material;
+}
+
+function makePolyesterFiberMaps(endsPerCarrier, denierPerEnd, profile = {}, lightMix = 0) {
+  const textureProfile = profile.texture || {};
+  const lightTextureProfile = textureProfile.lightCarrier || {};
+  const profileId = profile.materialProfileId || "polyester_satin";
+  const isPolyesterSatin = profileId === "polyester_satin";
+  const lightTextureClass = isPolyesterSatin && lightMix >= .5 ? "light" : "base";
+  const fiberValue = (name, fallback) => Number(
+    (lightTextureClass === "light" ? lightTextureProfile[name] : undefined)
+      ?? textureProfile[name]
+      ?? fallback
+  );
+  const mapKey = `${profileId}:${endsPerCarrier}:${denierPerEnd}:${lightTextureClass}`;
+  if (state.polyesterFiberMaps.has(mapKey)) return state.polyesterFiberMaps.get(mapKey);
+  const width = 512;
+  const height = isPolyesterSatin ? 512 : 256;
+  const strandCount = clamp(Math.round(endsPerCarrier), 8, 40);
+  const strandSpacing = height / strandCount;
+  const denierScale = Math.sqrt(denierPerEnd / 700);
+  const referenceMicroFibers = Number(textureProfile.referenceMicroFibersPerEnd ?? 6);
+  const microFibersPerYarn = clamp(
+    Math.round(referenceMicroFibers * Math.sqrt(denierPerEnd / 700)),
+    3,
+    12
+  );
+  const aggregateFiberClusters = clamp(Math.round(Math.sqrt(strandCount) * 1.6), 5, 10);
+  const colorCanvas = document.createElement("canvas");
+  const bumpCanvas = document.createElement("canvas");
+  const normalCanvas = document.createElement("canvas");
+  const roughnessCanvas = document.createElement("canvas");
+  const specularCanvas = document.createElement("canvas");
+  const anisotropyCanvas = document.createElement("canvas");
+  colorCanvas.width = bumpCanvas.width = width;
+  colorCanvas.height = bumpCanvas.height = height;
+  normalCanvas.width = roughnessCanvas.width = specularCanvas.width = width;
+  normalCanvas.height = roughnessCanvas.height = specularCanvas.height = height;
+  anisotropyCanvas.width = isPolyesterSatin ? width : 8;
+  anisotropyCanvas.height = isPolyesterSatin ? height : 8;
+  const colorCtx = colorCanvas.getContext("2d");
+  const bumpCtx = bumpCanvas.getContext("2d");
+  const roughnessCtx = roughnessCanvas.getContext("2d");
+  const specularCtx = specularCanvas.getContext("2d");
+  const anisotropyCtx = anisotropyCanvas.getContext("2d");
+  const colorImage = colorCtx.createImageData(width, height);
+  const bumpImage = bumpCtx.createImageData(width, height);
+  const roughnessImage = roughnessCtx.createImageData(width, height);
+  const specularImage = specularCtx.createImageData(width, height);
+  const anisotropyImage = isPolyesterSatin
+    ? anisotropyCtx.createImageData(width, height)
+    : null;
+  const bumpAmplitude = clamp(54 * denierScale, 24, 78);
+
+  for (let y = 0; y < height; y += 1) {
+    for (let x = 0; x < width; x += 1) {
+      const pathPhase = Math.PI * 2 * x / width;
+      const wave = isPolyesterSatin
+        ? (
+          Math.sin(pathPhase * 3 + y * .004)
+          + .45 * Math.sin(pathPhase * 7 - y * .002)
+        ) * strandSpacing * .018
+        : Math.sin(x * .022 + y * .006) * strandSpacing * .055;
+      const wrapped = mod(y + wave, height);
+      const strandPosition = wrapped / strandSpacing;
+      const strandIndex = Math.floor(strandPosition);
+      const local = strandPosition - strandIndex;
+      let colorValue;
+      let bumpValue;
+      let roughnessValue;
+      let specularValue;
+      let anisotropyDirection = 0;
+      let anisotropyStrength = .9;
+
+      if (isPolyesterSatin) {
+        const macroCrown = Math.pow(Math.sin(Math.PI * local), 1.25);
+        const macroGroove = Math.pow(Math.abs(Math.cos(Math.PI * local)), 12);
+        const microPosition = local * microFibersPerYarn
+          + fract(Math.sin((strandIndex + 1) * 43.17) * 1973.31) * .72
+          + .035 * Math.sin(pathPhase * 3 + strandIndex * .61);
+        const microIndex = strandIndex * microFibersPerYarn + Math.floor(microPosition);
+        const filamentVariation = fract(Math.sin((microIndex + 1) * 78.233) * 43758.5453);
+        const microLocal = fract(microPosition);
+        const microFiber = Math.pow(
+          Math.sin(Math.PI * microLocal),
+          1.65 + filamentVariation * 1.3
+        );
+        const microGroove = Math.pow(
+          Math.abs(Math.cos(Math.PI * microLocal)),
+          8 + filamentVariation * 6
+        );
+        const pathUnit = x / width;
+        const fragmentWave = clamp(
+          .14
+          + .56 * periodicFiberNoise(microIndex, pathUnit * 13, 13, 1)
+          + .30 * periodicFiberNoise(microIndex, pathUnit * 29, 29, 2),
+          0,
+          1
+        );
+        const brokenHighlight = Math.pow(fragmentWave, 2.2);
+        const macroVariation = .68
+          + filamentVariation * .20
+          + .12 * Math.sin(pathPhase * 3 + strandIndex * .43);
+        const edgeMask = Math.pow(Math.abs(y / (height - 1) * 2 - 1), 7);
+        const edgeVariation = .5 + .5 * Math.sin(pathPhase * 11 + microIndex * 1.31);
+        const crossUnit = y / height;
+        let aggregateGlint = 0;
+        if (lightTextureClass !== "light") {
+          const aggregateSignal = clamp(
+            .58 * periodicNoise2D(
+              pathUnit * 7,
+              crossUnit * aggregateFiberClusters,
+              7,
+              aggregateFiberClusters,
+              3
+            )
+            + .42 * periodicNoise2D(pathUnit * 17, crossUnit * 5, 17, 5, 4),
+            0,
+            1
+          );
+          aggregateGlint = Math.pow(aggregateSignal, 2.8);
+        }
+        const colorSatin = fiberValue("colorSatinAmplitude", 3);
+        const macroColor = fiberValue("macroColorAmplitude", 4);
+        const macroGrooveColor = fiberValue("macroGrooveColor", 3);
+        const microColor = fiberValue("microColorAmplitude", 5);
+        const microGrooveColor = fiberValue("microGrooveColor", 2.5);
+        const filamentColorVariation = fiberValue("filamentColorVariation", 8);
+        const microGrooveVisibility = .58
+          + .42 * periodicFiberNoise(microIndex, pathUnit * 17, 17, 10);
+
+        colorValue = clampByte(
+          fiberValue("colorBase", 228)
+          + macroCrown * macroColor * macroVariation
+          - macroGroove * macroGrooveColor
+          + microFiber * microColor * (.62 + brokenHighlight * .58)
+          - microGroove * microGrooveColor * microGrooveVisibility
+          + (filamentVariation - .5) * filamentColorVariation
+          + brokenHighlight * colorSatin
+          + aggregateGlint * fiberValue("aggregateColor", 12)
+          - edgeMask * (2 + edgeVariation * 3)
+        );
+        bumpValue = clampByte(
+          128
+          + macroCrown * fiberValue("macroRelief", 3.5) * denierScale
+            * macroVariation
+          - macroGroove * 4
+          + microFiber * fiberValue("microRelief", 10) * denierScale
+            * (.45 + brokenHighlight * .55)
+          - microGroove * 2.4
+          + (brokenHighlight - .5) * 1.4
+          + edgeMask * (edgeVariation - .5) * 6
+        );
+        roughnessValue = clampByte(
+          fiberValue("roughnessBase", 226)
+          - microFiber * (
+            fiberValue("roughnessFiber", 16)
+            + brokenHighlight * fiberValue("roughnessSatin", 30)
+          )
+          - macroCrown * (7 + brokenHighlight * 12)
+          - aggregateGlint * fiberValue("aggregateRoughness", 42)
+          + (1 - brokenHighlight) * 5
+          + edgeMask * fiberValue("edgeRoughness", 18)
+        );
+        specularValue = clampByte(
+          fiberValue("specularBase", 58)
+          + microFiber * (
+            fiberValue("specularFiber", 42)
+            + brokenHighlight * fiberValue("specularSatin", 92)
+          )
+          + macroCrown * (12 + brokenHighlight * 28)
+          + aggregateGlint * fiberValue("aggregateSpecular", 88)
+          - edgeMask * 18
+        );
+        anisotropyDirection = .035 * Math.sin(pathPhase * 3 + microIndex * .17)
+          + .015 * Math.sin(pathPhase * 11 - strandIndex * .41);
+        anisotropyStrength = clamp(
+          .68 + microFiber * (.14 + brokenHighlight * .18) - edgeMask * .10,
+          .5,
+          1
+        );
+      } else {
+        const ridge = Math.pow(Math.sin(Math.PI * local), .82);
+        const fiberCore = Math.pow(Math.sin(Math.PI * local), 2.15);
+        const capillaryLine = Math.pow(Math.sin(Math.PI * local), 16);
+        const capillaryGroove = Math.pow(Math.abs(Math.cos(Math.PI * local)), 18);
+        const contactShadow = Math.pow(1 - ridge, 3);
+        const filamentTone = (
+          fract(Math.sin((strandIndex + 1) * 91.713) * 43758.5453) - .5
+        ) * 7;
+        const satinBand = .5 + .34 * Math.sin(x * .031 + strandIndex * .47)
+          + .16 * Math.sin(x * .009 - strandIndex * .23);
+        colorValue = clampByte(
+          235 + ridge * 6 - contactShadow * 3 + filamentTone * .16
+          + capillaryLine * 4 - capillaryGroove * 4
+          + satinBand * fiberCore * Number(textureProfile.colorSatinAmplitude ?? 8)
+        );
+        bumpValue = clampByte(
+          116 + ridge * bumpAmplitude + capillaryLine * 4 - capillaryGroove * 14
+        );
+        roughnessValue = clampByte(
+          Number(textureProfile.roughnessBase ?? 225)
+          - fiberCore * (
+            Number(textureProfile.roughnessFiber ?? 24)
+            + satinBand * Number(textureProfile.roughnessSatin ?? 12)
+          )
+          - ridge * 4
+        );
+        specularValue = clampByte(
+          Number(textureProfile.specularBase ?? 46)
+          + fiberCore * (
+            Number(textureProfile.specularFiber ?? 44)
+            + satinBand * Number(textureProfile.specularSatin ?? 24)
+          )
+          + capillaryLine * 8
+        );
+      }
+      const offset = (y * width + x) * 4;
+
+      colorImage.data[offset] = colorValue;
+      colorImage.data[offset + 1] = colorValue;
+      colorImage.data[offset + 2] = colorValue;
+      colorImage.data[offset + 3] = 255;
+      bumpImage.data[offset] = bumpValue;
+      bumpImage.data[offset + 1] = bumpValue;
+      bumpImage.data[offset + 2] = bumpValue;
+      bumpImage.data[offset + 3] = 255;
+      roughnessImage.data[offset] = roughnessValue;
+      roughnessImage.data[offset + 1] = roughnessValue;
+      roughnessImage.data[offset + 2] = roughnessValue;
+      roughnessImage.data[offset + 3] = isPolyesterSatin ? roughnessValue : 255;
+      specularImage.data[offset] = specularValue;
+      specularImage.data[offset + 1] = specularValue;
+      specularImage.data[offset + 2] = specularValue;
+      specularImage.data[offset + 3] = specularValue;
+      if (anisotropyImage) {
+        anisotropyImage.data[offset] = clampByte(127.5 + Math.cos(anisotropyDirection) * 127.5);
+        anisotropyImage.data[offset + 1] = clampByte(127.5 + Math.sin(anisotropyDirection) * 127.5);
+        anisotropyImage.data[offset + 2] = clampByte(anisotropyStrength * 255);
+        anisotropyImage.data[offset + 3] = 255;
+      }
+    }
+  }
+  colorCtx.putImageData(colorImage, 0, 0);
+  bumpCtx.putImageData(bumpImage, 0, 0);
+  roughnessCtx.putImageData(roughnessImage, 0, 0);
+  specularCtx.putImageData(specularImage, 0, 0);
+
+  const normalCtx = normalCanvas.getContext("2d");
+  const normalImage = normalCtx.createImageData(width, height);
+  for (let y = 0; y < height; y += 1) {
+    for (let x = 0; x < width; x += 1) {
+      const left = bumpImage.data[(y * width + mod(x - 1, width)) * 4];
+      const right = bumpImage.data[(y * width + mod(x + 1, width)) * 4];
+      const up = bumpImage.data[(mod(y - 1, height) * width + x) * 4];
+      const down = bumpImage.data[(mod(y + 1, height) * width + x) * 4];
+      const nx = (left - right) / 255;
+      const ny = (up - down) / 255;
+      const nz = isPolyesterSatin ? .75 : 1.45;
+      const inverseLength = 1 / Math.hypot(nx, ny, nz);
+      const offset = (y * width + x) * 4;
+      normalImage.data[offset] = (nx * inverseLength * .5 + .5) * 255;
+      normalImage.data[offset + 1] = (ny * inverseLength * .5 + .5) * 255;
+      normalImage.data[offset + 2] = (nz * inverseLength * .5 + .5) * 255;
+      normalImage.data[offset + 3] = 255;
+    }
+  }
+  normalCtx.putImageData(normalImage, 0, 0);
+
+  if (anisotropyImage) {
+    anisotropyCtx.putImageData(anisotropyImage, 0, 0);
+  } else {
+    // R/G encode +X tangent direction; B is anisotropy strength.
+    anisotropyCtx.fillStyle = "rgb(255,128,230)";
+    anisotropyCtx.fillRect(0, 0, anisotropyCanvas.width, anisotropyCanvas.height);
+  }
+
+  const colorTexture = new THREE.CanvasTexture(colorCanvas);
+  const bumpTexture = new THREE.CanvasTexture(bumpCanvas);
+  const normalTexture = new THREE.CanvasTexture(normalCanvas);
+  const roughnessTexture = new THREE.CanvasTexture(roughnessCanvas);
+  const specularTexture = new THREE.CanvasTexture(specularCanvas);
+  const anisotropyTexture = new THREE.CanvasTexture(anisotropyCanvas);
+  const repeatU = Number(
+    textureProfile.worldSpaceU ? textureProfile.repeatPerMm : textureProfile.repeatU
+  ) || 3.5;
+  for (const texture of [colorTexture, bumpTexture, normalTexture, roughnessTexture, specularTexture, anisotropyTexture]) {
+    texture.wrapS = THREE.RepeatWrapping;
+    texture.wrapT = THREE.RepeatWrapping;
+    texture.repeat.set(repeatU, 1);
+    texture.anisotropy = Math.min(12, state.renderer.capabilities.getMaxAnisotropy?.() || 1);
+  }
+  colorTexture.colorSpace = THREE.SRGBColorSpace;
+  const maps = {
+    color: colorTexture,
+    bump: bumpTexture,
+    normal: normalTexture,
+    roughness: roughnessTexture,
+    specular: specularTexture,
+    anisotropy: anisotropyTexture,
+    audit: {
+      mapKey,
+      repeatU,
+      minFilter: "LinearMipmapLinearFilter",
+      mipmaps: true,
+      physicalYarnBands: strandCount,
+      microFibersPerEnd: microFibersPerYarn,
+      aggregateFiberClusters,
+      lightTextureClass,
+      specularMapColorSpace: "linear-data"
+    }
+  };
+  state.polyesterFiberMaps.set(mapKey, maps);
+  return maps;
+}
+
+function geometryFromCarrierMesh(mesh, materialProfile = {}) {
+  const geometry = new THREE.BufferGeometry();
+  const worldSpaceU = materialProfile.texture?.worldSpaceU === true;
+  const pathLengthMm = Number(mesh.pathLengthMm || 1);
+  const uvs = worldSpaceU
+    ? mesh.uvs.map((value, index) => index % 2 === 0 ? value * pathLengthMm : value)
+    : mesh.uvs;
+  geometry.setAttribute("position", new THREE.Float32BufferAttribute(mesh.vertices, 3));
+  geometry.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
+  geometry.setIndex(mesh.indices);
+  geometry.computeVertexNormals();
+  geometry.computeTangents();
+  geometry.computeBoundingSphere();
+  return geometry;
+}
+
+function renderCanvasFromThree() {
+  const previewZoom = state.zoom;
+  state.camera.position.set(0, 0, previewZoom);
+  state.camera.lookAt(0, 0, 0);
+  const previewRotation = {
+    x: state.viewRotation.x,
+    y: state.viewRotation.y,
+    z: state.viewRotation.z + state.autoRotation
+  };
+  state.ropeGroup.rotation.set(previewRotation.x, previewRotation.y, previewRotation.z);
+  const canvas = ui.patternCanvas;
+  const ctx = canvas.getContext("2d");
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  const mountRect = ui.threeMount.getBoundingClientRect();
+  if (state.geometryMesh?.mode === "rope") {
+    state.camera.position.z = clamp(state.geometryMesh.length * 2.15, 52, 80);
+    state.ropeGroup.rotation.set(0, 0, 0);
+  }
+  state.camera.aspect = canvas.width / canvas.height;
+  state.camera.updateProjectionMatrix();
+  state.renderer.setSize(canvas.width, canvas.height, false);
+  state.renderer.render(state.scene, state.camera);
+  recordDiameterProjectionAudit(canvas.width, canvas.height, state.geometryMesh);
+  ctx.drawImage(state.renderer.domElement, 0, 0, canvas.width, canvas.height);
+  drawMeasurementRulers(ctx, canvas.width, canvas.height, state.geometryMesh);
+
+  state.ropeGroup.rotation.set(previewRotation.x, previewRotation.y, previewRotation.z);
+  state.camera.position.z = previewZoom;
+  state.camera.aspect = mountRect.width / Math.max(1, mountRect.height);
+  state.camera.updateProjectionMatrix();
+  state.renderer.setSize(mountRect.width, mountRect.height, false);
+  state.renderer.render(state.scene, state.camera);
+}
+
+function recordDiameterProjectionAudit(width, height, mesh) {
+  if (mesh?.mode !== "rope") return;
+  state.ropeGroup.updateMatrixWorld(true);
+  const halfLength = Number(mesh.length) * .45;
+  const diameterMm = Number(mesh.diameterMm);
+  const sampleDiameterPx = (x) => {
+    const top = new THREE.Vector3(x, diameterMm / 2, 0)
+      .applyMatrix4(state.ropeGroup.matrixWorld)
+      .project(state.camera);
+    const bottom = new THREE.Vector3(x, -diameterMm / 2, 0)
+      .applyMatrix4(state.ropeGroup.matrixWorld)
+      .project(state.camera);
+    return Math.abs(top.y - bottom.y) * height * .5;
+  };
+  const samples = [-halfLength, 0, halfLength].map(sampleDiameterPx);
+  const spreadPx = Math.max(...samples) - Math.min(...samples);
+  window.__BRAIDSTUDIO_RUNTIME_AUDIT__ = {
+    ...(window.__BRAIDSTUDIO_RUNTIME_AUDIT__ || {}),
+    measurementProjection: {
+      projection: "front_parallel_perspective",
+      selectedDiameterMm: diameterMm,
+      meshOuterDiameterMm: Number(mesh.meshOuterDiameterMm),
+      diameterErrorMm: Number(mesh.diameterErrorMm),
+      diameterSamplesPx: samples,
+      maximumDiameterSpreadPx: spreadPx
+    }
+  };
+}
+
+function projectedPixelsPerMillimeter(width, height, mesh) {
+  const diameterMm = Number(mesh?.diameterMm);
+  if (!(diameterMm > 0)) return 0;
+  const top = new THREE.Vector3(0, diameterMm / 2, 0).project(state.camera);
+  const bottom = new THREE.Vector3(0, -diameterMm / 2, 0).project(state.camera);
+  return Math.abs(top.y - bottom.y) * height * .5 / diameterMm;
+}
+
+function drawMeasurementRulers(ctx, width, height, mesh, { clear = false } = {}) {
+  if (clear) ctx.clearRect(0, 0, width, height);
+  if (mesh?.mode !== "rope") return;
+  const pxPerMm = projectedPixelsPerMillimeter(width, height, mesh);
+  if (!(pxPerMm >= 3)) return;
+
+  const topHeight = 30;
+  const leftWidth = 48;
+  const diameterMm = Number(mesh.diameterMm);
+  const ropeTop = height / 2 - diameterMm * pxPerMm / 2;
+  ctx.save();
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, width, topHeight);
+  ctx.fillRect(0, 0, leftWidth, height);
+  ctx.strokeStyle = "rgba(35,66,56,.78)";
+  ctx.fillStyle = "#234238";
+  ctx.lineWidth = 1;
+  ctx.font = "11px system-ui, sans-serif";
+  ctx.textBaseline = "top";
+
+  ctx.beginPath();
+  ctx.moveTo(leftWidth, topHeight - .5);
+  ctx.lineTo(width, topHeight - .5);
+  for (let mm = 0; leftWidth + mm * pxPerMm <= width; mm += 1) {
+    const x = leftWidth + mm * pxPerMm;
+    const major = mm % 5 === 0;
+    ctx.moveTo(x, topHeight);
+    ctx.lineTo(x, topHeight - (major ? 12 : 6));
+    if (major && x < width - 34) ctx.fillText(String(mm), x + 3, 3);
+  }
+  ctx.stroke();
+  ctx.fillText("mm", width - 22, 3);
+
+  ctx.beginPath();
+  ctx.moveTo(leftWidth - .5, topHeight);
+  ctx.lineTo(leftWidth - .5, height);
+  const firstMm = Math.floor((topHeight - ropeTop) / pxPerMm);
+  const lastMm = Math.ceil((height - ropeTop) / pxPerMm);
+  for (let mm = firstMm; mm <= lastMm; mm += 1) {
+    const y = ropeTop + mm * pxPerMm;
+    if (y < topHeight || y > height) continue;
+    const major = mm % 5 === 0;
+    ctx.moveTo(leftWidth, y);
+    ctx.lineTo(leftWidth - (major ? 12 : 6), y);
+    if (major && mm >= 0) ctx.fillText(String(mm), 4, y + 2);
+  }
+  ctx.stroke();
+  ctx.fillText("mm", 4, topHeight + 4);
+  ctx.restore();
+}
+
+function disposeObject(object) {
+  object.traverse?.((child) => {
+    child.geometry?.dispose();
+    if (!child.material?.userData?.sharedBraidMaterial) {
+      child.material?.map?.dispose?.();
+      child.material?.bumpMap?.dispose?.();
+      child.material?.dispose?.();
+    }
+  });
+  object.geometry?.dispose();
+  if (!object.material?.userData?.sharedBraidMaterial) object.material?.dispose?.();
+}
+
+function renderSummary(result, mesh = null) {
+  ui.diameterValue.textContent = `${result.diameterMm} mm`;
+  ui.angleValue.textContent = `${result.angleDeg}°`;
+  ui.strandWidthValue.textContent = `${Math.round(result.strandWidthScale * 100)}%`;
+  ui.filamentCountValue.textContent = `${result.filamentCount}`;
+  ui.denierValue.textContent = `${result.denier}D`;
+  const dimensions = mesh?.derivedDimensions;
+  ui.repeatBadge.textContent = dimensions
+    ? `${result.carrierCount / 2} blokta aynı kukla`
+    : "Hesaplanıyor";
+  ui.sceneMeta.textContent = `${result.carrierCount} kukla, ${result.diameterMm} mm, ${result.angleDeg}° örgü`;
+  const fitLabel = {
+    ok: "Uygun",
+    loose: "Gevşek paket",
+    overfilled: "Çapa sığmıyor"
+  }[mesh?.fitStatus] || "Hesaplanıyor";
+  const geometryMetrics = mesh ? [
+    ["Bir tur adımı", `${dimensions.helicalPitchAxialMm.toFixed(1)} mm`],
+    ["Görünen tur", `${(mesh.length / dimensions.helicalPitchAxialMm).toFixed(2)} tur`],
+    ["Yüzey çevresi", `${dimensions.circumferenceMm.toFixed(1)} mm`],
+    ["Kukla aralığı", `${dimensions.circumferentialPitchMm.toFixed(2)} mm`],
+    ["Aynı kuklanın dönüşü", `${result.carrierCount / 2} blok / ${dimensions.helicalPitchAxialMm.toFixed(1)} mm`],
+    ["Üst-alt tekrarı", `${dimensions.patternRepeatRows} sıra / ${dimensions.weaveRepeatAxialMm.toFixed(1)} mm`],
+    ["Görünen kesit", mesh.visibleRows ? `${mesh.visibleRows} sıra` : "tek crossing"],
+    ["Taşıyıcı toplamı", `${mesh.totalCarrierDenier}D`],
+    ["Kalibre taşıyıcı", `${mesh.derivedDimensions.effectiveCarrierDenier}D`],
+    ["Blok kesiti", `${mesh.yarnWidth.toFixed(2)} x ${mesh.yarnThickness.toFixed(2)} mm`],
+    ["Temas doluluğu", `%${Math.round(mesh.contactPackingFraction * 100)}`],
+    ["Çap uyumu", fitLabel]
+  ] : [];
+  ui.summary.innerHTML = [
+    ["Kukla", `${result.carrierCount} adet`],
+    ["Gruplar", `${result.carrierCount / 2} S + ${result.carrierCount / 2} Z`],
+    ["Çap", `${result.diameterMm} mm`],
+    ["Tel / denye", `${result.filamentCount} tel x ${result.denier}D`],
+    ["Malzeme", ui.materialProfile.options[ui.materialProfile.selectedIndex].textContent],
+    ["Üst-alt", ui.crossingMode.options[ui.crossingMode.selectedIndex].textContent]
+  ].concat(geometryMetrics)
+    .map(([label, value]) => `<div class="metric"><span>${label}</span><strong>${value}</strong></div>`)
+    .join("");
+
+  ui.carrierTable.innerHTML = result.carriers.map((carrier) => `
+    <div class="carrier-row">
+      <strong>${carrier.no}</strong>
+      <span class="swatch" style="background:${carrier.color}"></span>
+      <span>${carrier.group} - ${carrier.direction} - ${colorName(carrier.color)}</span>
+    </div>
+  `).join("");
+}
+
+function updateControlReadouts() {
+  ui.diameterValue.textContent = `${ui.diameter.value} mm`;
+  ui.angleValue.textContent = `${ui.braidAngle.value}°`;
+  ui.strandWidthValue.textContent = `${ui.strandWidth.value}%`;
+  ui.filamentCountValue.textContent = ui.filamentCount.value;
+  ui.denierValue.textContent = `${ui.denier.value}D`;
+}
+
+function refreshGenerateButton() {
+  ui.generateBraid.disabled = state.generating;
+  ui.generateBraid.textContent = state.generating ? "Üretiliyor..." : "Üret";
+  ui.generateBraid.classList.toggle("is-dirty", state.simulationDirty && !state.generating);
+}
+
+function markSimulationDirty() {
+  updateControlReadouts();
+  savePreferences();
+  state.simulationDirty = true;
+  refreshGenerateButton();
+  if (!state.generating) ui.statusPill.textContent = "Değişiklikler hazır";
+  if (!document.querySelector('#renderRealistic').disabled) {
+    document.querySelector('#renderStatus').textContent = document.querySelector('#renderResult').hidden
+      ? 'Seçili reçeteden hesaplanır. İşlem birkaç dakika sürebilir.'
+      : 'Ayarlar değişti. Gösterilen çıktı aşağıdaki önceki reçeteye aittir; yenisini oluşturabilirsiniz.';
+  }
+}
+
+function renderAll() {
+  const result = calculateBraid();
+  state.lastResult = result;
+  state.simulationDirty = false;
+  updateControlReadouts();
+  refreshGenerateButton();
+  savePreferences();
+  renderSummary(result);
+  requestGeometryMesh(result);
+}
+
+function resizeThree() {
+  const rect = ui.threeMount.getBoundingClientRect();
+  state.camera.aspect = rect.width / Math.max(1, rect.height);
+  state.camera.updateProjectionMatrix();
+  state.renderer.setSize(rect.width, rect.height, false);
+  ui.threeRuler.width = Math.max(1, Math.round(rect.width));
+  ui.threeRuler.height = Math.max(1, Math.round(rect.height));
+}
+
+function installThreeInteractions() {
+  const mount = ui.threeMount;
+  mount.addEventListener("contextmenu", (event) => event.preventDefault());
+  mount.addEventListener("pointerdown", (event) => {
+    mount.setPointerCapture(event.pointerId);
+    state.spin = false;
+    ui.toggleSpin.textContent = "Sabit";
+    state.drag = {
+      pointerId: event.pointerId,
+      x: event.clientX,
+      y: event.clientY,
+      mode: event.button === 2 || event.shiftKey ? "z" : "xy"
+    };
+    mount.classList.add("is-dragging");
+  });
+  mount.addEventListener("pointermove", (event) => {
+    if (!state.drag || state.drag.pointerId !== event.pointerId) return;
+    const dx = event.clientX - state.drag.x;
+    const dy = event.clientY - state.drag.y;
+    state.drag.x = event.clientX;
+    state.drag.y = event.clientY;
+
+    if (state.drag.mode === "z") {
+      state.viewRotation.z += dx * .012;
+    } else {
+      state.viewRotation.y += dx * .01;
+      state.viewRotation.x += dy * .01;
+      state.viewRotation.x = clamp(state.viewRotation.x, -Math.PI * .48, Math.PI * .48);
+    }
+  });
+  mount.addEventListener("pointerup", endThreeDrag);
+  mount.addEventListener("pointercancel", endThreeDrag);
+  mount.addEventListener("wheel", (event) => {
+    event.preventDefault();
+    const maxZoom = state.geometryMesh?.mode === "rope" ? 90 : 13;
+    state.zoom = clamp(state.zoom + event.deltaY * .006, 4.6, maxZoom);
+    state.camera.position.z = state.zoom;
+    state.camera.lookAt(0, 0, 0);
+  }, { passive: false });
+}
+
+function endThreeDrag(event) {
+  if (!state.drag || state.drag.pointerId !== event.pointerId) return;
+  ui.threeMount.releasePointerCapture(event.pointerId);
+  ui.threeMount.classList.remove("is-dragging");
+  state.drag = null;
+}
+
+function animate() {
+  requestAnimationFrame(animate);
+  if (state.spin && state.ropeGroup) {
+    state.autoRotation += .006;
+  }
+  state.camera.position.z = state.zoom;
+  if (state.geometryMesh?.mode === "rope") {
+    state.camera.position.y = 0;
+    state.camera.lookAt(0, 0, 0);
+  }
+  state.ropeGroup.rotation.x = state.viewRotation.x;
+  state.ropeGroup.rotation.y = state.viewRotation.y;
+  state.ropeGroup.rotation.z = state.viewRotation.z + state.autoRotation;
+  state.renderer.render(state.scene, state.camera);
+  drawMeasurementRulers(
+    ui.threeRuler.getContext("2d"),
+    ui.threeRuler.width,
+    ui.threeRuler.height,
+    state.geometryMesh,
+    { clear: true }
+  );
+}
+
+function resetDefaultColors() {
+  const count = Number(ui.carrierCount.value);
+  initCarriers(count, { preserveExisting: false });
+  renderCarrierControls();
+  markSimulationDirty();
+}
+
+function updateCarrierCount() {
+  const count = Number(ui.carrierCount.value);
+  initCarriers(count, { preserveExisting: true });
+  renderCarrierControls();
+  markSimulationDirty();
+}
+
+function colorName(hex) {
+  return colorNames[hex.toLowerCase()] || hex.toUpperCase();
+}
+
+
+function mod(value, max) {
+  return ((value % max) + max) % max;
+}
+
+function fract(value) {
+  return value - Math.floor(value);
+}
+
+function hashNoise2D(x, y, salt) {
+  return fract(Math.sin((x + 1) * 127.1 + (y + 1) * 311.7 + salt * 74.7) * 43758.5453);
+}
+
+function periodicFiberNoise(fiberIndex, position, period, salt) {
+  const left = Math.floor(position);
+  const amount = fract(position);
+  const blend = amount * amount * (3 - 2 * amount);
+  const a = hashNoise2D(fiberIndex, mod(left, period), salt);
+  const b = hashNoise2D(fiberIndex, mod(left + 1, period), salt);
+  return a + (b - a) * blend;
+}
+
+function periodicNoise2D(x, y, periodX, periodY, salt) {
+  const x0 = Math.floor(x);
+  const y0 = Math.floor(y);
+  const tx0 = fract(x);
+  const ty0 = fract(y);
+  const tx = tx0 * tx0 * (3 - 2 * tx0);
+  const ty = ty0 * ty0 * (3 - 2 * ty0);
+  const a = hashNoise2D(mod(x0, periodX), mod(y0, periodY), salt);
+  const b = hashNoise2D(mod(x0 + 1, periodX), mod(y0, periodY), salt);
+  const c = hashNoise2D(mod(x0, periodX), mod(y0 + 1, periodY), salt);
+  const d = hashNoise2D(mod(x0 + 1, periodX), mod(y0 + 1, periodY), salt);
+  const top = a + (b - a) * tx;
+  const bottom = c + (d - c) * tx;
+  return top + (bottom - top) * ty;
+}
+
+function clampByte(value) {
+  return Math.max(0, Math.min(255, Math.round(value)));
+}
+
+
+function clamp(value, min, max) {
+  return Math.max(min, Math.min(max, value));
+}
+
+function openImageModal() {
+  ui.modalImage.src = ui.patternCanvas.toDataURL("image/png");
+  ui.imageModal.hidden = false;
+  ui.closeImageModal.focus();
+}
+
+function closeImageModal() {
+  ui.imageModal.hidden = true;
+  ui.modalImage.removeAttribute("src");
+}
+
+ui.carrierCount.addEventListener("change", updateCarrierCount);
+ui.diameter.addEventListener("input", markSimulationDirty);
+ui.braidAngle.addEventListener("input", markSimulationDirty);
+ui.strandWidth.addEventListener("input", markSimulationDirty);
+ui.filamentCount.addEventListener("input", markSimulationDirty);
+ui.denier.addEventListener("input", markSimulationDirty);
+ui.materialProfile.addEventListener("change", markSimulationDirty);
+ui.crossingMode.addEventListener("change", markSimulationDirty);
+ui.generateBraid.addEventListener("click", renderAll);
+ui.bulkColor.addEventListener("input", () => {
+  state.activeColor = ui.bulkColor.value;
+  renderFixedPalette();
+  savePreferences();
+});
+ui.paintAll.addEventListener("click", () => {
+  state.carriers.forEach((carrier) => carrier.color = state.activeColor);
+  renderCarrierControls();
+  markSimulationDirty();
+});
+ui.resetColors.addEventListener("click", resetDefaultColors);
+ui.invertFlow.addEventListener("click", () => {
+  state.flip = !state.flip;
+  renderCarrierControls();
+  markSimulationDirty();
+});
+ui.toggleSpin.addEventListener("click", () => {
+  state.spin = !state.spin;
+  ui.toggleSpin.textContent = state.spin ? "Döndür" : "Sabit";
+});
+ui.downloadPng.addEventListener("click", () => {
+  const a = document.createElement("a");
+  a.href = ui.patternCanvas.toDataURL("image/png");
+  a.download = `braidstudio-${ui.carrierCount.value}-kukla.png`;
+  a.click();
+});
+ui.patternCanvas.addEventListener("click", openImageModal);
+ui.closeImageModal.addEventListener("click", closeImageModal);
+ui.imageModal.addEventListener("click", (event) => {
+  if (event.target.closest("[data-close-modal]")) closeImageModal();
+});
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && !ui.imageModal.hidden) closeImageModal();
+});
+document.addEventListener("click", (event) => {
+  if (ui.carrierPopover.hidden) return;
+  if (ui.carrierPopover.contains(event.target) || event.target.closest(".carrier")) return;
+  hideCarrierPopover();
 });
 
-/* ── Tıklayınca büyütme (modal) ── */
-// renderRecipeSheet içinde canvas-modal-overlay kullanılıyor (aktif)
-// enlargeModal eski sistem — kullanılmıyor
+initThree();
+const savedPreferences = loadPreferences();
+applySavedPreferences(savedPreferences);
+initCarriers(Number(ui.carrierCount.value), {
+  preserveExisting: false,
+  colors: savedPreferences?.carrierColors
+});
+renderFixedPalette();
+renderCarrierControls();
+updateControlReadouts();
+renderAll();
+
+// Offline appearance output uses the same recipe function as the WebGL preview.
+const realisticButton = document.querySelector('#renderRealistic');
+realisticButton.addEventListener('click', async () => {
+  const status = document.querySelector('#renderStatus');
+  realisticButton.disabled = true;
+  const payload = geometryPayload(calculateBraid());
+  payload.mode = 'rope';
+  renderAll(); // Keep preview and its recipe summary in sync with this submission.
+  const label = `${payload.carrierCount} kukla · ${payload.diameterMm} mm · ${payload.braidAngle}° · ${payload.filamentCount} iplik × ${payload.denier}D`;
+  document.querySelector('#renderResult').hidden = true;
+  document.querySelector('#renderRecipe').textContent = label;
+  status.textContent = 'Görüntü hesaplanıyor… Ayar değişiklikleri sonraki çıktıya uygulanır.';
+  try {
+    let response = await fetch('/api/renders', {method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(payload)});
+    let job = await response.json();
+    if (!response.ok) throw new Error(job.error);
+    const id = job.id;
+    while (job.status === 'rendering') {
+      await new Promise(resolve => setTimeout(resolve,2000));
+      response = await fetch(`/api/renders/${id}`);
+      job = await response.json();
+      if (!response.ok) throw new Error(job.error);
+    }
+    if (job.status !== 'complete') throw new Error(job.error || 'Çıktı hazırlanamadı.');
+    document.querySelector('#renderImage').src=job.image;
+    document.querySelector('#renderDownload').href=job.image;
+    document.querySelector('#renderClose').href=job.close;
+    document.querySelector('#renderResult').hidden=false;
+    status.textContent='Çıktı hazır. Yukarıdaki reçeteye aittir; sonuçlar geçici olarak saklanır.';
+  } catch(error) { status.textContent=error.message; }
+  finally {realisticButton.disabled=false;}
+});

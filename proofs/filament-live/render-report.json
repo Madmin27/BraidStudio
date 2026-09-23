@@ -1,0 +1,104 @@
+{
+  "recipe": {
+    "mode": "rope",
+    "visibleRows": 30,
+    "baseColor": "#f6f5ee",
+    "carrierCount": 16,
+    "diameterMm": 16,
+    "braidAngle": 45,
+    "strandWidthScale": 1,
+    "filamentCount": 25,
+    "denier": 1000,
+    "materialProfileId": "polyester_satin",
+    "crossingMode": "diamond",
+    "flip": false,
+    "carriers": [
+      {
+        "no": 1,
+        "color": "#e11912"
+      },
+      {
+        "no": 2,
+        "color": "#f6f5ee"
+      },
+      {
+        "no": 3,
+        "color": "#e11912"
+      },
+      {
+        "no": 4,
+        "color": "#f6f5ee"
+      },
+      {
+        "no": 5,
+        "color": "#f6f5ee"
+      },
+      {
+        "no": 6,
+        "color": "#f6f5ee"
+      },
+      {
+        "no": 7,
+        "color": "#f6f5ee"
+      },
+      {
+        "no": 8,
+        "color": "#f6f5ee"
+      },
+      {
+        "no": 9,
+        "color": "#f6f5ee"
+      },
+      {
+        "no": 10,
+        "color": "#f6f5ee"
+      },
+      {
+        "no": 11,
+        "color": "#f6f5ee"
+      },
+      {
+        "no": 12,
+        "color": "#f6f5ee"
+      },
+      {
+        "no": 13,
+        "color": "#f6f5ee"
+      },
+      {
+        "no": 14,
+        "color": "#f6f5ee"
+      },
+      {
+        "no": 15,
+        "color": "#f6f5ee"
+      },
+      {
+        "no": 16,
+        "color": "#f6f5ee"
+      }
+    ],
+    "denierScale": 1
+  },
+  "profileVersion": "filament-c-denoised-1",
+  "geometrySha256": "031c33ef1b20a817d4347fe9096cbddca986bb2785f1fdd547754eaf44aa7816",
+  "carrierCount": 16,
+  "directions": {
+    "S": 8,
+    "Z": 8
+  },
+  "denoising": true,
+  "blender": "4.0.2",
+  "assumedFilamentsPerEnd": 192,
+  "renders": [
+    {
+      "file": "rope.png",
+      "seconds": 101.61739683151245
+    },
+    {
+      "file": "close.png",
+      "seconds": 136.39284801483154
+    }
+  ],
+  "seconds": 243.78359007835388
+}

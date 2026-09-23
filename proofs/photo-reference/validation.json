@@ -1,0 +1,58 @@
+{
+  "checkpoint": "73cacd4",
+  "branch": "work/photo-reference",
+  "accepted": false,
+  "deployed": false,
+  "tests": {
+    "command": "node tests/unifiedGeometry.test.js",
+    "pass": 11,
+    "fail": 0,
+    "exitCode": 0
+  },
+  "syntax": {
+    "command": "npm run check",
+    "exitCode": 0
+  },
+  "runtimeProofs": {
+    "photo-reference-rope": {
+      "generatedAt": "2026-09-05T19:20:05.038Z",
+      "browserErrors": [],
+      "lighting": {
+        "environment": true,
+        "shadowCastingCarriers": 32,
+        "environmentIntensity": 3.2
+      },
+      "effectiveDenier": 1000,
+      "diameterErrorMm": -1.7763568394002505e-15
+    },
+    "photo-reference-crossing": {
+      "generatedAt": "2026-09-05T19:20:21.008Z",
+      "browserErrors": [],
+      "lighting": {
+        "environment": true,
+        "shadowCastingCarriers": 2,
+        "environmentIntensity": 3.2
+      },
+      "effectiveDenier": 1000,
+      "diameterErrorMm": null
+    },
+    "photo-reference-default": {
+      "generatedAt": "2026-09-05T19:21:05.163Z",
+      "browserErrors": [],
+      "lighting": {
+        "environment": true,
+        "shadowCastingCarriers": 16,
+        "environmentIntensity": 3.2
+      },
+      "effectiveDenier": 1000,
+      "diameterErrorMm": 0
+    }
+  },
+  "sha256": {
+    "public/app.js": "24875a485c9b2760c4510ca863fe43de391893dae34c5b4394e4e05ef2345c91",
+    "scripts/braid_geometry.py": "e437c503dd2c8b7419afcca2a495a5af2defe1fefb80767435d1eb55ac19ba74",
+    "data/materials/polyester_satin.json": "712ce43013d5d702aa6e35a7532c4055725f6ce892040037242279b69828e8f5",
+    "scripts/textile-proof-screenshot.mjs": "e120eaa71d6520b7c35e2ca48c8fde9b6729289cab8a5c267b0c21558ef39ab9",
+    "tests/unifiedGeometry.test.js": "53556f3921b8616c7ad424225ef538944f42573a79dc1358c00543044931c7e7"
+  }
+}

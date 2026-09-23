@@ -4,11 +4,11 @@ After=network.target
 
 [Service]
 Type=simple
-WorkingDirectory=/root/sunucu/BraidStudio
+WorkingDirectory=/root/projeler/BraidStudio
 Environment=NODE_ENV=production
 Environment=HOST=127.0.0.1
 Environment=PORT=3017
-EnvironmentFile=-/root/sunucu/BraidStudio/.env
+EnvironmentFile=-/root/projeler/BraidStudio/.env
 ExecStart=/usr/bin/node server.js
 Restart=always
 RestartSec=5

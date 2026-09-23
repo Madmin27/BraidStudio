@@ -1,0 +1,95 @@
+{
+  "generatedAt": "2026-08-27T20:25:39.339Z",
+  "sourceUrl": "http://127.0.0.1:3228/?geometryMode=crossing",
+  "braidAngle": null,
+  "requestedMaterialProfile": "polyester_satin",
+  "requestedGeometryMode": "crossing",
+  "geometry": {
+    "geometryModel": "unified_carrier_geometry",
+    "crossingDepthModel": "quintic_C2_layer_exchange",
+    "crossingDeformationModel": "continuous_across_width_saddle_field",
+    "crossingEdgeTimingModel": "exact_unwrapped_line_intersection",
+    "cylindricalSweepModel": "centerline_first_local_frame_sweep",
+    "crossSectionFrameModel": "actual_3d_path_orthonormal_transport",
+    "crossSectionOrder": 2,
+    "carrierPathModel": "one_continuous_bundle_per_carrier",
+    "piecesPerCarrier": 1,
+    "surfacePieceCount": 2,
+    "minimumCrossingEnvelopeClearance": 0,
+    "contactWidthConstraint": "full_pitch_no_gap_width",
+    "minimumContactAreaRetention": 0.8987940907970416,
+    "ringSegments": 24,
+    "materialProfileId": "polyester_satin",
+    "denier": 1000,
+    "denierScale": 0.7,
+    "effectiveDenier": 700
+  },
+  "runtimeAudit": {
+    "mode": "crossing",
+    "materialProfileId": "polyester_satin",
+    "carrierCount": 2,
+    "materials": [
+      {
+        "carrierNo": 1,
+        "color": "#e11912",
+        "materialUuid": "32d81e72-6e93-46cd-a331-87edfd526e9f",
+        "textureUuid": "46fda114-4a04-4cd4-b740-aa6b0eda867f",
+        "lodKey": "25:2:1.73",
+        "visibleYarnBands": 25,
+        "microFibersPerYarn": 2,
+        "contrastBoost": 1.7320508075688772,
+        "pixelsPerYarn": 3.5983361158422724,
+        "textureMapKey": "polyester_satin:25:700:25:2:1.73",
+        "textureRepeatU": 0.3,
+        "textureMinFilter": "LinearMipmapNearestFilter",
+        "textureMipmaps": true,
+        "worldSpaceU": true
+      },
+      {
+        "carrierNo": 2,
+        "color": "#f6f5ee",
+        "materialUuid": "cf85d60f-7e81-4c99-a260-0d450dec9822",
+        "textureUuid": "46fda114-4a04-4cd4-b740-aa6b0eda867f",
+        "lodKey": "25:2:1.73",
+        "visibleYarnBands": 25,
+        "microFibersPerYarn": 2,
+        "contrastBoost": 1.7320508075688772,
+        "pixelsPerYarn": 3.5983361158422724,
+        "textureMapKey": "polyester_satin:25:700:25:2:1.73",
+        "textureRepeatU": 0.3,
+        "textureMinFilter": "LinearMipmapNearestFilter",
+        "textureMipmaps": true,
+        "worldSpaceU": true
+      }
+    ]
+  },
+  "screenshots": {
+    "normal": {
+      "nonTransparent": 14400,
+      "dark": 661,
+      "bright": 13234,
+      "total": 14400
+    },
+    "generated": {
+      "nonTransparent": 14400,
+      "dark": 476,
+      "bright": 13772,
+      "total": 14400
+    },
+    "close": {
+      "nonTransparent": 14400,
+      "dark": 6169,
+      "bright": 6377,
+      "total": 14400
+    },
+    "mobile": {
+      "nonTransparent": 14400,
+      "dark": 1104,
+      "bright": 12405,
+      "total": 14400
+    }
+  },
+  "accepted": false,
+  "deployed": false,
+  "acceptanceNote": "User visual acceptance is still required."
+}

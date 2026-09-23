@@ -1,0 +1,35 @@
+BRAIDSTUDIO RUNTIME PRUNE - 2026-08-27
+
+KEPT PRODUCTION PATH
+public/index.html
+public/app.js
+public/styles.css
+public/vendor/three.module.js
+public/vendor/three.core.js
+server.js
+scripts/braid_geometry.py
+data/materials/polip_rope.json
+data/materials/polyester_satin.json
+
+REMOVED RUNTIME STACKS
+- /api/analyze-image
+- /api/library and /api/library/validate
+- /api/pattern/solve
+- /api/pattern/generate-color-map
+- /api/pattern/predict
+- /api/pattern/simulate
+- server/lib legacy solver, predictor, validator and generator modules
+- src legacy matrix, walk-map, canvas and surface-simulation modules
+- legacy recipe, machine-profile, pattern-signature and analysis-cache data
+- tests that only exercised removed stacks
+
+VERIFICATION
+- npm run check: pass
+- npm test: pass
+- live /api/braid-geometry: HTTP 200
+- live geometryModel: unified_carrier_geometry
+- live carrier count: 16
+- live piecesPerCarrier: 1
+- live Polyester effective denier: 700
+- removed /api/pattern/simulate: HTTP 404
+- live visual proof: proofs/clean-live

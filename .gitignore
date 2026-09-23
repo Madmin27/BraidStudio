@@ -1,7 +1,11 @@
 .env
 node_modules/
+__pycache__/
+*.py[cod]
 overlap-test-*.png
 # Debug/test artifacts
 debug-*.png
 debug-*.json
 paint-face-*.png
+
+.render-cache/

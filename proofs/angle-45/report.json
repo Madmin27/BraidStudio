@@ -1,0 +1,50 @@
+{
+  "generatedAt": "2026-08-27T10:31:12.040Z",
+  "sourceUrl": "http://127.0.0.1:3218/",
+  "braidAngle": 45,
+  "geometry": {
+    "geometryModel": "unified_carrier_geometry",
+    "crossingDepthModel": "quintic_C2_layer_exchange",
+    "crossingDeformationModel": "continuous_across_width_saddle_field",
+    "crossingEdgeTimingModel": "exact_unwrapped_line_intersection",
+    "cylindricalSweepModel": "centerline_first_local_frame_sweep",
+    "crossSectionFrameModel": "actual_3d_path_orthonormal_transport",
+    "crossSectionOrder": 2,
+    "carrierPathModel": "one_continuous_bundle_per_carrier",
+    "piecesPerCarrier": 1,
+    "surfacePieceCount": 16,
+    "minimumCrossingEnvelopeClearance": 0,
+    "contactWidthConstraint": "full_pitch_no_gap_width",
+    "minimumContactAreaRetention": 0.8987940907970416,
+    "ringSegments": 24
+  },
+  "screenshots": {
+    "normal": {
+      "nonTransparent": 14400,
+      "dark": 506,
+      "bright": 6940,
+      "total": 14400
+    },
+    "generated": {
+      "nonTransparent": 14400,
+      "dark": 727,
+      "bright": 6861,
+      "total": 14400
+    },
+    "close": {
+      "nonTransparent": 14400,
+      "dark": 0,
+      "bright": 2015,
+      "total": 14400
+    },
+    "mobile": {
+      "nonTransparent": 14400,
+      "dark": 140,
+      "bright": 7523,
+      "total": 14400
+    }
+  },
+  "accepted": false,
+  "deployed": false,
+  "acceptanceNote": "User visual acceptance is still required."
+}

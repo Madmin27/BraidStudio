@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="tr">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>BraidStudio</title>
+    <link rel="stylesheet" href="/styles.css?v=20260809-rollback-satin-1">
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="topbar">
+        <div>
+          <p>BraidStudio</p>
+          <h1>Tres halat desen simülasyonu</h1>
+        </div>
+        <div class="status-pill" id="statusPill">Canlı hesap</div>
+      </header>
+
+      <section class="layout">
+        <aside class="controls" aria-label="Makine ve renk ayarları">
+          <section class="panel">
+            <div class="panel-head">
+              <h2>Makine</h2>
+              <span id="repeatBadge">-</span>
+            </div>
+            <label>
+              Kukla sayısı
+              <select id="carrierCount">
+                <option>8</option>
+                <option>12</option>
+                <option selected>16</option>
+                <option>24</option>
+                <option>32</option>
+                <option>36</option>
+                <option>48</option>
+              </select>
+            </label>
+            <label>
+              Halat çapı <strong id="diameterValue">16 mm</strong>
+              <input id="diameter" type="range" min="4" max="80" step="1" value="16">
+            </label>
+            <label>
+              Örgü açısı <strong id="angleValue">34°</strong>
+              <input id="braidAngle" type="range" min="24" max="68" step="1" value="34">
+            </label>
+            <label>
+              İp genişliği <strong id="strandWidthValue">100%</strong>
+              <input id="strandWidth" type="range" min="80" max="190" step="5" value="100">
+            </label>
+            <label>
+              Tel sayısı <strong id="filamentCountValue">30</strong>
+              <input id="filamentCount" type="range" min="8" max="40" step="1" value="25">
+            </label>
+            <label>
+              Denye <strong id="denierValue">1300D</strong>
+              <input id="denier" type="range" min="300" max="3000" step="100" value="1000">
+            </label>
+            <label>
+              Üst-alt düzeni
+              <select id="crossingMode">
+                <option value="diamond" selected>1 üst / 1 alt - Diamond</option>
+                <option value="regular">2 üst / 2 alt - Regular</option>
+                <option value="hercules">3 üst / 3 alt - Hercules</option>
+              </select>
+            </label>
+            <button id="generateBraid" class="generate-button" type="button">Üret</button>
+          </section>
+
+          <section class="panel">
+            <div class="panel-head">
+              <h2>Kukla renkleri</h2>
+              <button id="resetColors" type="button" title="Beyaz/kırmızı örneğe dön">Sıfırla</button>
+            </div>
+            <div class="quick-row">
+              <input id="bulkColor" type="color" value="#59ee78" aria-label="Toplu renk">
+              <button id="paintAll" type="button">Hepsine boya</button>
+              <button id="invertFlow" type="button">Yönleri çevir</button>
+            </div>
+            <div id="fixedPalette" class="fixed-palette" aria-label="Hazır renkler"></div>
+            <div id="carrierGrid" class="carrier-grid"></div>
+            <div id="carrierPopover" class="carrier-popover" hidden></div>
+          </section>
+        </aside>
+
+        <section class="viewer">
+          <div class="canvas-card">
+            <div class="viewer-head">
+              <div>
+                <h2>3D halat yüzeyi</h2>
+                <span id="sceneMeta">-</span>
+              </div>
+              <button id="toggleSpin" type="button">Döndür</button>
+            </div>
+            <div id="threeMount" class="three-mount"></div>
+          </div>
+
+          <div class="canvas-card">
+            <div class="viewer-head">
+              <div>
+                <h2>Üretilecek halat çıktısı</h2>
+                <span>Silindir yüzeyinde yakın plan desen</span>
+              </div>
+              <button id="downloadPng" type="button">PNG indir</button>
+            </div>
+            <canvas id="patternCanvas" width="1400" height="780"></canvas>
+          </div>
+        </section>
+
+        <aside class="output">
+          <section class="panel">
+            <div class="panel-head">
+              <h2>Kesin reçete</h2>
+              <span id="confidence">Deterministik</span>
+            </div>
+            <div id="summary" class="summary"></div>
+          </section>
+          <section class="panel">
+            <div class="panel-head">
+              <h2>Kukla listesi</h2>
+            </div>
+            <div id="carrierTable" class="carrier-table"></div>
+          </section>
+        </aside>
+      </section>
+    </main>
+
+    <div id="imageModal" class="image-modal" hidden aria-modal="true" role="dialog" aria-label="Buyuk halat goruntusu">
+      <button class="image-modal-backdrop" type="button" data-close-modal aria-label="Kapat"></button>
+      <div class="image-modal-panel">
+        <button id="closeImageModal" class="image-modal-close" type="button">Kapat</button>
+        <img id="modalImage" alt="Buyuk halat ciktisi">
+      </div>
+    </div>
+
+    <script type="module" src="/app.js?v=20260809-rollback-satin-1"></script>
+  </body>
+</html>
