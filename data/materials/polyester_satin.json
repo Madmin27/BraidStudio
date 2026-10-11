@@ -96,29 +96,29 @@
     ]
   },
   "render": {
-    "version": "filament-c-denoised-1",
-    "samples": 256,
-    "assumedFilamentsPerEnd": 192,
-    "surfaceCurvesPerCarrier": 180,
-    "roughness": 0.18,
-    "specular": 0.65,
-    "ior": 1.57,
-    "coreRoughness": 0.85,
-    "grooveDepthMm": 0.023,
-    "coreInsetMm": 0.026,
-    "exposure": 0.7,
-    "worldStrength": 0.22,
+    "version": "fiber-bundle-1",
+    "samples": 128,
+    "viewTransform": "Standard",
+    "exposure": 0.6,
+    "worldStrength": 0.45,
     "lightScale": 4,
+    "keyStrength": 1.0,
+    "assumedFilamentsPerEnd": 192,
+    "filamentsPerCarrier": 2500,
+    "twistPitchMm": 12,
+    "bundleShellStart": 0.65,
+    "bundleFlatten": 0.6,
+    "coreInsetMm": 0.026,
+    "roughness": 0.24,
+    "specular": 0.5,
+    "anisotropy": 0.5,
+    "sheen": 0.25,
+    "ior": 1.55,
     "referenceColors": {
-      "#bb0615": [
-        0.5,
-        0.003,
-        0.008
-      ],
       "#f6f5ee": [
-        0.74,
-        0.75,
-        0.72
+        0.8,
+        0.8,
+        0.76
       ]
     }
   }
