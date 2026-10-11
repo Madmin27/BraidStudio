@@ -1,11 +1,11 @@
 # BraidStudio Calisma Sozlesmesi
 
-## Etkin durum — 2026-10-11 lif demeti cikti (fiber-bundle-1)
+## Etkin durum — 2026-10-11 duz filament serit cikti (flat-tape-2)
 
 - Blender adaptoru `scripts/render_braid.py` yeniden yazildi: tasiyici yuzeyi
-  oluk/kordon dokusu yerine hair-curve filamentlerle kaplanir. Gorunur demet
-  sayisi `widthMm / equivalentEndDiameterMm` (katmanli paketleme), filamentler
-  demet ekseni etrafinda `twistPitchMm` bukumle sarilir. Geometri cekirdegi
+  oluk/kordon dokusu yerine hair-curve filamentlerle kaplanir. Filamentler
+  bukumsuz, paralel, 3 katmanli duz serit olarak tum tasiyici enine yayilir
+  (kullanicinin kilif referansi: bukumlu demet degil, yassi satin serit). Geometri cekirdegi
   ve tasiyici yollari degismedi; 12 test gecti.
 - Ton: Standard view transform (AgX kirmiziyi somona kaydiriyor, beyazi
   griye bogiyordu), dar key isigi + genis fill. Hizli Three.js onizleme

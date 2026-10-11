@@ -62,9 +62,9 @@ camd.type='ORTHO'; camd.clip_end=400
 def sink(v,amount):
     n=Vector((0,v.y,v.z)).normalized()
     return v-n*amount
-dd=g['derivedDimensions']; width_mm=dd['widthMm']; end_d=dd['equivalentEndDiameterMm']
-lanes=max(2,int(round(width_mm/end_d))); R_mm=width_mm/(2*lanes); R_u=.5/lanes
-twist=opt['twistPitchMm']*scene_scale; nfib=opt['filamentsPerCarrier']
+# Flat multifilament tape: parallel, untwisted filaments in a few layers across the
+# full carrier width; only slow, sub-filament lateral drift breaks perfect regularity.
+nfib=opt['filamentsPerCarrier']; layers=opt['filamentLayers']; drift=opt['filamentDriftMm']*scene_scale
 for yi,yarn in enumerate(g['yarns']):
     raw=yarn['mesh']; vv=raw['vertices']
     verts=[Vector(vv[j:j+3])*scene_scale for j in range(0,len(vv),3)]
@@ -88,16 +88,15 @@ for yi,yarn in enumerate(g['yarns']):
     rng=random.Random(31+yi)
     cv=bpy.data.hair_curves.new('Filaments '+str(yarn['carrierNo'])); cv.add_curves([rings]*nfib)
     pos=[]; rad=[]
+    width_units=(sample(0,0)-sample(0,1)).length
     for f in range(nfib):
-        lane_c=(rng.randrange(lanes)+.5)/lanes
-        rr=rng.uniform(.85,1.15); phase=rng.uniform(0,math.tau)
-        rho=rng.uniform(opt['bundleShellStart'],1.0)
+        u0=rng.uniform(.004,.996); rr=rng.uniform(.85,1.15)
+        layer=rng.uniform(0,layers-1)*2*radius*.9
+        ph=rng.uniform(0,math.tau); wl=rng.uniform(40,90)*scene_scale
         for r in range(rings):
-            th=phase+math.tau*arc[r]/twist
-            u=max(.002,min(.998,lane_c+rho*R_u*math.cos(th)*.96))
-            # Bundle axis sits below the envelope; flattened shell keeps the production thickness.
-            h=(rho*math.sin(th)*opt['bundleFlatten']-.3)*R_mm*scene_scale
-            v=sink(sample(r,u),-h-radius*rr)
+            du=drift*math.sin(math.tau*arc[r]/wl+ph)/max(width_units,1e-6)
+            u=max(.002,min(.998,u0+du))
+            v=sink(sample(r,u),-(layer+radius*rr))
             pos.extend(v); rad.append(radius*rr)
     cv.points.foreach_set('position',pos)
     cv.attributes.new('radius','FLOAT','POINT').data.foreach_set('value',rad)
@@ -110,4 +109,4 @@ for name,width,target,res in [('rope.png',min(length*.88,90),(0,0,0),(1400,650))
     s.render.resolution_x=res[0]; s.render.resolution_y=res[1]; s.render.resolution_percentage=100
     s.render.filepath=str(OUT/name); started=time.time(); bpy.ops.render.render(write_still=True)
     stats.append(dict(file=name,seconds=time.time()-started))
-(OUT/'report.json').write_text(json.dumps(dict(recipe=recipe,profileVersion=opt['version'],geometrySha256=hashlib.sha256(CORE.read_bytes()).hexdigest(),carrierCount=g['carrierCount'],directions=g['directionCounts'],denoising=True,blender=bpy.app.version_string,assumedFilamentsPerEnd=opt['assumedFilamentsPerEnd'],filamentsPerCarrier=nfib,visibleBundlesPerCarrier=lanes,renders=stats,seconds=time.time()-t0),indent=2))
+(OUT/'report.json').write_text(json.dumps(dict(recipe=recipe,profileVersion=opt['version'],geometrySha256=hashlib.sha256(CORE.read_bytes()).hexdigest(),carrierCount=g['carrierCount'],directions=g['directionCounts'],denoising=True,blender=bpy.app.version_string,assumedFilamentsPerEnd=opt['assumedFilamentsPerEnd'],filamentsPerCarrier=nfib,filamentLayers=layers,renders=stats,seconds=time.time()-t0),indent=2))

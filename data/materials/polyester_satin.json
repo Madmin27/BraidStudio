@@ -96,30 +96,29 @@
     ]
   },
   "render": {
-    "version": "fiber-bundle-1",
+    "version": "flat-tape-2",
     "samples": 128,
     "viewTransform": "Standard",
-    "exposure": 0.6,
+    "exposure": 0.3,
     "worldStrength": 0.45,
     "lightScale": 4,
     "keyStrength": 1.0,
     "assumedFilamentsPerEnd": 192,
-    "filamentsPerCarrier": 2500,
-    "twistPitchMm": 12,
-    "bundleShellStart": 0.65,
-    "bundleFlatten": 0.6,
+    "filamentsPerCarrier": 3000,
     "coreInsetMm": 0.026,
-    "roughness": 0.24,
-    "specular": 0.5,
-    "anisotropy": 0.5,
-    "sheen": 0.25,
+    "roughness": 0.21,
+    "specular": 0.6,
+    "anisotropy": 0.8,
+    "sheen": 0.1,
     "ior": 1.55,
     "referenceColors": {
       "#f6f5ee": [
-        0.8,
-        0.8,
-        0.76
+        0.86,
+        0.86,
+        0.83
       ]
-    }
+    },
+    "filamentLayers": 3,
+    "filamentDriftMm": 0.05
   }
 }

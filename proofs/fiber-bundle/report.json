@@ -80,7 +80,7 @@
     ],
     "denierScale": 1
   },
-  "profileVersion": "fiber-bundle-1",
+  "profileVersion": "flat-tape-2",
   "geometrySha256": "031c33ef1b20a817d4347fe9096cbddca986bb2785f1fdd547754eaf44aa7816",
   "carrierCount": 16,
   "directions": {
@@ -90,17 +90,17 @@
   "denoising": true,
   "blender": "4.0.2",
   "assumedFilamentsPerEnd": 192,
-  "filamentsPerCarrier": 2500,
-  "visibleBundlesPerCarrier": 10,
+  "filamentsPerCarrier": 3000,
+  "filamentLayers": 3,
   "renders": [
     {
       "file": "rope.png",
-      "seconds": 41.21887421607971
+      "seconds": 25.676217079162598
     },
     {
       "file": "close.png",
-      "seconds": 51.29815101623535
+      "seconds": 30.423820972442627
     }
   ],
-  "seconds": 114.94525837898254
+  "seconds": 80.78066682815552
 }
