@@ -12,7 +12,7 @@
   degismedi.
 - Kanit: `proofs/fiber-bundle/` (16 kukla, 10 mm, 34 derece, 25 ip x 1000D).
   Geri donus dali: `rollback/before-fiber-bsdf-20261011` (`3dc848e`).
-- Kullanici gorsel kabulu bekleniyor; push yapilmadi.
+- Kullanici 2026-10-11: "kabul edilebilir seviyede, idare eder". Push yapilmadi.
 
 ## Etkin durum — 2026-09-22 filament cikti entegrasyonu
 
