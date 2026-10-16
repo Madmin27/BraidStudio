@@ -652,3 +652,5 @@
 {"at":"2026-08-27T10:34:07.585Z","type":"asset","request":"/vendor/three.module.js","file":"public/vendor/three.module.js"}
 {"at":"2026-08-27T10:34:07.909Z","type":"asset","request":"/vendor/three.core.js","file":"public/vendor/three.core.js"}
 {"at":"2026-08-27T10:34:08.755Z","type":"geometry","status":"ok","mode":"rope","model":"unified_carrier_geometry","carrierCount":16,"durationMs":533,"files":["server.js","scripts/braid_geometry.py"]}
+{"at":"2026-10-11T16:22:43.105Z","type":"asset","request":"/","file":"public/index.html"}
+{"at":"2026-10-11T16:26:28.294Z","type":"asset","request":"/","file":"public/index.html"}

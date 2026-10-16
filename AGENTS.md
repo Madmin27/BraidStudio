@@ -105,6 +105,20 @@ The single-engine restrictions below apply to this active production path.
 
 # BraidStudio Calisma Sozlesmesi
 
+## Etkin durum — 2026-10-11 duz filament serit cikti (flat-tape-2)
+
+- Blender adaptoru `scripts/render_braid.py` yeniden yazildi: tasiyici yuzeyi
+  oluk/kordon dokusu yerine hair-curve filamentlerle kaplanir. Filamentler
+  bukumsuz, paralel, 3 katmanli duz serit olarak tum tasiyici enine yayilir
+  (kullanicinin kilif referansi: bukumlu demet degil, yassi satin serit). Geometri cekirdegi
+  ve tasiyici yollari degismedi; 12 test gecti.
+- Ton: Standard view transform (AgX kirmiziyi somona kaydiriyor, beyazi
+  griye bogiyordu), dar key isigi + genis fill. Hizli Three.js onizleme
+  degismedi.
+- Kanit: `proofs/fiber-bundle/` (16 kukla, 10 mm, 34 derece, 25 ip x 1000D).
+  Geri donus dali: `rollback/before-fiber-bsdf-20261011` (`3dc848e`).
+- Kullanici 2026-10-11: "kabul edilebilir seviyede, idare eder". Push yapilmadi.
+
 ## Etkin durum — 2026-09-22 filament cikti entegrasyonu
 
 Bu bolum asagidaki tarihsel durum notlarindan once gelir. Kullanici temiz
